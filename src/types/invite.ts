@@ -14,7 +14,6 @@ export type InviteSource = 'cmms' | 'restock';
 
 export interface Invite {
   code: string;
-  orgIds: string[];
   role: InviteRole;
   source: InviteSource;
   createdBy: string;
@@ -31,10 +30,12 @@ export interface Invite {
   // restock_cleaners doc id that should be patched with the new user's uid.
   linkedDocId?: string;
 
-  // Legacy: pre-multi-org invites used a singular `orgId`. The new
-  // generate path writes both for a transition window. Readers should
-  // prefer `orgIds`. Drop after the migration script has run in prod.
+  // The org(s) this invite grants membership in. Both fields are optional at
+  // the type level so legacy single-org and new multi-org code paths both
+  // typecheck; at runtime one or the other should be set. Use the
+  // `inviteOrgIds()` / `inviteOrgId()` helpers to read either form safely.
   orgId?: string;
+  orgIds?: string[];
 }
 
 export const INVITABLE_ROLES: readonly InviteRole[] = [
