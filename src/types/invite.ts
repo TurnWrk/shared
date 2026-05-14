@@ -68,3 +68,17 @@ export function inviteOrgIds(invite: Partial<Pick<Invite, 'orgIds' | 'orgId'>>):
   if (typeof invite.orgId === 'string' && invite.orgId) return [invite.orgId];
   return [];
 }
+
+// Legacy single-org helper. Returns the single orgId when the invite is bound
+// to exactly one org (either via the singular `orgId` field or a one-element
+// `orgIds` array), otherwise null. Kept for backward compatibility with
+// consumer code written before multi-org invites; new code should prefer
+// `inviteOrgIds` and handle the array case explicitly.
+export function inviteOrgId(invite: Partial<Pick<Invite, 'orgIds' | 'orgId'>>): string | null {
+  if (typeof invite.orgId === 'string' && invite.orgId) return invite.orgId;
+  if (Array.isArray(invite.orgIds) && invite.orgIds.length === 1) {
+    const only = invite.orgIds[0];
+    return typeof only === 'string' && only ? only : null;
+  }
+  return null;
+}
