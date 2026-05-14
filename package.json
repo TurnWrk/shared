@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./types": "./src/types/index.ts",
     "./roles": "./src/roles.ts",
-    "./collections": "./src/collections.ts"
+    "./collections": "./src/collections.ts",
+    "./members": "./src/members.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
