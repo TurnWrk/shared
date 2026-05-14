@@ -1,6 +1,7 @@
 export type ResupplyStatus =
   | 'pending'
   | 'approved'
+  | 'ordered'
   | 'fulfilled'
   | 'rejected';
 
@@ -9,6 +10,14 @@ export type ResupplySource =
   | 'relay-chat'
   | 'restock-app'
   | 'guest-qr';
+
+/**
+ * Which side of the suite the requesting vendor uses. Set by the originating
+ * app so dispatch-assistant-api and downstream UIs can route by persona:
+ *   - 'cleaning'    — turnover cleaner using the Restock /inspect form
+ *   - 'maintenance' — technician using the CMMS technician panel / Relay Chat
+ */
+export type ResupplyVendorType = 'cleaning' | 'maintenance';
 
 /**
  * One requested resupply line.
@@ -63,7 +72,28 @@ export interface ResupplyRequest {
   /** Guest-QR token that created the request (anonymous flow). */
   tokenId?: string;
   approvedAt?: number;
+  orderedAt?: number;
   fulfilledAt?: number;
+  rejectedAt?: number;
+  rejectedBy?: string;
+  rejectionReason?: string;
+
+  /** Vendor persona that originated the request. */
+  vendorType?: ResupplyVendorType;
+
+  // Restock-only extension fields. CMMS readers can ignore these; persisted
+  // on the canonical doc so a request created via /inspect retains its
+  // photo evidence and cleaner attribution.
+  cleanerId?: string;
+  cleanerName?: string;
+  /** Catalog itemType slugs (Restock catalog) — present alongside `items`. */
+  itemTypes?: string[];
+  notesImageUrls?: string[];
+  storagePhotos?: Array<{
+    storageId: string;
+    storageName: string;
+    imageUrls: string[];
+  }>;
 }
 
 // ==================== PURCHASE REQUESTS ====================

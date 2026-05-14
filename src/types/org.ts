@@ -1,3 +1,9 @@
+export interface OrgBranding {
+  logoUrl?: string;
+  logoPath?: string;
+  accentColor?: string;
+}
+
 export interface Org {
   id: string;
   name: string;
@@ -9,4 +15,5 @@ export interface Org {
     hostfixCmms?: boolean;
     restock?: boolean;
   };
+  branding?: OrgBranding;
 }
