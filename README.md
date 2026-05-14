@@ -5,13 +5,25 @@ Canonical types and constants shared across the turnwrk app suite
 
 ## Consumption
 
-Add as a file dependency in the consumer's `package.json`:
+Install from the canonical git repo
+([TurnWrk/shared](https://github.com/TurnWrk/shared)) in the consumer's
+`package.json`:
 
 ```json
 "dependencies": {
-  "@turnwrk/shared": "file:../turnwrk-shared"
+  "@turnwrk/shared": "git+https://github.com/TurnWrk/shared.git#main"
 }
 ```
+
+Then `npm install` — npm will clone the repo and resolve the package. To pin
+to a specific commit instead of tracking `main`, replace `#main` with the
+commit SHA (e.g. `#48d4a76`).
+
+> HTTPS (not SSH) is the canonical transport: Firebase App Hosting and other
+> CI containers don't ship `ssh`, so `git+ssh://` URLs fail in builds.
+
+Next.js consumers also need `@turnwrk/shared` in `transpilePackages` (this
+package ships raw `.ts`, not pre-built JS).
 
 Import canonical types:
 
