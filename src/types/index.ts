@@ -1,4 +1,5 @@
 export * from './org';
+export * from './owner';
 export * from './user';
 export * from './property';
 export * from './resupply';
