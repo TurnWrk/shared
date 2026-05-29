@@ -9,7 +9,9 @@ export type ResupplySource =
   | 'manual'
   | 'relay-chat'
   | 'restock-app'
-  | 'guest-qr';
+  | 'guest-qr'
+  | 'sms-surge'
+  | 'telegram';
 
 /**
  * Which side of the suite the requesting vendor uses. Set by the originating
