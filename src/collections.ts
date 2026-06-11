@@ -33,6 +33,8 @@ export const COLLECTIONS = {
   cmms_propertyMappings: 'cmms_propertyMappings',
   cmms_reviews: 'cmms_reviews',
   cmms_reports: 'cmms_reports',
+  // Standalone technician expense receipts (not embedded in a work order).
+  cmms_techReceipts: 'cmms_techReceipts',
 
   // restock-scoped
   restock_products: 'restock_products',
