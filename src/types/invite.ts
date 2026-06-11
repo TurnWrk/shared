@@ -36,6 +36,9 @@ export interface Invite {
   // `inviteOrgIds()` / `inviteOrgId()` helpers to read either form safely.
   orgId?: string;
   orgIds?: string[];
+
+  /** Normalized (lowercase) email of the intended invitee, when provided at issue time. */
+  inviteeEmail?: string;
 }
 
 export const INVITABLE_ROLES: readonly InviteRole[] = [
@@ -62,6 +65,10 @@ export function generateInviteCode(length: number = 6): string {
 
 export function normalizeInviteCode(raw: string): string {
   return raw.trim().toUpperCase();
+}
+
+export function normalizeInviteeEmail(raw: string): string {
+  return raw.trim().toLowerCase();
 }
 
 export function inviteOrgIds(invite: Partial<Pick<Invite, 'orgIds' | 'orgId'>>): string[] {

@@ -10,7 +10,8 @@
     "./types": "./src/types/index.ts",
     "./roles": "./src/roles.ts",
     "./collections": "./src/collections.ts",
-    "./members": "./src/members.ts"
+    "./members": "./src/members.ts",
+    "./phone": "./src/phone.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

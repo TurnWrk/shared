@@ -18,6 +18,10 @@ export const COLLECTIONS = {
   // Vendor-owned standalone expense receipts (see types/receipt.ts).
   // Written by hostfix-cmms today; restock cleaners later.
   vendorReceipts: 'vendorReceipts',
+  // Org-independent vendor identity (keyed by phone); shared across CMMS + Restock.
+  vendors: 'vendors',
+  // Links vendors to orgs via app-specific profile docs (cmms_technicians / restock_cleaners).
+  vendorAffiliations: 'vendorAffiliations',
 
   // hostfix-cmms-scoped
   cmms_workOrders: 'cmms_workOrders',
