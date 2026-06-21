@@ -21,6 +21,27 @@ export interface StorageLocation {
   imageUrl?: string;
 }
 
+/**
+ * A permanent, must-know characteristic of a property (reverse taps, sticky gate,
+ * pest hot-spots). Mirrors the akita knowledge-base `quirks` shape so field research
+ * can seed these. `tags` loosely categorize (e.g. 'plumbing' | 'access' | 'pests').
+ */
+export interface PropertyQuirk {
+  id: string;
+  title: string;
+  detail?: string;
+  tags?: string[];
+  lastVerifiedAt?: number;
+}
+
+/** A property-specific question vendors/guests recurrently ask (hot-tub operation, etc.). */
+export interface PropertyFAQ {
+  id: string;
+  question: string;
+  answer: string;
+  lastVerifiedAt?: number;
+}
+
 export interface PropertyMaintenance {
   accessCode?: string;
   wifiSsid?: string;
@@ -37,6 +58,8 @@ export interface PropertyMaintenance {
     waterShutoffImage?: string;
     gasShutoffLocation?: string;
     gasShutoffImage?: string;
+    /** Unix-ms — when the emergency shutoff info was last confirmed on-site. */
+    verifiedAt?: number;
   };
 
   safetyEquipment?: {
@@ -58,6 +81,12 @@ export interface PropertyMaintenance {
   cleaningStorage?: StorageLocation;
   assets?: PropertyAsset[];
 
+  /** Property knowledge base — permanent quirks + recurring FAQs (akita-seeded or ops-entered). */
+  quirks?: PropertyQuirk[];
+  faqs?: PropertyFAQ[];
+  /** Unix-ms — when the lockbox/access code was last confirmed on-site. */
+  accessVerifiedAt?: number;
+
   bookingSource?: 'akita' | 'airbnb' | 'vrbo' | 'ics-sync' | null;
   mercuryRecipientId?: string | null;
   mercuryRecipientEmail?: string | null;
@@ -74,6 +103,17 @@ export type PropertyAmenity =
 
 export type SupplyTier = 'basics' | 'comfort' | 'luxe';
 
+/**
+ * Controls the UX mode vendors see when they scan the property QR code.
+ * - `full_checklist`: guided 4-step flow (notes → consumables checklist → storage photos → review)
+ * - `speedy_complete`: single-page quick-submit (notes + quick item chips + submit)
+ *
+ * Defaults to `full_checklist` when unset so existing properties are unaffected.
+ * Operators onboard vendors on `full_checklist` and migrate to `speedy_complete` once
+ * vendors are comfortable with the catalog.
+ */
+export type InspectMode = 'full_checklist' | 'speedy_complete';
+
 export interface PropertySupply {
   beds?: number;
   baths?: number;
@@ -82,6 +122,8 @@ export interface PropertySupply {
   curatedListId?: string; // FK → restock_curatedLists; the PM's chosen preset
   supplyPreferences?: Record<string, string>; // itemType -> productId (advanced per-item overrides)
   hiddenItemTypes?: string[]; // itemTypes hidden from the inspect view for this property
+  /** Inspect QR mode. Defaults to 'full_checklist' when absent. */
+  inspectMode?: InspectMode;
 }
 
 export interface Property {
