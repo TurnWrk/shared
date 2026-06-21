@@ -2,18 +2,51 @@
   "name": "@turnwrk/shared",
   "version": "0.4.0",
   "private": true,
-  "type": "module",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./types": "./src/types/index.ts",
-    "./roles": "./src/roles.ts",
-    "./collections": "./src/collections.ts",
-    "./members": "./src/members.ts",
-    "./phone": "./src/phone.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/types/index.js",
+      "default": "./dist/types/index.js"
+    },
+    "./roles": {
+      "types": "./dist/roles.d.ts",
+      "require": "./dist/roles.js",
+      "default": "./dist/roles.js"
+    },
+    "./collections": {
+      "types": "./dist/collections.d.ts",
+      "require": "./dist/collections.js",
+      "default": "./dist/collections.js"
+    },
+    "./members": {
+      "types": "./dist/members.d.ts",
+      "require": "./dist/members.js",
+      "default": "./dist/members.js"
+    },
+    "./phone": {
+      "types": "./dist/phone.d.ts",
+      "require": "./dist/phone.js",
+      "default": "./dist/phone.js"
+    },
+    "./whisper": {
+      "types": "./dist/whisper/index.d.ts",
+      "require": "./dist/whisper/index.js",
+      "default": "./dist/whisper/index.js"
+    }
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
