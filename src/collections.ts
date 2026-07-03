@@ -22,6 +22,9 @@ export const COLLECTIONS = {
   vendors: 'vendors',
   // Links vendors to orgs via app-specific profile docs (cmms_technicians / restock_cleaners).
   vendorAffiliations: 'vendorAffiliations',
+  // Vendor calendar share links (created by cmms + restock UIs; public page
+  // served by cmms resolves them via the Admin SDK — no public read).
+  propertyShareTokens: 'propertyShareTokens',
 
   // hostfix-cmms-scoped
   cmms_workOrders: 'cmms_workOrders',
