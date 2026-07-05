@@ -59,7 +59,7 @@ export interface MembersApi {
     listMembers(orgId: string): Promise<MemberSummary[]>;
     updateMemberRoles(orgId: string, uid: string, roles: Role[]): Promise<void>;
     removeMember(orgId: string, uid: string): Promise<void>;
-    listInvites(orgId: string, opts?: { source?: 'cmms' | 'restock' | 'all' }): Promise<Invite[]>;
+    listInvites(orgId: string, opts?: { source?: 'cmms' | 'restock' | 'clean' | 'all' }): Promise<Invite[]>;
     createInvite(args: {
         orgId: string;
         role: InviteRole;

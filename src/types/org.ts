@@ -5,7 +5,11 @@ import type { CleanOrgSettings } from './clean';
 export interface OrgBranding {
   logoUrl?: string;
   logoPath?: string;
+  /** Brand primary color (hex). Drives whitelabel theme tokens in clean/. */
   accentColor?: string;
+  companyName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
 }
 
 /** SOP-05 weekly on-call rotation entry. */

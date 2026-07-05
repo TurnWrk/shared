@@ -10,7 +10,7 @@ export type InviteRole = Extract<Role, 'admin' | 'pm' | 'tech' | 'cleaner'>;
 // Which app issued the invite. The collection is shared across the suite, so
 // this lets each app filter to invites it cares about and lets the signup
 // flow know which post-acceptance hooks to run (e.g. linking a cleaner doc).
-export type InviteSource = 'cmms' | 'restock';
+export type InviteSource = 'cmms' | 'restock' | 'clean';
 
 export interface Invite {
   code: string;

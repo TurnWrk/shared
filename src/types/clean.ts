@@ -8,7 +8,7 @@
  *
  * Spec: docs/projects/cleaning-app/02-ENGINEERING-SPEC.md §4 (domain model)
  * and §11 (state machines). State transitions are enforced in
- * hostfix-cmms/lib/clean/transitions.ts — writers must go through that layer.
+ * @turnwrk/shared/clean/transitions.ts — writers must go through that layer.
  */
 
 // ---------------------------------------------------------------------------
