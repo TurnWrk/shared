@@ -38,7 +38,15 @@ export interface Vendor {
   updatedAt: number;
 }
 
-/** Links a vendor to an org via an app-specific profile doc. */
+export type VendorVerificationStatus = 'pending' | 'verified';
+
+/**
+ * Links a vendor to an org via an app-specific profile doc.
+ *
+ * Org-scoped economics live HERE, never on the shared `Vendor` profile —
+ * a crew member's rate/verification with one operator must not leak to
+ * another operator reading the same vendor doc.
+ */
 export interface VendorAffiliation {
   id: string;
   vendorId: string;
@@ -46,6 +54,12 @@ export interface VendorAffiliation {
   app: VendorApp;
   /** `cmms_technicians` or `restock_cleaners` doc id. */
   profileId: string;
+  /** Org-scoped hourly labor rate in minor units (Turnwrk Clean payroll). */
+  hourlyRateMinor?: number;
+  /** Org-scoped verification state shown in the Clean contractors table. */
+  verificationStatus?: VendorVerificationStatus;
+  /** Org-scoped active flag (inactive contractors are hidden from assignment). */
+  active?: boolean;
   createdAt: number;
   updatedAt: number;
 }

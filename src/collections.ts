@@ -3,8 +3,8 @@
  *
  * Convention:
  *   - Shared collections (read/written by more than one app) use no prefix.
- *   - App-scoped collections use a prefix (`cmms_`, `restock_`) so DB admin
- *     work can tell at a glance which app owns the data.
+ *   - App-scoped collections use a prefix (`cmms_`, `restock_`, `clean_`) so
+ *     DB admin work can tell at a glance which app owns the data.
  */
 export const COLLECTIONS = {
   // shared (no prefix)
@@ -43,6 +43,24 @@ export const COLLECTIONS = {
   cmms_propertyMappings: 'cmms_propertyMappings',
   cmms_reviews: 'cmms_reviews',
   cmms_reports: 'cmms_reports',
+
+  // Turnwrk Clean (cleaning-operations product; operator surfaces live in
+  // hostfix-cmms, public booking app is `clean/`). Types in types/clean.ts;
+  // writes are server-side except tech check-in/out on own assignment.
+  clean_customers: 'clean_customers',
+  clean_leads: 'clean_leads',
+  // One embedded catalog doc per org: clean_catalogs/{orgId}.
+  clean_catalogs: 'clean_catalogs',
+  clean_bookings: 'clean_bookings',
+  clean_bookingSeries: 'clean_bookingSeries',
+  clean_assignments: 'clean_assignments',
+  clean_payments: 'clean_payments',
+  clean_invoices: 'clean_invoices',
+  clean_payoutPeriods: 'clean_payoutPeriods',
+  // Customer booking reviews — distinct from cmms_reviews (property/guest store).
+  clean_reviews: 'clean_reviews',
+  // Append-only transition/audit stream; Stripe webhook dedupe (doc id = event id).
+  clean_events: 'clean_events',
 
   // restock-scoped
   restock_products: 'restock_products',

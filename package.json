@@ -39,6 +39,11 @@
       "types": "./dist/whisper/index.d.ts",
       "require": "./dist/whisper/index.js",
       "default": "./dist/whisper/index.js"
+    },
+    "./clean": {
+      "types": "./dist/clean/index.d.ts",
+      "require": "./dist/clean/index.js",
+      "default": "./dist/clean/index.js"
     }
   },
   "files": [

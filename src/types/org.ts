@@ -1,5 +1,6 @@
 import type { InspectMode } from './property';
 import type { LaundryVendorConfig } from './property';
+import type { CleanOrgSettings } from './clean';
 
 export interface OrgBranding {
   logoUrl?: string;
@@ -38,8 +39,22 @@ export interface Org {
   enabledApps?: {
     hostfixCmms?: boolean;
     restock?: boolean;
+    /** Turnwrk Clean (cleaning-operations product). */
+    clean?: boolean;
   };
   branding?: OrgBranding;
+  /**
+   * IANA timezone (e.g. 'America/Chicago'). Used for display and for
+   * computing schedule-derived instants (e.g. the Clean T-48h pre-auth) —
+   * absent falls back to app-level defaults.
+   */
+  timezone?: string;
+  /** ISO 4217 currency for customer-facing money (default 'USD'). */
+  currency?: string;
+  /** Sales-tax settings applied to Clean bookings. Whole percent (8.25 = 8.25%). */
+  tax?: { pct: number };
+  /** Turnwrk Clean org configuration (booking site, windows, reviews, …). */
+  cleanSettings?: CleanOrgSettings;
   /**
    * Default inspect mode applied to newly created properties for this org.
    * Individual properties can still override via `PropertySupply.inspectMode`.

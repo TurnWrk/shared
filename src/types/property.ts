@@ -192,7 +192,20 @@ export interface PropertyMaintenance {
   pestRiskTier?: PestRiskTier;
   pestTreatments?: PestTreatmentRecord[];
 
-  bookingSource?: 'akita' | 'airbnb' | 'vrbo' | 'ics-sync' | null;
+  /** When set, occupancy is derived from synced bookings (see `usesSyncedBookings`). */
+  bookingSource?: 'external-sync' | 'akita' | 'airbnb' | 'vrbo' | 'ics-sync' | null;
+  /** Owner name snapshot from an external integration (replaces legacy `akitaOwnerName`). */
+  integrationOwnerName?: string;
+  /** Owner phone snapshot from an external integration (replaces legacy `akitaOwnerPhone`). */
+  integrationOwnerPhone?: string;
+  /** External system's property label (replaces legacy `akitaPropertyName`). */
+  externalPropertyName?: string;
+  /** @deprecated Use `integrationOwnerName`. Legacy Akita snapshot field. */
+  akitaOwnerName?: string;
+  /** @deprecated Use `integrationOwnerPhone`. Legacy Akita snapshot field. */
+  akitaOwnerPhone?: string;
+  /** @deprecated Use `externalPropertyName`. Legacy Akita snapshot field. */
+  akitaPropertyName?: string;
   mercuryRecipientId?: string | null;
   mercuryRecipientEmail?: string | null;
 }
@@ -239,10 +252,31 @@ export interface PropertySupply {
   primaryCleanerId?: string;
 }
 
+export type PropertyKind = 'str_unit' | 'residence';
+
+/** Structured address parts (Turnwrk Clean wizard writes these; `address` stays the formatted string). */
+export interface PropertyAddressParts {
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  zip: string;
+}
+
 export interface Property {
   id: string;
   orgId: string;
   address: string;
+  /** Structured decomposition of `address` when known (Clean bookings require it). */
+  addressParts?: PropertyAddressParts;
+  /**
+   * Service-location kind. Absent = 'str_unit' (backward compatible).
+   * 'residence' = a Clean customer's home; occupancy semantics don't apply —
+   * "customer home / not home" lives on the booking instead.
+   */
+  kind?: PropertyKind;
+  /** Clean customer this residence belongs to (clean_customers doc id). */
+  customerId?: string;
   name?: string;
   ownerId?: string;
   geo?: GeoCache;
