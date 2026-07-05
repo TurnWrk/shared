@@ -12,8 +12,9 @@
  *     `vendor-receipts/{vendorId}/`.
  *   - `amount` is a string for parity with hostfix's work-order-embedded
  *     receipt shape.
- *   - Excluded from technician earnings until an approval flow exists.
  */
+export type VendorReceiptApprovalStatus = 'pending' | 'approved' | 'rejected';
+
 export interface VendorReceipt {
   id: string;
   /** Submitter's auth uid. */
@@ -27,4 +28,11 @@ export interface VendorReceipt {
   /** Unix ms. */
   timestamp?: number;
   submitted?: boolean;
+  /** SOP-06 approval flow — pending until dispatcher reviews. */
+  approvalStatus?: VendorReceiptApprovalStatus;
+  approvedAt?: number;
+  approvedBy?: string;
+  rejectedAt?: number;
+  rejectedBy?: string;
+  rejectionReason?: string;
 }

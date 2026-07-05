@@ -1,9 +1,31 @@
 import type { InspectMode } from './property';
+import type { LaundryVendorConfig } from './property';
 
 export interface OrgBranding {
   logoUrl?: string;
   logoPath?: string;
   accentColor?: string;
+}
+
+/** SOP-05 weekly on-call rotation entry. */
+export interface OnCallRotationEntry {
+  weekStart: string; // ISO date YYYY-MM-DD (Monday)
+  techId?: string;
+  dispatcherUserId?: string;
+}
+
+/**
+ * SOP-05 / SOP-08 SLA thresholds (org-configurable).
+ */
+export interface OrgSlaSettings {
+  /** Minutes before unacknowledged WO escalates to secondary (default 20). */
+  workOrderAckMinutes?: number;
+  /** Hours before unacked resupply request is flagged (default 24). */
+  resupplyAckHours?: number;
+  /** Days before open resupply request is aged (default 7). */
+  resupplyOpenDays?: number;
+  /** User ids notified before admins on WO SLA breach (dispatchers, etc.). */
+  secondaryNotifyUserIds?: string[];
 }
 
 export interface Org {
@@ -35,4 +57,10 @@ export interface Org {
     maxLaborHours?: number;  // default 2
     maxCostUsd?: number;     // default 200
   };
+  /** SOP-05 after-hours on-call rotation. */
+  onCallRotation?: OnCallRotationEntry[];
+  /** SOP-05/08 SLA defaults for this org. */
+  sla?: OrgSlaSettings;
+  /** SOP-08 per-market laundry vendor configs. */
+  laundryVendors?: LaundryVendorConfig[];
 }
