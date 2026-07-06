@@ -43,6 +43,9 @@ export const COLLECTIONS = {
   cmms_propertyMappings: 'cmms_propertyMappings',
   cmms_reviews: 'cmms_reviews',
   cmms_reports: 'cmms_reports',
+  // Owner-facing work-order estimates. Public /estimate/{token} page + the
+  // approve/decline writeback resolve these via the Admin SDK — no public read.
+  cmms_estimates: 'cmms_estimates',
 
   // Turnwrk Clean (cleaning-operations product; operator surfaces live in
   // hostfix-cmms, public booking app is `clean/`). Types in types/clean.ts;
