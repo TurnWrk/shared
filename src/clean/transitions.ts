@@ -98,11 +98,13 @@ export function bookingStatusForWoStatus(status: WOStatus): CleanBookingStatus |
 // ---------------------------------------------------------------------------
 
 export const PAYMENT_TRANSITIONS: Record<CleanPaymentStatus, CleanPaymentStatus[]> = {
-  pending: ['vaulted'],
+  // paid_manual covers a cardless booking the operator settled offline.
+  pending: ['vaulted', 'paid_manual'],
   // vaulted → captured is the operator "Charge now" path (skips pre-auth)
   vaulted: ['preauthorized', 'captured', 'paid_manual', 'preauth_failed'],
-  // void (cancel intent before capture) returns to vaulted; capture completes
-  preauthorized: ['captured', 'vaulted'],
+  // void (cancel intent before capture) returns to vaulted; capture completes.
+  // paid_manual releases the hold when the customer pays another way.
+  preauthorized: ['captured', 'vaulted', 'paid_manual'],
   preauth_failed: ['retrying', 'risk', 'preauthorized', 'paid_manual'],
   retrying: ['preauthorized', 'risk', 'preauth_failed', 'paid_manual'],
   // operator fixed the card / took payment another way

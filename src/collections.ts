@@ -47,9 +47,9 @@ export const COLLECTIONS = {
   // approve/decline writeback resolve these via the Admin SDK — no public read.
   cmms_estimates: 'cmms_estimates',
 
-  // Turnwrk Clean (cleaning-operations product; operator surfaces live in
-  // hostfix-cmms, public booking app is `clean/`). Types in types/clean.ts;
-  // writes are server-side except tech check-in/out on own assignment.
+  // Turnwrk Clean (cleaning-operations product; operator portal + public
+  // booking app both live in `clean/`, sharing this Firestore project). Types
+  // in types/clean.ts; writes are server-side except tech check-in/out.
   clean_customers: 'clean_customers',
   clean_leads: 'clean_leads',
   // One embedded catalog doc per org: clean_catalogs/{orgId}.
@@ -64,6 +64,8 @@ export const COLLECTIONS = {
   clean_reviews: 'clean_reviews',
   // Append-only transition/audit stream; Stripe webhook dedupe (doc id = event id).
   clean_events: 'clean_events',
+  // Per-org counters (invoice sequence, …) — doc id == orgId.
+  clean_counters: 'clean_counters',
 
   // restock-scoped
   restock_products: 'restock_products',

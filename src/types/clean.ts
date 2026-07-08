@@ -227,7 +227,7 @@ export type CleanBookingStatus =
   | 'on_hold'
   | 'canceled';
 
-export type CleanBookingSource = 'widget' | 'manual' | 'ai_intake' | 'auto_turnover';
+export type CleanBookingSource = 'widget' | 'manual' | 'ai_intake' | 'auto_turnover' | 'series';
 
 /**
  * One booking occurrence. 1:1 with a `cmms_workOrders` doc
@@ -273,6 +273,9 @@ export interface CleanBooking {
   canceledReason?: string;
   /** Status the booking held before `on_hold`, restored on release. */
   heldFromStatus?: CleanBookingStatus;
+  /** Reminder-sent markers (written by the hostfix sendCleanReminders worker). */
+  reminder24hAt?: number;
+  reminder2hAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -295,6 +298,13 @@ export interface CleanBookingSeries {
   status: CleanSeriesStatus;
   /** Set when a payment failure paused the series. */
   pausedReason?: string;
+  /** First occurrence booking (source of the vaulted card for occurrences). */
+  anchorBookingId?: string;
+  /** Cached vaulted card from the anchor booking, reused to auto-charge occurrences. */
+  stripeCustomerId?: string;
+  paymentMethodId?: string;
+  /** Epoch ms of the last successful materialization run. */
+  lastMaterializedAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -530,4 +540,16 @@ export interface CleanOrgSettings {
   lateCancel?: CleanLateCancelPolicy;
   /** Require before/after photos to complete a clean (org default). */
   photoCloseoutRequired?: boolean;
+  /** Auto-turnover automation (WOType 'Turnover' from occupancy checkouts). */
+  turnover?: CleanTurnoverSettings;
+}
+
+export interface CleanTurnoverSettings {
+  enabled: boolean;
+  /** cmms_technicians / vendor profile id auto-assigned to turnover WOs. */
+  defaultCleanerId?: string;
+  /** Catalog service used for the turnover job snapshot. */
+  serviceId?: string;
+  /** Create the WO this many days before checkout (default 30). */
+  leadDays?: number;
 }

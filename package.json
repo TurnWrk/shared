@@ -44,6 +44,11 @@
       "types": "./dist/clean/index.d.ts",
       "require": "./dist/clean/index.js",
       "default": "./dist/clean/index.js"
+    },
+    "./authFlow": {
+      "types": "./dist/authFlow.d.ts",
+      "require": "./dist/authFlow.js",
+      "default": "./dist/authFlow.js"
     }
   },
   "files": [
