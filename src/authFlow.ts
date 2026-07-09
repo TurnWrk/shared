@@ -148,3 +148,61 @@ export async function validateInviteCode(
         orgId: (data as { orgId?: string }).orgId,
     };
 }
+
+/**
+ * Rewrite a Firebase-hosted email action link (`*.firebaseapp.com/__/auth/action`)
+ * to the app's `/login` URL with `oobCode` + `apiKey` query params. This bypasses
+ * Firebase's hosted action page, which can fail CORS when `init.json` redirects
+ * to a marketing domain that doesn't serve Firebase auth helpers.
+ */
+export function toAppSignInLink(firebaseActionLink: string, appLoginUrl: string): string {
+    try {
+        const src = new URL(firebaseActionLink);
+        const apiKey = src.searchParams.get('apiKey');
+        const oobCode = src.searchParams.get('oobCode');
+        const mode = src.searchParams.get('mode') ?? 'signIn';
+        if (!apiKey || !oobCode) return firebaseActionLink;
+
+        const dest = new URL(appLoginUrl);
+        dest.searchParams.set('apiKey', apiKey);
+        dest.searchParams.set('oobCode', oobCode);
+        dest.searchParams.set('mode', mode);
+        const continueUrl = src.searchParams.get('continueUrl');
+        if (continueUrl) dest.searchParams.set('continueUrl', continueUrl);
+        const lang = src.searchParams.get('lang');
+        if (lang) dest.searchParams.set('lang', lang);
+        return dest.toString();
+    } catch {
+        return firebaseActionLink;
+    }
+}
+
+const PROCESSED_MAGIC_LINK_OOB_KEY = 'turnwrk:processedMagicLinkOob';
+
+/** True if this oobCode was already used to complete sign-in this session. */
+export function isMagicLinkOobProcessed(oobCode: string): boolean {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem(PROCESSED_MAGIC_LINK_OOB_KEY) === oobCode;
+}
+
+export function markMagicLinkOobProcessed(oobCode: string): void {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(PROCESSED_MAGIC_LINK_OOB_KEY, oobCode);
+}
+
+/** Remove one-time sign-in params from the URL so effects don't retry. */
+export function clearMagicLinkUrlParams(): void {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('oobCode');
+    url.searchParams.delete('apiKey');
+    url.searchParams.delete('mode');
+    url.searchParams.delete('lang');
+    url.searchParams.delete('continueUrl');
+    const next = url.pathname + url.search + url.hash;
+    window.history.replaceState({}, '', next);
+}
+
+export function isInvalidActionCodeError(err: unknown): boolean {
+    return (err as { code?: string })?.code === 'auth/invalid-action-code';
+}
