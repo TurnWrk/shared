@@ -66,6 +66,19 @@ export const COLLECTIONS = {
   clean_events: 'clean_events',
   // Per-org counters (invoice sequence, …) — doc id == orgId.
   clean_counters: 'clean_counters',
+  // Org-edited notification template overrides (Change Order 1 R2). Defaults
+  // live in code (clean/notificationDefaults.ts); docs exist only once edited.
+  clean_notificationTemplates: 'clean_notificationTemplates',
+  // Per-send metering/audit for the notification engine (SMS billing source).
+  clean_notificationSends: 'clean_notificationSends',
+  // Weekly working hours, one doc per (org, tech) — absent = always available.
+  clean_contractorAvailability: 'clean_contractorAvailability',
+  // PTO/sick/unavailable ranges with request→approve lifecycle (R3).
+  clean_timeOff: 'clean_timeOff',
+  // Field-safety incidents (SOS alerts) — A4.
+  clean_incidents: 'clean_incidents',
+  // Booking-site short links; doc id == short code (A9).
+  clean_shortLinks: 'clean_shortLinks',
 
   // restock-scoped
   restock_products: 'restock_products',

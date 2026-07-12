@@ -6,7 +6,7 @@
  *
  * Spec: docs/projects/clean/02-ENGINEERING-SPEC.md §M4 (payments lifecycle).
  */
-import type { CleanPayment } from '../types/clean';
+import type { CleanDunningSettings, CleanInvoice, CleanPayment } from '../types/clean';
 import { splitAllocatedMinutes } from './pricing';
 
 // ---------------------------------------------------------------------------
@@ -126,4 +126,80 @@ export function computeAssignmentAllocations(
 /** Per-org invoice number, 6-digit zero-padded sequence: `INV-000042`. */
 export function formatInvoiceNumber(seq: number): string {
   return `INV-${String(Math.max(0, Math.trunc(seq))).padStart(6, '0')}`;
+}
+
+// ---------------------------------------------------------------------------
+// A/R dunning planning (Change Order 1 A2) — mirrors planPreauthSweep
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_DUNNING_OFFSETS: number[] = [-2, 0, 3, 10];
+
+export type DunningActionKind = 'mark_overdue' | 'send_stage' | 'skip';
+
+export interface DunningAction {
+  invoiceId: string;
+  kind: DunningActionKind;
+  /** Index into the org's offsets array (kind === 'send_stage'). */
+  stage?: number;
+  /** `clean:dunning:{invoiceId}:{stage}` (kind === 'send_stage'). */
+  idempotencyKey?: string;
+  /** Why skipped — for logging. */
+  reason?: string;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Decide dunning work for open A/R invoices. Pure: caller queries
+ * kind=='invoice' docs with status in ('open','partially_paid','overdue') and
+ * executes the returned actions. Rules:
+ *   - non-invoice / settled / no dueAtUtc      → skip
+ *   - status open|partially_paid past due      → mark_overdue (send fires with the flip)
+ *   - next unsent offset stage reached         → send_stage (at most ONE per run)
+ *   - dunning disabled                          → overdue flip only, no stages
+ * Auto-stop on payment is structural: paid invoices leave the query set.
+ */
+export function planDunning(
+  invoices: CleanInvoice[],
+  settings: CleanDunningSettings | undefined,
+  now: number,
+): DunningAction[] {
+  const offsets = settings?.offsets ?? DEFAULT_DUNNING_OFFSETS;
+  const enabled = settings?.enabled ?? true;
+  const actions: DunningAction[] = [];
+  for (const inv of invoices) {
+    if (inv.kind !== 'invoice' || inv.dueAtUtc === undefined) {
+      actions.push({ invoiceId: inv.id, kind: 'skip', reason: 'not_ar_invoice' });
+      continue;
+    }
+    if (inv.status !== 'open' && inv.status !== 'partially_paid' && inv.status !== 'overdue') {
+      actions.push({ invoiceId: inv.id, kind: 'skip', reason: `status:${inv.status}` });
+      continue;
+    }
+    if ((inv.status === 'open' || inv.status === 'partially_paid') && inv.dueAtUtc <= now) {
+      actions.push({ invoiceId: inv.id, kind: 'mark_overdue' });
+      continue; // stage sends resume next run, after the flip
+    }
+    if (!enabled) {
+      actions.push({ invoiceId: inv.id, kind: 'skip', reason: 'dunning_disabled' });
+      continue;
+    }
+    const nextStage = inv.dunningStage ?? 0;
+    if (nextStage >= offsets.length) {
+      actions.push({ invoiceId: inv.id, kind: 'skip', reason: 'stages_exhausted' });
+      continue;
+    }
+    const stageDueAt = inv.dueAtUtc + offsets[nextStage] * DAY_MS;
+    if (now < stageDueAt) {
+      actions.push({ invoiceId: inv.id, kind: 'skip', reason: 'stage_not_due' });
+      continue;
+    }
+    actions.push({
+      invoiceId: inv.id,
+      kind: 'send_stage',
+      stage: nextStage,
+      idempotencyKey: `clean:dunning:${inv.id}:${nextStage}`,
+    });
+  }
+  return actions;
 }

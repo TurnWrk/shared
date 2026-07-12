@@ -33,6 +33,34 @@ export interface OrgSlaSettings {
   secondaryNotifyUserIds?: string[];
 }
 
+/**
+ * Plan-flag gate keys (Change Order 1 R2/A9; doc 07 "org_features"). This is
+ * deliberately NOT a billing-tier system — just per-org boolean gates that a
+ * future pricing design can drive (F2). Absent keys fall back to
+ * ORG_FEATURE_DEFAULTS.
+ */
+export type OrgFeatureKey =
+  /** Operator may edit notification templates (default on). */
+  | 'clean_editable_templates'
+  /** Removes "Powered by Turnwrk" badging from the public booking surfaces (default off). */
+  | 'clean_white_label_booking'
+  /** SMS channel available to this org (default on; sends still require org smsEnabled + provider config). */
+  | 'clean_sms';
+
+export const ORG_FEATURE_DEFAULTS: Record<OrgFeatureKey, boolean> = {
+  clean_editable_templates: true,
+  clean_white_label_booking: false,
+  clean_sms: true,
+};
+
+/** Resolve a feature flag with its default. */
+export function orgFeatureEnabled(
+  org: Pick<Org, 'features'> | null | undefined,
+  key: OrgFeatureKey,
+): boolean {
+  return org?.features?.[key] ?? ORG_FEATURE_DEFAULTS[key];
+}
+
 export interface Org {
   id: string;
   name: string;
@@ -46,6 +74,8 @@ export interface Org {
     /** Turnwrk Clean (cleaning-operations product). */
     clean?: boolean;
   };
+  /** Plan-flag gates (see OrgFeatureKey). Absent = ORG_FEATURE_DEFAULTS. */
+  features?: Partial<Record<OrgFeatureKey, boolean>>;
   branding?: OrgBranding;
   /**
    * IANA timezone (e.g. 'America/Chicago'). Used for display and for

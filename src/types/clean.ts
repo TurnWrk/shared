@@ -36,6 +36,12 @@ export interface CleanCustomer {
   source: CleanCustomerSource;
   stripeCustomerId?: string;
   notes?: string;
+  /** Per-customer payment-policy override (negotiated commercial accounts). */
+  paymentPolicy?: CleanPaymentPolicy;
+  /** Per-customer invoice terms override (days). Falls back to org invoiceTermsDays. */
+  termsDays?: number;
+  /** Set when the customer texts STOP; cleared on START. Blocks all SMS sends. */
+  smsOptOutAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -97,6 +103,8 @@ export interface CleanService {
   params: CleanPricingParam[];
   /** Which org extras are offered for this service. */
   extraIds: string[];
+  /** Per-service payment-policy override (e.g. commercial services on terms). */
+  paymentPolicy?: CleanPaymentPolicy;
 }
 
 export interface CleanExtra {
@@ -271,11 +279,20 @@ export interface CleanBooking {
   leadId?: string;
   source: CleanBookingSource;
   canceledReason?: string;
+  /**
+   * Payment policy resolved (customer → service → org → default) and
+   * snapshotted at creation — settings edits never mutate in-flight money.
+   * Absent (legacy docs) = 'card_required_preauth'.
+   */
+  paymentPolicy?: CleanPaymentPolicy;
   /** Status the booking held before `on_hold`, restored on release. */
   heldFromStatus?: CleanBookingStatus;
-  /** Reminder-sent markers (written by the hostfix sendCleanReminders worker). */
+  /** Contractor-push reminder markers (written by the hostfix sendCleanReminders worker). */
   reminder24hAt?: number;
   reminder2hAt?: number;
+  /** Customer reminder markers (written by clean/'s notifications sweep — R2). */
+  customerReminder24hAt?: number;
+  customerReminder2hAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -323,6 +340,8 @@ export type CleanAssignmentStatus =
 export interface CleanGeoStamp {
   lat: number;
   lng: number;
+  /** Horizontal accuracy in meters, when the device reports it. */
+  accuracy?: number;
 }
 
 /**
@@ -355,6 +374,8 @@ export interface CleanAssignment {
   source: 'app' | 'manual';
   checkInGeo?: CleanGeoStamp;
   checkOutGeo?: CleanGeoStamp;
+  /** Set by the "On my way" tap (A1); one-shot, cleared never. */
+  enRouteAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -362,6 +383,22 @@ export interface CleanAssignment {
 // ---------------------------------------------------------------------------
 // Payments, invoices, payouts
 // ---------------------------------------------------------------------------
+
+/**
+ * How money is collected for a booking (Change Order 1 R1). Resolved
+ * customer → service → org → 'card_required_preauth' via
+ * clean/paymentPolicy.ts and snapshotted onto the booking + payment.
+ *
+ *  - card_required_preauth:     vault → T-48h pre-auth → capture on completion
+ *  - card_on_file_charge_after: vault → charge on completion (no pre-auth)
+ *  - invoice_terms:             no card required; invoice on completion, A/R lifecycle
+ *  - offline:                   tracked only; operator uses Mark-as-Paid
+ */
+export type CleanPaymentPolicy =
+  | 'card_required_preauth'
+  | 'card_on_file_charge_after'
+  | 'invoice_terms'
+  | 'offline';
 
 export type CleanPaymentStatus =
   | 'pending'
@@ -373,7 +410,12 @@ export type CleanPaymentStatus =
   | 'captured'
   | 'paid_manual'
   | 'refunded'
-  | 'partially_refunded';
+  | 'partially_refunded'
+  // A/R lifecycle (invoice_terms policy only):
+  | 'invoiced_unpaid'
+  | 'partially_paid'
+  | 'paid'
+  | 'overdue';
 
 export type CleanManualPaymentMethod = 'cash' | 'bank_transfer' | 'check';
 
@@ -399,6 +441,8 @@ export interface CleanPayment {
   /** Epoch ms when the T-48h pre-auth is due — the worker's query key. */
   preauthDueAt?: number;
   preauthAt?: number;
+  /** When the "upcoming hold" customer notice was sent (sweep lookahead, R2). */
+  preauthNoticeAt?: number;
   capturedAt?: number;
   refundedMinor?: number;
   retryCount?: number;
@@ -411,8 +455,29 @@ export interface CleanPayment {
   manualMethod?: CleanManualPaymentMethod;
   manualPaidAt?: number;
   invoiceId?: string;
+  /** Policy snapshot from the booking. Absent (legacy) = 'card_required_preauth'. */
+  policy?: CleanPaymentPolicy;
   createdAt: number;
   updatedAt: number;
+}
+
+/** Receipt = record of a settled card/manual payment. Invoice = A/R billable. */
+export type CleanInvoiceKind = 'receipt' | 'invoice';
+
+export type CleanInvoiceStatus = 'open' | 'partially_paid' | 'paid' | 'overdue' | 'void';
+
+/** One payment applied against an A/R invoice (partial payments supported). */
+export interface CleanInvoicePaymentApplied {
+  id: string;
+  amountMinor: number;
+  /** 'card' = hosted pay-link payment; others recorded by the operator. */
+  method: 'card' | CleanManualPaymentMethod;
+  /** Gateway PaymentIntent id when method === 'card'. */
+  intentId?: string;
+  receivedAt: number;
+  /** uid, 'system' (webhook backstop), or 'customer:{customerId}'. */
+  actorId: string;
+  note?: string;
 }
 
 export interface CleanInvoice {
@@ -426,6 +491,30 @@ export interface CleanInvoice {
   pdfPath?: string;
   emailedAt?: number;
   totalsSnapshot: CleanPricing;
+  // --- A/R lifecycle (Change Order 1 R1/A2). Absent kind (legacy docs) = a
+  // --- settled 'receipt'; the fields below only apply to kind 'invoice'.
+  kind?: CleanInvoiceKind;
+  status?: CleanInvoiceStatus;
+  issuedAt?: number;
+  /** Due date, org-local calendar date. */
+  dueDate?: string;
+  /**
+   * Epoch ms of end-of-day dueDate, computed ONCE in the org timezone at issue
+   * time — the dunning worker's query key (scheduledStartUtc discipline).
+   */
+  dueAtUtc?: number;
+  /** Terms applied at issue (customer override → org invoiceTermsDays → 14). */
+  termsDays?: number;
+  totalMinor?: number;
+  paidMinor?: number;
+  balanceMinor?: number;
+  paymentsApplied?: CleanInvoicePaymentApplied[];
+  /** Bearer token for the hosted /pay/{token} page. */
+  payToken?: string;
+  /** Number of dunning stages already sent (index into org dunning offsets). */
+  dunningStage?: number;
+  lastDunningAt?: number;
+  updatedAt?: number;
   createdAt: number;
 }
 
@@ -492,7 +581,12 @@ export type CleanEventEntity =
   | 'lead'
   | 'series'
   | 'review'
-  | 'stripe';
+  | 'stripe'
+  | 'invoice'
+  | 'timeoff'
+  | 'availability'
+  | 'incident'
+  | 'notification';
 
 /**
  * Immutable transition/audit record. Stripe webhook events are stored here
@@ -512,6 +606,196 @@ export interface CleanEvent {
 }
 
 // ---------------------------------------------------------------------------
+// Notifications (Change Order 1 R2 — template engine + SMS channel)
+// ---------------------------------------------------------------------------
+
+export type CleanNotificationChannel = 'email' | 'sms' | 'push';
+
+export type CleanNotificationAudience = 'customer' | 'contractor' | 'operator';
+
+/**
+ * Every templated send in the product. The ENG §12 matrix + Change Order 1
+ * additions. Default copy per (eventKey, channel) lives in
+ * clean/notificationDefaults.ts; org overrides in clean_notificationTemplates.
+ */
+export type CleanNotificationEventKey =
+  | 'booking_confirmed'
+  | 'booking_assigned'
+  | 'booking_changed'
+  | 'booking_canceled'
+  | 'reminder_24h'
+  | 'reminder_2h'
+  | 'preauth_upcoming_hold'
+  | 'payment_risk'
+  | 'receipt'
+  | 'review_request'
+  | 'lead_recovery'
+  // Change Order 1:
+  | 'cleaner_en_route' // A1
+  | 'invoice_issued' // R1/A2
+  | 'invoice_reminder' // A2 (dunning stage is a template variable, not N keys)
+  | 'invoice_overdue' // A2
+  | 'sos_triggered'; // A4 — exempt from plan gating (safety is not a tier)
+
+/**
+ * Org-edited template override for one (eventKey, channel, audience). Only
+ * materialized when an operator edits — the merged view is defaults ∪ these.
+ * Body/subject use {{dotted.variable}} tokens; rendering fails safe (falls
+ * back to the code default, never sends raw placeholders).
+ */
+export interface CleanNotificationTemplate {
+  id: string;
+  orgId: string;
+  eventKey: CleanNotificationEventKey;
+  channel: CleanNotificationChannel;
+  audience: CleanNotificationAudience;
+  /** Email only. */
+  subject?: string;
+  /** Maps to the clean-notification email template's heading slot. */
+  heading?: string;
+  body: string;
+  ctaLabel?: string;
+  footnote?: string;
+  enabled: boolean;
+  /** False once operator-edited; true rows mirror the code default. */
+  isDefault: boolean;
+  updatedBy?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type CleanNotificationSendStatus =
+  | 'sent'
+  | 'simulated'
+  | 'skipped_optout'
+  | 'skipped_disabled'
+  | 'render_failed'
+  | 'error';
+
+/**
+ * One channel attempt by the notification engine — the metering/audit record
+ * (SMS usage billing derives from these; doc 07 F2 prerequisite).
+ */
+export interface CleanNotificationSend {
+  id: string;
+  orgId: string;
+  eventKey: CleanNotificationEventKey;
+  channel: CleanNotificationChannel;
+  audience: CleanNotificationAudience;
+  entity?: CleanEventEntity;
+  entityId?: string;
+  /** Email address or E.164 number (org-scoped PII). */
+  to: string;
+  status: CleanNotificationSendStatus;
+  /** Provider message id (Surge/Resend), when sent. */
+  providerId?: string;
+  /** SMS segment count, for metered billing. */
+  segments?: number;
+  error?: string;
+  idempotencyKey?: string;
+  createdAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Contractor availability & time off (Change Order 1 R3)
+// ---------------------------------------------------------------------------
+
+/** One weekly recurring working-hours range, org-local 24h time. */
+export interface CleanWeeklyHours {
+  /** 0 = Sunday … 6 = Saturday. */
+  dow: number;
+  start: string;
+  end: string;
+}
+
+/**
+ * Weekly working hours, one doc per (org, tech). ABSENT DOC (or active:false)
+ * = always available — shipped orgs behave identically until configured.
+ * An explicit empty `weekly` array means never available.
+ */
+export interface CleanContractorAvailability {
+  id: string;
+  orgId: string;
+  /** cmms_technicians doc id. */
+  techId: string;
+  weekly: CleanWeeklyHours[];
+  active: boolean;
+  updatedBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type CleanTimeOffType = 'pto' | 'sick' | 'unavailable';
+
+export type CleanTimeOffStatus = 'requested' | 'approved' | 'denied' | 'canceled';
+
+/** A time-off range (org-local dates, inclusive). Only `approved` affects scheduling. */
+export interface CleanTimeOff {
+  id: string;
+  orgId: string;
+  techId: string;
+  type: CleanTimeOffType;
+  status: CleanTimeOffStatus;
+  startDate: string;
+  endDate: string;
+  note?: string;
+  /** uid or 'tech:{techId}' (field-app self-request). */
+  requestedBy: string;
+  approvedBy?: string;
+  decidedAt?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Incidents (Change Order 1 A4 — SOS)
+// ---------------------------------------------------------------------------
+
+export type CleanIncidentStatus = 'open' | 'acknowledged' | 'resolved' | 'false_alarm';
+
+/**
+ * Field-safety incident. The cancel window is client-side (hold-to-activate +
+ * countdown before the API fires); the server dispatches operator alerts
+ * immediately on receipt. Location is a one-time fix — no tracking.
+ */
+export interface CleanIncident {
+  id: string;
+  orgId: string;
+  type: 'sos';
+  status: CleanIncidentStatus;
+  techId: string;
+  assignmentId?: string;
+  bookingId?: string;
+  workOrderId?: string;
+  geo?: CleanGeoStamp;
+  triggeredAt: number;
+  /** Field-app idempotency token — duplicate triggers dedupe on (orgId, clientEventId). */
+  clientEventId?: string;
+  acknowledgedBy?: string;
+  acknowledgedAt?: number;
+  resolvedBy?: string;
+  resolvedAt?: number;
+  note?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Short links (Change Order 1 A9)
+// ---------------------------------------------------------------------------
+
+/** Booking-site short link; doc id == the short code (/s/{code}). */
+export interface CleanShortLink {
+  id: string;
+  orgId: string;
+  /** Booking-site slug the code resolves to. */
+  slug: string;
+  target: 'book';
+  hits?: number;
+  createdAt: number;
+}
+
+// ---------------------------------------------------------------------------
 // Org settings (referenced from Org.cleanSettings)
 // ---------------------------------------------------------------------------
 
@@ -522,6 +806,32 @@ export interface CleanLateCancelPolicy {
   pct: number;
 }
 
+/** Org-level communications config (Change Order 1 R2/A1/A4). */
+export interface CleanCommunicationsSettings {
+  /** Master switch for outbound SMS (default false until a sender is provisioned). */
+  smsEnabled?: boolean;
+  /** Per-org sender (E.164 or provider phone id). Falls back to the app-level SURGE_FROM_NUMBER. */
+  smsFromNumber?: string;
+  /** Where operator-audience notifications go (default org branding contactEmail). */
+  operatorAlertEmail?: string;
+  /** E.164; used by payment_risk / sos_triggered SMS alerts. */
+  operatorAlertPhone?: string;
+  /** A1 on-my-way customer notification (default true). */
+  enRouteEnabled?: boolean;
+}
+
+/** A/R dunning schedule (Change Order 1 A2). */
+export interface CleanDunningSettings {
+  /** Default true for orgs using invoice_terms. */
+  enabled?: boolean;
+  /**
+   * Day offsets relative to the due date, ascending (e.g. [-2, 0, 3, 10]).
+   * Each offset is one dunning stage; the sweep sends at most one stage per
+   * run per invoice and stops structurally once the invoice is paid.
+   */
+  offsets?: number[];
+}
+
 export interface CleanOrgSettings {
   /** Path slug on the public booking site (book.turnwrk.com/{slug}). */
   bookingSiteSlug?: string;
@@ -529,6 +839,12 @@ export interface CleanOrgSettings {
   arrivalWindows?: CleanArrivalWindow[];
   /** Max concurrent bookings per window (availability rule v1). */
   maxConcurrentPerWindow?: number;
+  /** Org-default payment policy. Absent = 'card_required_preauth'. */
+  paymentPolicy?: CleanPaymentPolicy;
+  /** Org-default invoice terms in days (invoice_terms policy). Absent = 14. */
+  invoiceTermsDays?: number;
+  communications?: CleanCommunicationsSettings;
+  dunning?: CleanDunningSettings;
   /** When true, assignments require contractor accept before confirmed. */
   requireAcceptance?: boolean;
   /** Ratings >= threshold get the public-review prompt (default 4). */

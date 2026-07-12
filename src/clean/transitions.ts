@@ -8,8 +8,10 @@
 import type {
   CleanAssignmentStatus,
   CleanBookingStatus,
+  CleanIncidentStatus,
   CleanLeadStatus,
   CleanPaymentStatus,
+  CleanTimeOffStatus,
 } from '../types/clean';
 import type { WOStatus } from '../types/workOrder';
 
@@ -99,9 +101,12 @@ export function bookingStatusForWoStatus(status: WOStatus): CleanBookingStatus |
 
 export const PAYMENT_TRANSITIONS: Record<CleanPaymentStatus, CleanPaymentStatus[]> = {
   // paid_manual covers a cardless booking the operator settled offline.
-  pending: ['vaulted', 'paid_manual'],
-  // vaulted → captured is the operator "Charge now" path (skips pre-auth)
-  vaulted: ['preauthorized', 'captured', 'paid_manual', 'preauth_failed'],
+  // invoiced_unpaid is the invoice_terms completion path (R1) — no card needed.
+  pending: ['vaulted', 'paid_manual', 'invoiced_unpaid'],
+  // vaulted → captured is the operator "Charge now" path (skips pre-auth).
+  // vaulted → invoiced_unpaid: customer had a card vaulted but the org
+  // invoices on terms (policy resolved invoice_terms).
+  vaulted: ['preauthorized', 'captured', 'paid_manual', 'preauth_failed', 'invoiced_unpaid'],
   // void (cancel intent before capture) returns to vaulted; capture completes.
   // paid_manual releases the hold when the customer pays another way.
   preauthorized: ['captured', 'vaulted', 'paid_manual'],
@@ -113,6 +118,14 @@ export const PAYMENT_TRANSITIONS: Record<CleanPaymentStatus, CleanPaymentStatus[
   paid_manual: [],
   partially_refunded: ['refunded', 'partially_refunded'],
   refunded: [],
+  // --- A/R lifecycle (invoice_terms policy; Change Order 1 R1/A2) ---
+  // Transitions are driven by applyInvoicePayment + the ar-sweep worker.
+  invoiced_unpaid: ['partially_paid', 'paid', 'overdue', 'paid_manual'],
+  // self-transition = another partial payment applied
+  partially_paid: ['partially_paid', 'paid', 'overdue'],
+  overdue: ['partially_paid', 'paid', 'paid_manual'],
+  // refundable only when a card intent exists — guarded in the domain layer
+  paid: ['refunded', 'partially_refunded'],
 };
 
 export function assertPaymentTransition(from: CleanPaymentStatus, to: CleanPaymentStatus): void {
@@ -123,6 +136,50 @@ export function assertPaymentTransition(from: CleanPaymentStatus, to: CleanPayme
 
 /** Statuses the pre-auth worker may act on (also requires hold !== true). */
 export const PREAUTH_ELIGIBLE_STATUSES: CleanPaymentStatus[] = ['vaulted', 'retrying'];
+
+/** A/R payment statuses with an outstanding balance (dunning + Outstanding view). */
+export const INVOICE_OPEN_STATUSES: CleanPaymentStatus[] = [
+  'invoiced_unpaid',
+  'partially_paid',
+  'overdue',
+];
+
+// ---------------------------------------------------------------------------
+// Time off: requested → approved | denied; approved → canceled (R3)
+// ---------------------------------------------------------------------------
+
+export const TIME_OFF_TRANSITIONS: Record<CleanTimeOffStatus, CleanTimeOffStatus[]> = {
+  requested: ['approved', 'denied', 'canceled'],
+  approved: ['canceled'],
+  denied: [],
+  canceled: [],
+};
+
+export function assertTimeOffTransition(from: CleanTimeOffStatus, to: CleanTimeOffStatus): void {
+  if (!TIME_OFF_TRANSITIONS[from]?.includes(to)) {
+    throw new CleanTransitionError('timeoff', from, to);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Incident (SOS): open → acknowledged → resolved · open → false_alarm (A4)
+// ---------------------------------------------------------------------------
+
+export const INCIDENT_TRANSITIONS: Record<CleanIncidentStatus, CleanIncidentStatus[]> = {
+  open: ['acknowledged', 'false_alarm'],
+  acknowledged: ['resolved'],
+  resolved: [],
+  false_alarm: [],
+};
+
+export function assertIncidentTransition(
+  from: CleanIncidentStatus,
+  to: CleanIncidentStatus,
+): void {
+  if (!INCIDENT_TRANSITIONS[from]?.includes(to)) {
+    throw new CleanTransitionError('incident', from, to);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Assignment: assigned → notified → accepted → (checked_in/out on the doc);

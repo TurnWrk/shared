@@ -53,3 +53,10 @@ export function zonedTimeToUtcMs(
 export function preauthDueAtFor(scheduledStartUtc: number): number {
   return scheduledStartUtc - 48 * 60 * 60 * 1000;
 }
+
+/** Add whole days to an org-local YYYY-MM-DD (pure calendar math, DST-immune). */
+export function addDaysToDate(date: string, days: number): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, (m || 1) - 1, (d || 1) + days));
+  return dt.toISOString().slice(0, 10);
+}
