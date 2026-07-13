@@ -551,6 +551,8 @@ export interface CleanPayoutLine {
   /** Bounty lines only — idempotency + revocation lookup. */
   bountyId?: string;
   bookingId?: string;
+  /** Time lines only — idempotency key for check-out / override upserts. */
+  assignmentId?: string;
 }
 
 export interface CleanPayoutPeriod {
