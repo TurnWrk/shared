@@ -1,7 +1,7 @@
 # @turnwrk/shared
 
 Canonical types and constants shared across the turnwrk app suite
-(`hostfix-cmms`, `restock`, `dispatch-assistant-api`, browser extensions).
+(`hostfix-cmms`, `restock`, `turnwrk-cortex`, browser extensions).
 
 ## Consumption
 

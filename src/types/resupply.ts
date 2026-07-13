@@ -1,3 +1,6 @@
+import type { ExpenseBearer } from './receipt';
+export type { ExpenseBearer };
+
 export type ResupplyStatus =
   | 'pending'
   | 'approved'
@@ -16,7 +19,7 @@ export type ResupplySource =
 
 /**
  * Which side of the suite the requesting vendor uses. Set by the originating
- * app so dispatch-assistant-api and downstream UIs can route by persona:
+ * app so turnwrk-cortex and downstream UIs can route by persona:
  *   - 'cleaning'    — turnover cleaner using the Restock /inspect form
  *   - 'maintenance' — technician using the CMMS technician panel / Relay Chat
  */
@@ -164,7 +167,15 @@ export interface PurchaseRequest {
   notes?: string;
   createdAt: number;
   updatedAt: number;
+  /** Set on approve: owner upgrade, manager ops, or guest damage. */
+  expenseBearer?: ExpenseBearer;
+  /**
+   * Day of spend (unix ms, start of day). Required when expenseBearer is
+   * `guest` for later reservation matching.
+   */
+  purchaseDate?: number;
   approvedAt?: number;
+  approvedBy?: string;
   purchasedAt?: number;
   deliveredAt?: number;
   /** Unified intake queue ownership (mirrors resupply aging). */
