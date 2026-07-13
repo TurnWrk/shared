@@ -192,6 +192,14 @@ export interface PropertyMaintenance {
   pestRiskTier?: PestRiskTier;
   pestTreatments?: PestTreatmentRecord[];
 
+  /**
+   * Operator-confirmed guest/clean booking block after repeated WO failures
+   * (TURNWRK-37). Unix-ms; active while `> Date.now()`.
+   */
+  bookingsBlockedUntil?: number;
+  /** Short reason shown on dispatch + clean availability. */
+  bookingBlockReason?: string;
+
   /** When set, occupancy is derived from synced bookings (see `usesSyncedBookings`). */
   bookingSource?: 'external-sync' | 'akita' | 'airbnb' | 'vrbo' | 'ics-sync' | null;
   /** Owner name snapshot from an external integration (replaces legacy `akitaOwnerName`). */
