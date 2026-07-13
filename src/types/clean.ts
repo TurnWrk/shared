@@ -292,6 +292,8 @@ export interface CleanBooking {
   /** Contractor-push reminder markers (written by the hostfix sendCleanReminders worker). */
   reminder24hAt?: number;
   reminder2hAt?: number;
+  /** Contractor unreported nudge (hostfix sendCleanOpsPushes — past start, no check-in). */
+  unreportedPushAt?: number;
   /** Customer reminder markers (written by clean/'s notifications sweep — R2). */
   customerReminder24hAt?: number;
   customerReminder2hAt?: number;
@@ -464,6 +466,8 @@ export interface CleanPayment {
   invoiceId?: string;
   /** Policy snapshot from the booking. Absent (legacy) = 'card_required_preauth'. */
   policy?: CleanPaymentPolicy;
+  /** Admin push when status entered `risk` (hostfix sendCleanOpsPushes). */
+  paymentRiskPushAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -582,6 +586,8 @@ export interface CleanReview {
   comment?: string;
   routed?: CleanReviewRouted;
   publicReviewClickedAt?: number;
+  /** Admin push when routed === private_alert (hostfix sendCleanOpsPushes). */
+  reviewLowPushAt?: number;
   requestedAt: number;
   respondedAt?: number;
   createdAt: number;
