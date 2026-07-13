@@ -689,6 +689,7 @@ export type CleanNotificationSendStatus =
   | 'simulated'
   | 'skipped_optout'
   | 'skipped_disabled'
+  | 'skipped_duplicate'
   | 'render_failed'
   | 'error';
 
