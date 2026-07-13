@@ -79,6 +79,13 @@ export const COLLECTIONS = {
   clean_incidents: 'clean_incidents',
   // Booking-site short links; doc id == short code (A9).
   clean_shortLinks: 'clean_shortLinks',
+  // Bounty photo rewards (Change Order 2). Program config incl. the embedded
+  // spot list, one doc per org (doc id == orgId, catalog pattern).
+  clean_bountyPrograms: 'clean_bountyPrograms',
+  // One bounty per eligible job (booking) — the drawn challenge + outcome.
+  clean_bounties: 'clean_bounties',
+  // Cleaner photo submissions incl. auto-rejected rows (audit trail).
+  clean_bountySubmissions: 'clean_bountySubmissions',
 
   // restock-scoped
   restock_products: 'restock_products',

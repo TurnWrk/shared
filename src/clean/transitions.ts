@@ -8,6 +8,7 @@
 import type {
   CleanAssignmentStatus,
   CleanBookingStatus,
+  CleanBountyStatus,
   CleanIncidentStatus,
   CleanLeadStatus,
   CleanPaymentStatus,
@@ -178,6 +179,37 @@ export function assertIncidentTransition(
 ): void {
   if (!INCIDENT_TRANSITIONS[from]?.includes(to)) {
     throw new CleanTransitionError('incident', from, to);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bounty (CO2, doc 09 §4): offered → revealed → submitted → approved|rejected;
+// rejected → submitted is the ONE resubmission (count enforced in the domain
+// layer, which flips a second rejection to 'missed'). 'on_assignment' reveal
+// mode creates the bounty directly in 'revealed' (initial write, not a
+// transition). A cap-skipped draw writes NO bounty row — only a
+// bounty.draw_cancelled event — so 'cancelled' here means booking canceled.
+// Bounty state NEVER blocks job completion or check-out.
+// ---------------------------------------------------------------------------
+
+export const BOUNTY_TRANSITIONS: Record<CleanBountyStatus, CleanBountyStatus[]> = {
+  // offered → expired covers on_check_in bounties never revealed (booking
+  // completed via a path that skipped check-in; the sweep catches it).
+  offered: ['revealed', 'expired', 'cancelled'],
+  revealed: ['submitted', 'expired', 'cancelled'],
+  submitted: ['approved', 'rejected', 'cancelled'],
+  rejected: ['submitted', 'missed', 'cancelled'],
+  // post-audit reversal (auto_with_audit) or operator revoke
+  approved: ['revoked'],
+  missed: [],
+  expired: [],
+  revoked: [],
+  cancelled: [],
+};
+
+export function assertBountyTransition(from: CleanBountyStatus, to: CleanBountyStatus): void {
+  if (!BOUNTY_TRANSITIONS[from]?.includes(to)) {
+    throw new CleanTransitionError('bounty', from, to);
   }
 }
 

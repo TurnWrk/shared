@@ -224,6 +224,19 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
       },
     },
   },
+  bounty_submitted: {
+    // Operator review-queue nudge (CO2 — manual approval mode only).
+    audience: 'operator',
+    ctaUrlVar: 'bounty.review_url',
+    channels: {
+      email: {
+        subject: 'Bounty photo awaiting review',
+        heading: 'A bounty photo needs your review',
+        body: '{{cleaner.first_name}} submitted a bounty photo ("{{bounty.spot}}") for the {{booking.service}} on {{booking.date}}.',
+        ctaLabel: 'Review submission',
+      },
+    },
+  },
   sos_triggered: {
     // Operator-audience safety alert — exempt from plan gating (A4).
     audience: 'operator',
@@ -277,6 +290,8 @@ export const SAMPLE_TEMPLATE_VARS: Record<string, string | number> = {
   'incident.time': 'Aug 1, 9:15 AM',
   'incident.location': 'https://maps.google.com/?q=30.2672,-97.7431',
   'incident.url': 'https://example.com/app/bookings',
+  'bounty.spot': 'Under the kitchen sink',
+  'bounty.review_url': 'https://example.com/app/bounties',
   eta: '15 min',
 };
 

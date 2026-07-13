@@ -45,12 +45,15 @@ export type OrgFeatureKey =
   /** Removes "Powered by Turnwrk" badging from the public booking surfaces (default off). */
   | 'clean_white_label_booking'
   /** SMS channel available to this org (default on; sends still require org smsEnabled + provider config). */
-  | 'clean_sms';
+  | 'clean_sms'
+  /** Bounty photo rewards (Change Order 2). Default off: zero UI, zero rows. */
+  | 'clean_bounties';
 
 export const ORG_FEATURE_DEFAULTS: Record<OrgFeatureKey, boolean> = {
   clean_editable_templates: true,
   clean_white_label_booking: false,
   clean_sms: true,
+  clean_bounties: false,
 };
 
 /** Resolve a feature flag with its default. */

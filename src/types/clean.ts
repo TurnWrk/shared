@@ -285,6 +285,8 @@ export interface CleanBooking {
    * Absent (legacy docs) = 'card_required_preauth'.
    */
   paymentPolicy?: CleanPaymentPolicy;
+  /** The job's bounty, when drawn (CO2) — zero-read gate for the cancel hook. */
+  bountyId?: string;
   /** Status the booking held before `on_hold`, restored on release. */
   heldFromStatus?: CleanBookingStatus;
   /** Contractor-push reminder markers (written by the hostfix sendCleanReminders worker). */
@@ -376,6 +378,11 @@ export interface CleanAssignment {
   checkOutGeo?: CleanGeoStamp;
   /** Set by the "On my way" tap (A1); one-shot, cleared never. */
   enRouteAt?: number;
+  /**
+   * The job's bounty, when drawn (CO2) — zero-read gate for the check-in/out
+   * hooks and the field app's sealed-chip signal.
+   */
+  bountyId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -523,12 +530,23 @@ export type CleanPayoutLineStatus = 'pending' | 'approved' | 'paid';
 export interface CleanPayoutLine {
   techId: string;
   vendorId?: string;
-  /** Σ minutes across the period's assignments (override wins). */
+  /**
+   * Line kind. Absent = 'time' (back-compat with the original typed-only
+   * shape). 'bounty' lines are itemized bonuses (CO2) — never merged into
+   * hourly math, clearly typed for downstream payroll/overtime handling
+   * (doc 09 §5 compliance flag F3).
+   */
+  type?: 'time' | 'bounty';
+  /** Σ minutes across the period's assignments (override wins). 0 for bounty lines. */
   minutes: number;
+  /** 0 for bounty lines. */
   rateMinorPerHour: number;
   amountMinor: number;
   status: CleanPayoutLineStatus;
   paidAt?: number;
+  /** Bounty lines only — idempotency + revocation lookup. */
+  bountyId?: string;
+  bookingId?: string;
 }
 
 export interface CleanPayoutPeriod {
@@ -586,7 +604,8 @@ export type CleanEventEntity =
   | 'timeoff'
   | 'availability'
   | 'incident'
-  | 'notification';
+  | 'notification'
+  | 'bounty';
 
 /**
  * Immutable transition/audit record. Stripe webhook events are stored here
@@ -635,7 +654,8 @@ export type CleanNotificationEventKey =
   | 'invoice_issued' // R1/A2
   | 'invoice_reminder' // A2 (dunning stage is a template variable, not N keys)
   | 'invoice_overdue' // A2
-  | 'sos_triggered'; // A4 — exempt from plan gating (safety is not a tier)
+  | 'sos_triggered' // A4 — exempt from plan gating (safety is not a tier)
+  | 'bounty_submitted'; // CO2 — operator review-queue nudge (manual approval mode)
 
 /**
  * Org-edited template override for one (eventKey, channel, audience). Only
@@ -778,6 +798,217 @@ export interface CleanIncident {
   note?: string;
   createdAt: number;
   updatedAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Bounty photo rewards (Change Order 2 — doc 09)
+// ---------------------------------------------------------------------------
+
+export type CleanBountySpotCategory =
+  | 'kitchen'
+  | 'bath'
+  | 'bedroom'
+  | 'living'
+  | 'utility'
+  | 'supply'
+  | 'exterior'
+  | 'other';
+
+/** One preset photo challenge. Lives embedded on the org's program doc. */
+export interface CleanBountySpot {
+  /** Stable per-org id — referenced by CleanBounty.spotId + last-N exclusion. */
+  id: string;
+  /** "Under the kitchen sink" */
+  label: string;
+  instructionText: string;
+  category: CleanBountySpotCategory;
+  /**
+   * Normalized token matched against the booking's paramsSnapshot labels/ids
+   * (e.g. 'bath', 'game room'). A spot with this set is never drawn for a
+   * location whose matching param has qty 0 (doc §3.3 / B7).
+   */
+  requiresParameter?: string;
+  /** Approved photos of this spot double as restock stock evidence (doc §1.3). */
+  supplyRelevant?: boolean;
+  active: boolean;
+  /** bountyDefaults seed this was copied from; absent = operator-created. */
+  seedKey?: string;
+}
+
+export type CleanBountyRevealMode = 'on_check_in' | 'on_assignment';
+export type CleanBountyApprovalMode = 'manual' | 'auto_with_audit';
+export type CleanBountyAmountType = 'fixed' | 'pct_of_job';
+
+/**
+ * Org bounty program config, one doc per org (doc id == orgId, catalog
+ * pattern — spots embedded so the draw is a single point-read). Server-write
+ * only; the clean_bounties plan-flag gate is enforced in the API layer.
+ */
+export interface CleanBountyProgram {
+  orgId: string;
+  enabled: boolean;
+  /** Catalog service ids eligible for draws; empty/absent = all cleaning jobs. */
+  serviceIds?: string[];
+  amountType: CleanBountyAmountType;
+  /** Minor units when 'fixed'; whole percent of the booking total when 'pct_of_job'. */
+  amountValue: number;
+  /** 0–1; 1.0 = every eligible job draws. */
+  triggerProbability: number;
+  /** Default 'on_check_in' — preserves the random-audit property (doc §3.2). */
+  reveal: CleanBountyRevealMode;
+  approval: CleanBountyApprovalMode;
+  /** 0–100; auto_with_audit only. */
+  auditSamplePct?: number;
+  monthlyBudgetCapMinor?: number;
+  perCleanerDailyCapMinor?: number;
+  /** Meters; absent = BOUNTY_DEFAULT_GEOFENCE_M (150). */
+  geofenceRadiusM?: number;
+  spots: CleanBountySpot[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type CleanBountyStatus =
+  | 'offered'
+  | 'revealed'
+  | 'submitted'
+  | 'approved'
+  | 'rejected'
+  | 'missed'
+  | 'expired'
+  | 'revoked'
+  | 'cancelled';
+
+/**
+ * One bounty per job (booking). Spot + amount are snapshotted at draw — spot
+ * edits and program changes never mutate live bounties. A cap-skipped draw
+ * writes NO bounty row, only a `bounty.draw_cancelled` event (B6/B9).
+ */
+export interface CleanBounty {
+  id: string;
+  orgId: string;
+  bookingId: string;
+  workOrderId: string;
+  /** Last-N spot exclusion + property-scoped photo dedupe joins. */
+  propertyId: string;
+  spotId: string;
+  spotLabel: string;
+  spotInstruction: string;
+  spotSupplyRelevant?: boolean;
+  /** Snapshotted at draw (operator-funded; never touches the customer total). */
+  amountMinor: number;
+  currency: string;
+  status: CleanBountyStatus;
+  revealMode: CleanBountyRevealMode;
+  approvalMode: CleanBountyApprovalMode;
+  /** Live assignee techIds at draw (refreshed on re-assign) — cap queries + push fan-out. */
+  techIds: string[];
+  offeredAt: number;
+  /** Org-local 'YYYY-MM' of the draw — monthly-cap sums without range indexes. */
+  drawnMonth: string;
+  /** Org-local 'YYYY-MM-DD' of the draw — per-cleaner daily-cap sums. */
+  drawnDate: string;
+  revealedAt?: number;
+  expiredAt?: number;
+  /** First approved submission wins (B5). */
+  winnerSubmissionId?: string;
+  winnerTechId?: string;
+  approvedAt?: number;
+  /** clean_payoutPeriods doc holding this bounty's payout line. */
+  payoutPeriodId?: string;
+  /** auto_with_audit sample flagged for retroactive review. */
+  auditFlagged?: boolean;
+  auditResolved?: boolean;
+  auditResolvedBy?: string;
+  auditResolvedAt?: number;
+  revokedReason?: string;
+  /** Revocation landed after the payout period closed — operator fixes payroll manually. */
+  revokeNeedsPayrollFix?: boolean;
+  cancelledReason?: 'booking_canceled';
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type CleanBountySubmissionDecision = 'pending' | 'approved' | 'rejected' | 'moot';
+
+/** Distinct server/reviewer rejection codes (B3 requires distinguishable reasons). */
+export type CleanBountyRejectionCode =
+  | 'outside_checkin_window'
+  | 'sync_too_late'
+  | 'outside_geofence'
+  | 'duplicate_photo_property'
+  | 'duplicate_photo_cleaner'
+  | 'wrong_spot'
+  | 'poor_quality'
+  | 'other';
+
+/** Which geofence-ladder rung applied. 'unverified' = accepted but flagged for the reviewer. */
+export type CleanBountyGeoBasis = 'property' | 'check_in' | 'unverified';
+
+/**
+ * One photo submission, including server auto-rejected attempts (kept for
+ * audit — cleaners will dispute). capturedAt is the client capture time and
+ * is what the check-in window validates (offline sync arrives later).
+ */
+export interface CleanBountySubmission {
+  id: string;
+  orgId: string;
+  bountyId: string;
+  bookingId: string;
+  propertyId: string;
+  assignmentId: string;
+  techId: string;
+  /** Token download URL (set once the photo is stored; absent on early rejects). */
+  photoUrl?: string;
+  storagePath?: string;
+  capturedAt: number;
+  /** Server receipt time — bounded by the offline sync grace window. */
+  receivedAt: number;
+  geo?: CleanGeoStamp;
+  geoBasis: CleanBountyGeoBasis;
+  geoDistanceM?: number;
+  /** 16-hex-char dHash; absent on rejects that failed before hashing. */
+  phash?: string;
+  /** Stored for audit, never trusted (strippable — doc §3.4). */
+  exifMeta?: Record<string, unknown>;
+  decision: CleanBountySubmissionDecision;
+  /** uid or 'system' (server auto-reject / auto-approve / moot fan-out). */
+  decidedBy?: string;
+  decidedAt?: number;
+  rejectionCode?: CleanBountyRejectionCode;
+  rejectionReason?: string;
+  /** Prior reviewer-rejected submission this retries (B4 one-resubmission link). */
+  resubmissionOf?: string;
+  /** Field-app idempotency key — offline drainer retries dedupe on (orgId, this). */
+  clientSubmissionId?: string;
+  /** Quick Work Order opened from this photo by a reviewer (B8). */
+  openedWorkOrderId?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/**
+ * Tech-facing projection for the field app. While sealed (on_check_in mode,
+ * pre-check-in) the spot fields are withheld — the server never sends them.
+ */
+export interface CleanBountyTechView {
+  bountyId: string;
+  status: CleanBountyStatus;
+  sealed: boolean;
+  amountMinor: number;
+  currency: string;
+  spotLabel?: string;
+  spotInstruction?: string;
+  revealMode: CleanBountyRevealMode;
+  mySubmissions: Array<
+    Pick<
+      CleanBountySubmission,
+      'id' | 'decision' | 'rejectionCode' | 'rejectionReason' | 'capturedAt' | 'resubmissionOf'
+    >
+  >;
+  /** Set when this tech won: the itemized job-card earning (B2). */
+  earnedMinor?: number;
+  canResubmit: boolean;
 }
 
 // ---------------------------------------------------------------------------
