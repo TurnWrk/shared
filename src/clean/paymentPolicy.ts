@@ -3,14 +3,29 @@
  *
  * The resolved policy is snapshotted onto CleanBooking.paymentPolicy and
  * CleanPayment.policy at creation time; settings edits never mutate in-flight
- * money. Absent fields everywhere resolve to the shipped default, so legacy
- * docs need no backfill.
+ * money. Readers dual-read booking → payment → default (TURNWRK-82) so legacy
+ * docs missing the booking stamp still behave correctly; optional backfill
+ * stamps booking.paymentPolicy for clarity.
  */
 import type { CleanPaymentPolicy } from '../types/clean';
 
 export const DEFAULT_PAYMENT_POLICY: CleanPaymentPolicy = 'card_required_preauth';
 
 export const DEFAULT_INVOICE_TERMS_DAYS = 14;
+
+const KNOWN_POLICIES = new Set<CleanPaymentPolicy>([
+  'card_required_preauth',
+  'card_on_file_charge_after',
+  'invoice_terms',
+  'offline',
+]);
+
+function asPolicy(value: unknown): CleanPaymentPolicy | undefined {
+  if (typeof value !== 'string') return undefined;
+  return KNOWN_POLICIES.has(value as CleanPaymentPolicy)
+    ? (value as CleanPaymentPolicy)
+    : undefined;
+}
 
 export interface ResolvePaymentPolicyInput {
   /** Org default (Org.cleanSettings.paymentPolicy). */
@@ -33,6 +48,38 @@ export function resolvePaymentPolicy(input: ResolvePaymentPolicyInput): CleanPay
     input.org?.paymentPolicy ??
     DEFAULT_PAYMENT_POLICY
   );
+}
+
+/**
+ * Dual-read the snapshotted policy on an in-flight booking/payment pair.
+ * Prefer booking.paymentPolicy (canonical for completion hooks), then
+ * payment.policy, then the shipped default.
+ */
+export function resolveSnapshottedPaymentPolicy(input: {
+  booking?: { paymentPolicy?: CleanPaymentPolicy | null } | null;
+  payment?: { policy?: CleanPaymentPolicy | null } | null;
+}): CleanPaymentPolicy {
+  return (
+    asPolicy(input.booking?.paymentPolicy) ??
+    asPolicy(input.payment?.policy) ??
+    DEFAULT_PAYMENT_POLICY
+  );
+}
+
+/**
+ * Backfill patch for bookings missing `paymentPolicy`. Prefer sibling
+ * payment.policy when present; otherwise stamp the default.
+ */
+export function legacyPaymentPolicyPatch(
+  booking: { paymentPolicy?: CleanPaymentPolicy | null },
+  payment?: { policy?: CleanPaymentPolicy | null } | null,
+  opts?: { force?: boolean },
+): { paymentPolicy: CleanPaymentPolicy } | null {
+  const existing = asPolicy(booking.paymentPolicy);
+  if (existing && !opts?.force) return null;
+  return {
+    paymentPolicy: resolveSnapshottedPaymentPolicy({ booking, payment }),
+  };
 }
 
 /** Invoice terms in days: customer override → org setting → 14. */
