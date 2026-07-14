@@ -1,0 +1,25 @@
+name: CI
+
+# Unit + typecheck gate for @turnwrk/shared. Tests only — never deploys.
+# This package is the dependency root of the suite; keep it green first.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  unit:
+    name: typecheck + unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:run
+      - run: npm run build
+      # Suite-local only: skips when sibling apps are absent (this repo CI).
+      - run: npm run check:vendored-fixtures
