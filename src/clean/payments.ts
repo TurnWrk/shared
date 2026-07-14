@@ -8,6 +8,7 @@
  */
 import type { CleanDunningSettings, CleanInvoice, CleanPayment } from '../types/clean';
 import { splitAllocatedMinutes } from './pricing';
+import { isArInvoice } from './invoiceKind';
 
 // ---------------------------------------------------------------------------
 // Pre-auth sweep planning (T-48h worker)
@@ -168,7 +169,7 @@ export function planDunning(
   const enabled = settings?.enabled ?? true;
   const actions: DunningAction[] = [];
   for (const inv of invoices) {
-    if (inv.kind !== 'invoice' || inv.dueAtUtc === undefined) {
+    if (!isArInvoice(inv) || inv.dueAtUtc === undefined) {
       actions.push({ invoiceId: inv.id, kind: 'skip', reason: 'not_ar_invoice' });
       continue;
     }

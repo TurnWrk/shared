@@ -49,6 +49,11 @@
       "types": "./dist/authFlow.d.ts",
       "require": "./dist/authFlow.js",
       "default": "./dist/authFlow.js"
+    },
+    "./testFixtures": {
+      "types": "./dist/testFixtures/index.d.ts",
+      "require": "./dist/testFixtures/index.js",
+      "default": "./dist/testFixtures/index.js"
     }
   },
   "files": [
@@ -59,7 +64,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "check:vendored-fixtures": "bash scripts/check-vendored-testFixtures.sh"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
