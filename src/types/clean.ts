@@ -613,7 +613,8 @@ export type CleanEventEntity =
   | 'availability'
   | 'incident'
   | 'notification'
-  | 'bounty';
+  | 'bounty'
+  | 'payoutPeriod';
 
 /**
  * Immutable transition/audit record. Stripe webhook events are stored here
