@@ -104,7 +104,7 @@ export function resolvePropertyStorageSlots(input: {
  * dropping unrelated maintenance fields.
  */
 export function applyResolvedStorageToMaintenance<
-  T extends { maintenance?: (PropertyStorageSlots & Record<string, unknown>) | null },
+  T extends { maintenance?: PropertyStorageSlots | null },
 >(property: T, restockRows?: RestockStorageRow[] | null): T {
   const slots = resolvePropertyStorageSlots({
     maintenance: property.maintenance ?? undefined,
