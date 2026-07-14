@@ -10,3 +10,4 @@ export * from './resupplyNormalize';
 export * from './resupplyBackfill';
 export * from './integrationBackfill';
 export * from './propertyAddress';
+export * from './propertyStorage';
