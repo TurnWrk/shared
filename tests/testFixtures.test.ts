@@ -42,6 +42,24 @@ describe('testFixtures scenarios', () => {
     expect(() => resolveScenario('nope')).toThrow(/Unknown test scenario/);
   });
 
+  it('clean:booking includes public slug + catalog for wizard E2E', () => {
+    const r = resolveScenario('clean:booking');
+    const org = r.firestore[COLLECTIONS.orgs][TEST_DATA.orgId] as {
+      cleanSettings?: { bookingSiteSlug?: string; paymentPolicy?: string };
+    };
+    expect(org.cleanSettings).toMatchObject({
+      bookingSiteSlug: TEST_DATA.bookingSiteSlug,
+      paymentPolicy: 'offline',
+    });
+    expect(r.firestore[COLLECTIONS.clean_catalogs][TEST_DATA.orgId]).toMatchObject({
+      orgId: TEST_DATA.orgId,
+    });
+    expect(
+      (r.firestore[COLLECTIONS.clean_catalogs][TEST_DATA.orgId] as { services: unknown[] }).services
+        .length,
+    ).toBeGreaterThan(0);
+  });
+
   it('overrides shallow-merge onto docs without mutating the base builder output', () => {
     const merged = mergeScenario(resolveScenario('base'), {
       firestore: { [COLLECTIONS.orgs]: { [TEST_DATA.orgId]: { name: 'Renamed Org' } } },

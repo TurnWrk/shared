@@ -52,6 +52,8 @@ export const TEST_DATA = {
   // clean
   customerId: 'test-customer-1',
   bookingId: 'test-booking-1',
+  /** Public booking site slug for clean:booking / wizard E2E. */
+  bookingSiteSlug: 'test-clean',
 } as const;
 
 // ---- shared entities ----
@@ -60,6 +62,7 @@ export function buildOrg(overrides: FirestoreDoc = {}): FirestoreDoc {
   return {
     name: TEST_DATA.orgName,
     enabledApps: { restock: true, cmms: true, clean: true },
+    timezone: 'America/Chicago',
     createdAt: FIXED_NOW,
     updatedAt: FIXED_NOW,
     ...overrides,
@@ -270,6 +273,43 @@ export function buildBooking(overrides: FirestoreDoc = {}): FirestoreDoc {
     status: 'scheduled',
     priceMinor: 10000, // $100.00, integer minor units
     createdAt: FIXED_NOW,
+    updatedAt: FIXED_NOW,
+    ...overrides,
+  };
+}
+
+/** Minimal embedded catalog for public booking wizard E2E (clean:booking). */
+export function buildCleanCatalog(overrides: FirestoreDoc = {}): FirestoreDoc {
+  return {
+    orgId: TEST_DATA.orgId,
+    services: [
+      {
+        id: 'svc-standard',
+        name: 'Standard Clean',
+        description: 'Recurring residential clean',
+        basePriceMinor: 15000,
+        baseMinutes: 120,
+        mode: 'residential',
+        active: true,
+        params: [
+          {
+            id: 'bedrooms',
+            label: 'Bedrooms',
+            unitPriceMinor: 2500,
+            unitMinutes: 20,
+            min: 1,
+            max: 6,
+            sort: 0,
+          },
+        ],
+        extraIds: [],
+      },
+    ],
+    extras: [],
+    frequencies: [
+      { key: 'once', widgetLabel: 'One-time', discountPct: 0 },
+      { key: 'weekly', widgetLabel: 'Weekly', discountPct: 25 },
+    ],
     updatedAt: FIXED_NOW,
     ...overrides,
   };

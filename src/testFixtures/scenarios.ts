@@ -22,6 +22,7 @@ import {
   buildWorkOrder,
   buildCustomer,
   buildBooking,
+  buildCleanCatalog,
   authManager,
   authManagerB,
   authPlatformAdmin,
@@ -125,7 +126,7 @@ export const restockCatalog: Scenario = (overrides) => {
   );
 };
 
-/** base + a customer and a scheduled booking (clean domain starter). */
+/** base + catalog + public booking slug + a customer/booking (wizard E2E). */
 export const cleanBooking: Scenario = (overrides) => {
   const b = base();
   return mergeScenario(
@@ -133,8 +134,18 @@ export const cleanBooking: Scenario = (overrides) => {
       auth: b.auth,
       firestore: {
         ...b.firestore,
+        [COLLECTIONS.orgs]: {
+          [TEST_DATA.orgId]: buildOrg({
+            cleanSettings: {
+              bookingSiteSlug: TEST_DATA.bookingSiteSlug,
+              paymentPolicy: 'offline',
+              maxConcurrentPerWindow: 3,
+            },
+          }),
+        },
         [COLLECTIONS.clean_customers]: { [TEST_DATA.customerId]: buildCustomer() },
         [COLLECTIONS.clean_bookings]: { [TEST_DATA.bookingId]: buildBooking() },
+        [COLLECTIONS.clean_catalogs]: { [TEST_DATA.orgId]: buildCleanCatalog() },
       },
     },
     overrides
