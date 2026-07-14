@@ -15,6 +15,9 @@
  */
 export type VendorReceiptApprovalStatus = 'pending' | 'approved' | 'rejected';
 
+/** Who the expense is billed to after dispatcher assignment. */
+export type ExpenseBearer = 'owner' | 'manager' | 'guest';
+
 export interface VendorReceipt {
   id: string;
   /** Submitter's auth uid. */
@@ -30,6 +33,13 @@ export interface VendorReceipt {
   submitted?: boolean;
   /** SOP-06 approval flow — pending until dispatcher reviews. */
   approvalStatus?: VendorReceiptApprovalStatus;
+  /** Set on approve: owner upgrade, manager ops, or guest damage. */
+  expenseBearer?: ExpenseBearer;
+  /**
+   * Day of spend (unix ms, start of day). Required when expenseBearer is
+   * `guest` for later reservation matching.
+   */
+  purchaseDate?: number;
   approvedAt?: number;
   approvedBy?: string;
   rejectedAt?: number;
