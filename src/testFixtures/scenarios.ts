@@ -18,12 +18,14 @@ import {
   buildResupplyToken,
   buildCuratedList,
   buildTechnician,
+  buildTechUser,
   buildWorkOrder,
   buildCustomer,
   buildBooking,
   authManager,
   authManagerB,
   authPlatformAdmin,
+  authTechnician,
 } from './builders';
 import type { DeepPartial, Scenario, ScenarioResult, FirestoreDoc } from './types';
 
@@ -139,16 +141,26 @@ export const cleanBooking: Scenario = (overrides) => {
   );
 };
 
-/** base + a technician and a scheduled work order (cmms domain starter). */
+/**
+ * base + a signed-in-able technician (auth user + users doc + onboarded
+ * cmms_technicians profile) and a work order assigned to them. This is the
+ * scenario the hostfix technician-PWA visual specs sign in as.
+ */
 export const cmmsWorkOrders: Scenario = (overrides) => {
   const b = base();
   return mergeScenario(
     {
-      auth: b.auth,
+      auth: [...b.auth, authTechnician()],
       firestore: {
         ...b.firestore,
+        [COLLECTIONS.users]: {
+          ...b.firestore[COLLECTIONS.users],
+          [TEST_DATA.technicianId]: buildTechUser(),
+        },
         [COLLECTIONS.cmms_technicians]: { [TEST_DATA.technicianId]: buildTechnician() },
-        [COLLECTIONS.cmms_workOrders]: { [TEST_DATA.workOrderId]: buildWorkOrder() },
+        [COLLECTIONS.cmms_workOrders]: {
+          [TEST_DATA.workOrderId]: buildWorkOrder({ assignedTechId: TEST_DATA.technicianId }),
+        },
       },
     },
     overrides

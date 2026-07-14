@@ -41,6 +41,8 @@ export const TEST_DATA = {
   cleanerName: 'Maria Garcia',
   technicianId: 'test-technician-1',
   technicianName: 'Sam Fielder',
+  technicianEmail: 'sam@example.com',
+  technicianPassword: 'tech123456',
   workOrderId: 'test-wo-1',
   // restock
   tokenId: 'test-token-abc123',
@@ -194,13 +196,42 @@ export function buildCuratedList(overrides: FirestoreDoc = {}): FirestoreDoc {
 // Minimal, schema-plausible scaffolds. Per-app groundwork tickets refine these
 // against the real domain types + emulator before their E2E specs depend on them.
 
+/**
+ * A cmms_technicians profile. `userId` links it to the signed-in auth user
+ * (dataService matches currentTech by `userId===user.uid` or `email===email`),
+ * and `isOnboarded:true` clears the OnboardingWizard full-screen gate so the
+ * technician shell actually renders (MobileView.tsx:1349).
+ */
 export function buildTechnician(overrides: FirestoreDoc = {}): FirestoreDoc {
   return {
     orgId: TEST_DATA.orgId,
     name: TEST_DATA.technicianName,
-    email: 'sam@example.com',
+    email: TEST_DATA.technicianEmail,
+    userId: TEST_DATA.technicianId,
     orgIds: [TEST_DATA.orgId],
-    status: 'active',
+    status: 'Active',
+    isOnboarded: true,
+    createdAt: FIXED_NOW,
+    updatedAt: FIXED_NOW,
+    ...overrides,
+  };
+}
+
+/**
+ * The `users/{uid}` doc for the technician. `memberships:[{orgId,roles:['tech']}]`
+ * makes legacyRoleFor() resolve to 'tech' → ProtectedRoute allows /technician and
+ * the vendor org-scope intersection (users.orgIds ∩ technician.orgIds) is non-empty.
+ */
+export function buildTechUser(overrides: FirestoreDoc = {}): FirestoreDoc {
+  const memberships: Membership[] = [{ orgId: TEST_DATA.orgId, roles: ['tech'] }];
+  const { orgIds, adminOrgIds } = deriveUserIndex(memberships);
+  return {
+    uid: TEST_DATA.technicianId,
+    email: TEST_DATA.technicianEmail,
+    displayName: TEST_DATA.technicianName,
+    memberships,
+    orgIds,
+    adminOrgIds,
     createdAt: FIXED_NOW,
     updatedAt: FIXED_NOW,
     ...overrides,
@@ -254,4 +285,7 @@ export function authManagerB(): AuthUser {
 }
 export function authPlatformAdmin(): AuthUser {
   return { uid: TEST_DATA.adminId, email: TEST_DATA.adminEmail, password: TEST_DATA.adminPassword, displayName: 'Test Admin', emailVerified: true };
+}
+export function authTechnician(): AuthUser {
+  return { uid: TEST_DATA.technicianId, email: TEST_DATA.technicianEmail, password: TEST_DATA.technicianPassword, displayName: TEST_DATA.technicianName, emailVerified: true };
 }
