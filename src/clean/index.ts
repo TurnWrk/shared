@@ -4,6 +4,7 @@ export * from './orgTime';
 export * from './payments';
 export * from './invoiceKind';
 export * from './paymentPolicy';
+export * from './assignmentVendor';
 export * from './templateRender';
 export * from './availability';
 export * from './notificationDefaults';
