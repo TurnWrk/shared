@@ -247,6 +247,10 @@ export function buildWorkOrder(overrides: FirestoreDoc = {}): FirestoreDoc {
     propertyId: TEST_DATA.propertyId,
     title: 'Leaking faucet in unit 2',
     status: 'Scheduled',
+    // Schedule Queue filters on !!scheduledDate; without it the WO lands in
+    // Backlog (assigned-but-unscheduled) and visual specs looking at the
+    // default queue view see "No scheduled jobs".
+    scheduledDate: new Date(FIXED_NOW).toISOString().slice(0, 10),
     createdAt: FIXED_NOW,
     updatedAt: FIXED_NOW,
     ...overrides,
