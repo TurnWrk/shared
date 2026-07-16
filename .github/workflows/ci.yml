@@ -22,4 +22,5 @@ jobs:
       - run: npm run test:run
       - run: npm run build
       # Suite-local only: skips when sibling apps are absent (this repo CI).
-      - run: npm run check:vendored-fixtures
+      # Full shared + email + testFixtures parity (TURNWRK-134).
+      - run: npm run check:vendored

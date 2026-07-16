@@ -65,7 +65,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "check:vendored-fixtures": "bash scripts/check-vendored-testFixtures.sh"
+    "check:vendored-fixtures": "bash scripts/check-vendored-testFixtures.sh",
+    "check:vendored-shared": "bash scripts/check-vendored-shared.sh",
+    "check:vendored-email": "bash scripts/check-vendored-email.sh",
+    "check:vendored": "npm run check:vendored-shared && npm run check:vendored-fixtures && npm run check:vendored-email"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
