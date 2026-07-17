@@ -6,6 +6,8 @@ import {
   orgAppEnabled,
   orgIsSuspended,
   resolveBootstrapEnabledApps,
+  isOrgTrialExpired,
+  isOrgIndefiniteOrActiveTrial,
   type Org,
 } from '../src/types/org';
 
@@ -72,5 +74,23 @@ describe('resolveBootstrapEnabledApps / createIndefiniteTrialBilling', () => {
     expect(billing.updatedAt).toBe(1_700_000_000_000);
     expect(billing.trialEndsAt).toBeUndefined();
     expect(billing.currentPeriodEnd).toBeUndefined();
+  });
+});
+
+describe('isOrgTrialExpired / isOrgIndefiniteOrActiveTrial', () => {
+  it('treats missing trialEndsAt as indefinite (not expired)', () => {
+    const billing = { subscriptionStatus: 'trialing' as const };
+    expect(isOrgTrialExpired(billing)).toBe(false);
+    expect(isOrgIndefiniteOrActiveTrial(billing)).toBe(true);
+  });
+
+  it('expires only when trialEndsAt is in the past', () => {
+    const now = 1_700_000_000_000;
+    expect(
+      isOrgTrialExpired({ subscriptionStatus: 'trialing', trialEndsAt: now - 1 }, now),
+    ).toBe(true);
+    expect(
+      isOrgTrialExpired({ subscriptionStatus: 'trialing', trialEndsAt: now + 1 }, now),
+    ).toBe(false);
   });
 });

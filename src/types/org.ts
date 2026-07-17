@@ -205,6 +205,32 @@ export function orgIsSuspended(
   return org?.status === 'suspended';
 }
 
+/**
+ * Whether an org's suite trial has ended (TURNWRK-151).
+ *
+ * Policy for early access: absent `trialEndsAt` = indefinite trial (never
+ * expired). Countdown / soft-lock UI is deferred until a migration sets
+ * ends-at on early signups. OrgAppGate continues to enforce `enabledApps` +
+ * suspended only — do not auto-lock on expiry yet.
+ */
+export function isOrgTrialExpired(
+  billing: Pick<OrgBilling, 'subscriptionStatus' | 'trialEndsAt'> | null | undefined,
+  now: number = Date.now(),
+): boolean {
+  if (!billing || billing.subscriptionStatus !== 'trialing') return false;
+  if (typeof billing.trialEndsAt !== 'number') return false;
+  return billing.trialEndsAt <= now;
+}
+
+/** True when trialing with no ends-at, or ends-at still in the future. */
+export function isOrgIndefiniteOrActiveTrial(
+  billing: Pick<OrgBilling, 'subscriptionStatus' | 'trialEndsAt'> | null | undefined,
+  now: number = Date.now(),
+): boolean {
+  if (!billing || billing.subscriptionStatus !== 'trialing') return false;
+  return !isOrgTrialExpired(billing, now);
+}
+
 export interface Org {
   id: string;
   name: string;
