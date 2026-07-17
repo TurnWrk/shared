@@ -22,6 +22,58 @@ export function setAuthIntent(intent: AuthIntent): void {
     window.localStorage.setItem(AUTH_INTENT_KEY, intent);
 }
 
+export interface SuiteSignupHandoff {
+    intent?: AuthIntent;
+    /** Prefill for Create workspace (from marketing site query). */
+    orgName?: string;
+}
+
+/**
+ * Parse cross-app signup query params (TURNWRK-150).
+ * Website → hostfix: `/login?intent=create` (+ optional `orgName` / `company`).
+ */
+export function parseAuthHandoffSearchParams(
+    params: Pick<URLSearchParams, 'get'>,
+): SuiteSignupHandoff {
+    const intentRaw = params.get('intent');
+    const intent: AuthIntent | undefined =
+        intentRaw === 'signin' || intentRaw === 'create' || intentRaw === 'join'
+            ? intentRaw
+            : undefined;
+    const orgName =
+        params.get('orgName')?.trim() || params.get('company')?.trim() || undefined;
+    return { intent, orgName: orgName || undefined };
+}
+
+/**
+ * Build hostfix create-workspace URL for the marketing site (and other apps).
+ * `appBaseUrl` may be origin (`https://cmms.turnwrk.com`) or already `/login`.
+ */
+export function buildSuiteSignupUrl(
+    appBaseUrl: string,
+    opts?: { orgName?: string },
+): string {
+    const trimmed = appBaseUrl.replace(/\/$/, '');
+    const loginBase = /\/login$/i.test(trimmed) ? trimmed : `${trimmed}/login`;
+    const url = new URL(loginBase);
+    url.searchParams.set('intent', 'create');
+    if (opts?.orgName?.trim()) {
+        url.searchParams.set('orgName', opts.orgName.trim());
+    }
+    return url.toString();
+}
+
+/** Persist handoff intent (+ optional pending org name) before auth completes. */
+export function applyAuthHandoffToStorage(handoff: SuiteSignupHandoff): void {
+    if (typeof window === 'undefined') return;
+    if (handoff.intent) {
+        setAuthIntent(handoff.intent);
+    }
+    if (handoff.intent === 'create' && handoff.orgName) {
+        window.localStorage.setItem(PENDING_ORG_NAME_KEY, handoff.orgName);
+    }
+}
+
 export function getPendingInviteCode(): string | null {
     if (typeof window === 'undefined') return null;
     return window.localStorage.getItem(PENDING_INVITE_CODE_KEY);

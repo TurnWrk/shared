@@ -10,6 +10,9 @@ import {
   markPostSignupOnboarding,
   consumePostSignupOnboarding,
   POST_SIGNUP_ONBOARDING_KEY,
+  buildSuiteSignupUrl,
+  parseAuthHandoffSearchParams,
+  applyAuthHandoffToStorage,
 } from '../src/authFlow';
 
 describe('authFlow resolveNewUserAction', () => {
@@ -73,6 +76,33 @@ describe('authFlow resolveNewUserAction', () => {
     expect(mem.get(POST_SIGNUP_ONBOARDING_KEY)).toBe('1');
     expect(consumePostSignupOnboarding()).toBe(true);
     expect(consumePostSignupOnboarding()).toBe(false);
+  });
+
+  it('buildSuiteSignupUrl appends intent=create', () => {
+    expect(buildSuiteSignupUrl('https://cmms.turnwrk.com')).toBe(
+      'https://cmms.turnwrk.com/login?intent=create',
+    );
+    expect(buildSuiteSignupUrl('https://cmms.turnwrk.com/login', { orgName: 'Acme' })).toBe(
+      'https://cmms.turnwrk.com/login?intent=create&orgName=Acme',
+    );
+  });
+
+  it('parseAuthHandoffSearchParams reads intent + orgName', () => {
+    const params = new URLSearchParams('intent=create&orgName=Sunset');
+    expect(parseAuthHandoffSearchParams(params)).toEqual({
+      intent: 'create',
+      orgName: 'Sunset',
+    });
+    expect(parseAuthHandoffSearchParams(new URLSearchParams('company=Foo'))).toEqual({
+      intent: undefined,
+      orgName: 'Foo',
+    });
+  });
+
+  it('applyAuthHandoffToStorage sets intent and pending org', () => {
+    applyAuthHandoffToStorage({ intent: 'create', orgName: 'Acme Ops' });
+    expect(getAuthIntent()).toBe('create');
+    expect(mem.get(PENDING_ORG_NAME_KEY)).toBe('Acme Ops');
   });
 });
 
