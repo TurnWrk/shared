@@ -98,6 +98,12 @@ export function markPostSignupOnboarding(): void {
     window.localStorage.setItem(POST_SIGNUP_ONBOARDING_KEY, '1');
 }
 
+/** True while the PM onboarding wizard should still run (TURNWRK-146). */
+export function peekPostSignupOnboarding(): boolean {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(POST_SIGNUP_ONBOARDING_KEY) === '1';
+}
+
 export function consumePostSignupOnboarding(): boolean {
     if (typeof window === 'undefined') return false;
     const v = window.localStorage.getItem(POST_SIGNUP_ONBOARDING_KEY);
