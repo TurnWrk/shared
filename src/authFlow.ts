@@ -63,13 +63,14 @@ export function buildSuiteSignupUrl(
     return url.toString();
 }
 
-/** Persist handoff intent (+ optional pending org name) before auth completes. */
+/** Persist handoff intent (+ optional org name prefill for the wizard). */
 export function applyAuthHandoffToStorage(handoff: SuiteSignupHandoff): void {
     if (typeof window === 'undefined') return;
     if (handoff.intent) {
         setAuthIntent(handoff.intent);
     }
-    if (handoff.intent === 'create' && handoff.orgName) {
+    // Prefill only — org bootstrap happens on /onboarding after auth.
+    if (handoff.orgName) {
         window.localStorage.setItem(PENDING_ORG_NAME_KEY, handoff.orgName);
     }
 }
@@ -122,18 +123,16 @@ export type ResolveNewUserAction =
 
 /**
  * Decide how to provision a Firebase user who has no Firestore profile yet.
+ *
+ * Org creation is owned by hostfix `/onboarding` (auth first, then org name +
+ * logo). Pending org name is only a wizard prefill — never auto-bootstrap here.
  */
 export function resolveNewUserAction(
-    enabledApps: Org['enabledApps'],
+    _enabledApps?: Org['enabledApps'],
 ): ResolveNewUserAction {
     const inviteCode = getPendingInviteCode();
     if (inviteCode) {
         return { type: 'consume_invite', inviteCode };
-    }
-
-    const orgName = getPendingOrgName();
-    if (orgName) {
-        return { type: 'bootstrap', orgName, enabledApps };
     }
 
     const intent = getAuthIntent();

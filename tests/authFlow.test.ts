@@ -49,10 +49,9 @@ describe('authFlow resolveNewUserAction', () => {
 
   it('bootstraps when org name is pending', () => {
     mem.set(PENDING_ORG_NAME_KEY, 'Acme Clean');
+    // Pending org name is wizard prefill only — never auto-bootstrap.
     expect(resolveNewUserAction({ clean: true, cmms: true })).toEqual({
-      type: 'bootstrap',
-      orgName: 'Acme Clean',
-      enabledApps: { clean: true, cmms: true },
+      type: 'needs_onboarding',
     });
   });
 
