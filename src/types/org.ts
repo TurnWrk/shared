@@ -64,21 +64,164 @@ export function orgFeatureEnabled(
   return org?.features?.[key] ?? ORG_FEATURE_DEFAULTS[key];
 }
 
+/** Suite product keys on `Org.enabledApps`. */
+export type OrgAppKey = 'hostfixCmms' | 'restock' | 'clean';
+
+/**
+ * Legacy Firestore docs sometimes store `enabledApps.cmms` instead of
+ * `hostfixCmms`. Writers must always use `hostfixCmms`; readers dual-read.
+ */
+export type OrgEnabledApps = {
+  hostfixCmms?: boolean;
+  restock?: boolean;
+  /** Turnwrk Clean (cleaning-operations product). */
+  clean?: boolean;
+  /**
+   * @deprecated Legacy key — dual-read only. Prefer `hostfixCmms`.
+   * Present on some older docs until migrate-enabled-apps-keys runs.
+   */
+  cmms?: boolean;
+};
+
+export type OrgStatus = 'active' | 'suspended';
+
+export type OrgBillingSubscriptionStatus =
+  | 'active'
+  | 'trialing'
+  | 'past_due'
+  | 'canceled'
+  | null;
+
+/**
+ * Suite SaaS billing on the org (Turnwrk charging operators for software).
+ * Distinct from Clean customer Stripe (`clean_customers.stripeCustomerId`)
+ * and Mercury owner AR. Privileged writes go through Admin SDK / platform
+ * admin APIs — org admins must not set these client-side.
+ */
+export interface OrgBilling {
+  stripeCustomerId?: string;
+  subscriptionStatus?: OrgBillingSubscriptionStatus;
+  /** e.g. 'comp' | 'founder_ltd' | 'restock_pro' | 'trial' | Stripe price alias */
+  planId?: string;
+  /** UTC epoch ms when the current period ends (if known). */
+  currentPeriodEnd?: number;
+  /**
+   * UTC epoch ms when an indefinite trial should start counting down.
+   * Absent = indefinite trial (no countdown). A later migration may set this
+   * for early signups when paid plans launch (TURNWRK-145 / TURNWRK-151).
+   */
+  trialEndsAt?: number;
+  /** Support / comp reason — free text. */
+  notes?: string;
+  updatedAt?: number;
+  /** platformAdmin uid who last mutated billing. */
+  updatedBy?: string;
+}
+
+/**
+ * Default suite apps for self-serve / trial org create (TURNWRK-145).
+ * Dispatch + Restock on; Clean stays opt-in. Callers may override via bootstrap body.
+ */
+export const DEFAULT_TRIAL_ENABLED_APPS: Required<
+  Pick<OrgEnabledApps, 'hostfixCmms' | 'restock' | 'clean'>
+> = {
+  hostfixCmms: true,
+  restock: true,
+  clean: false,
+};
+
+/**
+ * Indefinite suite trial billing for newly bootstrapped orgs.
+ * No `trialEndsAt` / `currentPeriodEnd` until a future migration sets them.
+ */
+export function createIndefiniteTrialBilling(now: number = Date.now()): OrgBilling {
+  return {
+    subscriptionStatus: 'trialing',
+    planId: 'trial',
+    notes: 'Indefinite trial — ends-at deferred until paid plans launch',
+    updatedAt: now,
+  };
+}
+
+/**
+ * Resolve enabledApps for org bootstrap: explicit body wins (normalized);
+ * otherwise Dispatch + Restock trial defaults.
+ */
+export function resolveBootstrapEnabledApps(
+  input?: OrgEnabledApps | null,
+): NonNullable<Org['enabledApps']> {
+  if (input && Object.keys(input).length > 0) {
+    return (
+      normalizeEnabledApps(input) ?? {
+        hostfixCmms: false,
+        restock: false,
+        clean: false,
+      }
+    );
+  }
+  return { ...DEFAULT_TRIAL_ENABLED_APPS };
+}
+
+/**
+ * Whether an org may use a suite app.
+ *
+ * - Dual-reads legacy `enabledApps.cmms` as `hostfixCmms`.
+ * - Missing `enabledApps` entirely: allow hostfixCmms + restock (legacy
+ *   grandfather); Clean stays off until explicitly enabled (matches Clean app).
+ * - `status === 'suspended'`: all apps off.
+ */
+export function orgAppEnabled(
+  org: Pick<Org, 'enabledApps' | 'status'> | null | undefined,
+  app: OrgAppKey,
+): boolean {
+  if (!org) return false;
+  if (org.status === 'suspended') return false;
+  const apps = org.enabledApps;
+  if (!apps) {
+    return app === 'hostfixCmms' || app === 'restock';
+  }
+  if (app === 'hostfixCmms') {
+    return apps.hostfixCmms === true || apps.cmms === true;
+  }
+  return apps[app] === true;
+}
+
+/** Normalize enabledApps for writes: always `hostfixCmms`, never `cmms`. */
+export function normalizeEnabledApps(
+  input: OrgEnabledApps | null | undefined,
+): Org['enabledApps'] {
+  if (!input) return undefined;
+  const hostfixCmms = input.hostfixCmms === true || input.cmms === true;
+  return {
+    ...(hostfixCmms ? { hostfixCmms: true } : { hostfixCmms: false }),
+    ...(input.restock === true ? { restock: true } : { restock: false }),
+    ...(input.clean === true ? { clean: true } : { clean: false }),
+  };
+}
+
+export function orgIsSuspended(
+  org: Pick<Org, 'status'> | null | undefined,
+): boolean {
+  return org?.status === 'suspended';
+}
+
 export interface Org {
   id: string;
   name: string;
   createdAt: number;
   updatedAt: number;
+  /**
+   * Soft lifecycle. Absent = active. Suspended orgs retain data but apps
+   * refuse entry via `orgAppEnabled`.
+   */
+  status?: OrgStatus;
   // which apps this org has enabled — lets apps gate features without
   // requiring a separate config lookup
-  enabledApps?: {
-    hostfixCmms?: boolean;
-    restock?: boolean;
-    /** Turnwrk Clean (cleaning-operations product). */
-    clean?: boolean;
-  };
+  enabledApps?: OrgEnabledApps;
   /** Plan-flag gates (see OrgFeatureKey). Absent = ORG_FEATURE_DEFAULTS. */
   features?: Partial<Record<OrgFeatureKey, boolean>>;
+  /** Suite SaaS billing (not Clean job payments / Mercury). */
+  billing?: OrgBilling;
   branding?: OrgBranding;
   /**
    * IANA timezone (e.g. 'America/Chicago'). Used for display and for
