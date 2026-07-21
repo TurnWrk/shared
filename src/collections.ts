@@ -108,6 +108,9 @@ export const COLLECTIONS = {
   restock_storage: 'restock_storage',
   restock_storageStock: 'restock_storageStock',
   restock_storageLedger: 'restock_storageLedger',
+  // Visual stock evidence from Clean bounty supply-relevant approvals
+  // (TURNWRK-171). Written by clean Admin on approve; restock reads.
+  restock_supplySignals: 'restock_supplySignals',
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];

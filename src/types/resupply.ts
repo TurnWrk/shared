@@ -182,3 +182,28 @@ export interface PurchaseRequest {
   assignedTo?: string;
   acknowledgedAt?: number;
 }
+
+/**
+ * Visual stock evidence projected from Clean into Restock (TURNWRK-171).
+ * Written by clean Admin on supply-relevant bounty approval (`bounty.supply_photo`);
+ * restock reads for property-scoped burn-signal footholds (prediction later).
+ * Doc id: `bounty_{bountyId}` — idempotent if approval retries.
+ */
+export interface RestockSupplyPhotoSignal {
+  id: string;
+  orgId: string;
+  propertyId: string;
+  bookingId: string;
+  bountyId: string;
+  spotId: string;
+  spotLabel: string;
+  photoUrl: string;
+  source: 'bounty.supply_photo';
+  /** Unix ms when the signal was projected. */
+  createdAt: number;
+}
+
+/** Stable Firestore doc id for a bounty-sourced supply signal. */
+export function restockSupplySignalDocId(bountyId: string): string {
+  return `bounty_${bountyId}`;
+}
