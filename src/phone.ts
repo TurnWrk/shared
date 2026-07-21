@@ -1,6 +1,6 @@
 /**
  * Phone normalization for vendor identity matching across apps.
- * Twilio and inbound SMS use E.164; legacy docs may store other formats.
+ * Surge inbound SMS uses E.164; legacy docs may store other formats.
  */
 
 const E164_RE = /^\+\d{8,15}$/;
