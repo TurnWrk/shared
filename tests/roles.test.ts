@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { hasRole, hasAnyRole, ROLE_RANK } from '../src/roles';
 
-describe('hasRole (rank ladder)', () => {
+describe('hasRole (rank ladder) (TURNWRK-101)', () => {
   it('grants access when any user role ranks >= required', () => {
     expect(hasRole(['admin'], 'pm')).toBe(true);
     expect(hasRole(['pm'], 'admin')).toBe(false);

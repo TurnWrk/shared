@@ -21,8 +21,8 @@ describe('haversineMeters', () => {
   });
 });
 
-describe('renderTemplate / extractTemplateVars', () => {
-  it('substitutes tokens and fails closed on missing', () => {
+describe('renderTemplate / extractTemplateVars (TURNWRK-101)', () => {
+  it('substitutes tokens and fails closed on missing / empty', () => {
     expect(renderTemplate('Hi {{customer.first_name}}', { 'customer.first_name': 'Ada' })).toEqual({
       ok: true,
       text: 'Hi Ada',
@@ -31,7 +31,14 @@ describe('renderTemplate / extractTemplateVars', () => {
       ok: false,
       missing: ['invoice.pay_url'],
     });
+    expect(
+      renderTemplate('Hi {{customer.first_name}}', { 'customer.first_name': '' }),
+    ).toEqual({ ok: false, missing: ['customer.first_name'] });
     expect(extractTemplateVars('{{a}} and {{b.c}} {{a}}')).toEqual(['a', 'b.c']);
+    expect(renderTemplate('{{ org.name }}', { 'org.name': 'Acme' })).toEqual({
+      ok: true,
+      text: 'Acme',
+    });
   });
 });
 
