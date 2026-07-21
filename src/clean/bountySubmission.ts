@@ -63,11 +63,11 @@ export interface GeofenceResult {
 }
 
 /**
- * Enforcement ladder (recon: Property.geo is NOT guaranteed — populated only
- * by hostfix route geocoding): (1) property fix when available; (2) else the
- * check-in fix; (3) else — or when the submission carries no geo — accept
- * flagged 'unverified' so the reviewer sees it rather than punishing cleaners
- * for missing reference data.
+ * Enforcement ladder: (1) property fix when available (Clean lazily geocodes
+ * + caches Property.geo on bounty submit — TURNWRK-172; hostfix routes also
+ * write-through); (2) else the check-in fix; (3) else — or when the submission
+ * carries no geo — accept flagged 'unverified' so the reviewer sees it rather
+ * than punishing cleaners for missing reference data.
  */
 export function resolveGeofence(input: GeofenceInput): GeofenceResult {
   if (!input.submissionGeo) return { ok: true, basis: 'unverified' };
