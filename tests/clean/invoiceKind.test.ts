@@ -5,7 +5,7 @@ import {
   legacyInvoiceKindPatch,
 } from '../../src/clean/invoiceKind';
 
-describe('resolveInvoiceKind dual-read', () => {
+describe('resolveInvoiceKind dual-read (TURNWRK-100)', () => {
   it('honors explicit kind on new docs', () => {
     expect(resolveInvoiceKind({ kind: 'receipt' })).toBe('receipt');
     expect(resolveInvoiceKind({ kind: 'invoice', dueAtUtc: 1 })).toBe('invoice');
