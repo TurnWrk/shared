@@ -50,6 +50,11 @@
       "require": "./dist/authFlow.js",
       "default": "./dist/authFlow.js"
     },
+    "./onboarding": {
+      "types": "./dist/onboarding/index.d.ts",
+      "require": "./dist/onboarding/index.js",
+      "default": "./dist/onboarding/index.js"
+    },
     "./testFixtures": {
       "types": "./dist/testFixtures/index.d.ts",
       "require": "./dist/testFixtures/index.js",
