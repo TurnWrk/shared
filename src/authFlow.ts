@@ -53,9 +53,11 @@ export function buildSuiteSignupUrl(
     appBaseUrl: string,
     opts?: { orgName?: string },
 ): string {
-    const trimmed = appBaseUrl.replace(/\/$/, '');
-    const loginBase = /\/login$/i.test(trimmed) ? trimmed : `${trimmed}/login`;
-    const url = new URL(loginBase);
+    const url = new URL(appBaseUrl);
+    const pathname = url.pathname.replace(/\/$/, '');
+    if (!/\/login$/i.test(pathname)) {
+        url.pathname = `${pathname}/login`;
+    }
     url.searchParams.set('intent', 'create');
     if (opts?.orgName?.trim()) {
         url.searchParams.set('orgName', opts.orgName.trim());
@@ -68,6 +70,9 @@ export function applyAuthHandoffToStorage(handoff: SuiteSignupHandoff): void {
     if (typeof window === 'undefined') return;
     if (handoff.intent) {
         setAuthIntent(handoff.intent);
+    } else if (handoff.orgName) {
+        // orgName without explicit intent implies create flow; clear stale intent
+        window.localStorage.removeItem(AUTH_INTENT_KEY);
     }
     // Prefill only — org bootstrap happens on /onboarding after auth.
     if (handoff.orgName) {
