@@ -1,4 +1,5 @@
 import type { Role } from '../roles';
+import type { UserOnboardingState } from '../onboarding/types';
 
 export interface Membership {
   orgId: string;
@@ -22,6 +23,12 @@ export interface User {
   // cross-org superadmin. Grants access to suite-wide collections that have
   // no orgId scope (e.g. product catalog, curated lists). Use sparingly.
   platformAdmin?: boolean;
+
+  /**
+   * In-app tour progress (TURNWRK-195). Namespaced tour ids → completed/dismissed.
+   * See `@turnwrk/shared/onboarding` and docs/projects/ONBOARDING-FRAMEWORK.md.
+   */
+  onboarding?: UserOnboardingState;
 
   createdAt: number;
   updatedAt: number;

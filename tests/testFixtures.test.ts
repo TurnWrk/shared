@@ -5,8 +5,12 @@ import {
   mergeScenario,
   TEST_DATA,
   buildManagerUser,
+  buildFullyOnboardedOnboarding,
+  buildFullyOnboardedManagerUser,
+  KNOWN_V1_TOUR_IDS,
 } from '../src/testFixtures';
 import { COLLECTIONS } from '../src/collections';
+import { isTourSettled } from '../src/onboarding';
 
 describe('testFixtures scenarios', () => {
   it('base seeds one org, its owner + platform admin, and a property', () => {
@@ -67,5 +71,15 @@ describe('testFixtures scenarios', () => {
     expect(merged.firestore[COLLECTIONS.orgs][TEST_DATA.orgId]).toMatchObject({ name: 'Renamed Org', enabledApps: { restock: true } });
     // untouched fields survive
     expect(buildManagerUser().orgIds).toEqual([TEST_DATA.orgId]);
+  });
+
+  it('buildFullyOnboardedOnboarding settles every known v1 tour (e2e no-flash)', () => {
+    const onboarding = buildFullyOnboardedOnboarding();
+    expect(Object.keys(onboarding).sort()).toEqual([...KNOWN_V1_TOUR_IDS].sort());
+    for (const id of KNOWN_V1_TOUR_IDS) {
+      expect(isTourSettled(onboarding, id)).toBe(true);
+    }
+    const user = buildFullyOnboardedManagerUser();
+    expect(user.onboarding).toEqual(onboarding);
   });
 });

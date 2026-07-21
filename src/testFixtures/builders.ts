@@ -6,6 +6,8 @@
  * import zero runtime SDK. Timestamps are a fixed epoch-ms constant so fixtures
  * are fully deterministic and reproducible.
  */
+import type { TourId, UserOnboardingState } from '../onboarding/types';
+import { checklistPreferenceTourId } from '../onboarding/logic';
 import { deriveUserIndex, type Membership } from '../types/user';
 import type { AuthUser, FirestoreDoc } from './types';
 
@@ -61,7 +63,7 @@ export const TEST_DATA = {
 export function buildOrg(overrides: FirestoreDoc = {}): FirestoreDoc {
   return {
     name: TEST_DATA.orgName,
-    enabledApps: { restock: true, cmms: true, clean: true },
+    enabledApps: { restock: true, hostfixCmms: true, clean: true },
     timezone: 'America/Chicago',
     createdAt: FIXED_NOW,
     updatedAt: FIXED_NOW,
@@ -202,8 +204,8 @@ export function buildCuratedList(overrides: FirestoreDoc = {}): FirestoreDoc {
 /**
  * A cmms_technicians profile. `userId` links it to the signed-in auth user
  * (dataService matches currentTech by `userId===user.uid` or `email===email`),
- * and `isOnboarded:true` clears the OnboardingWizard full-screen gate so the
- * technician shell actually renders (MobileView.tsx:1349).
+ * and `isOnboarded:true` + schema/home-base fields clear the OnboardingWizard
+ * gate so the technician shell actually renders (completeness check).
  */
 export function buildTechnician(overrides: FirestoreDoc = {}): FirestoreDoc {
   return {
@@ -214,6 +216,11 @@ export function buildTechnician(overrides: FirestoreDoc = {}): FirestoreDoc {
     orgIds: [TEST_DATA.orgId],
     status: 'Active',
     isOnboarded: true,
+    onboardingSchemaVersion: 1,
+    phone: '5551234567',
+    skills: ['Plumbing'],
+    homeBaseAddress: '123 Main St, Orlando, FL',
+    homeBaseGeo: { lat: 28.5, lng: -81.4, geocodedAt: FIXED_NOW },
     createdAt: FIXED_NOW,
     updatedAt: FIXED_NOW,
     ...overrides,
@@ -317,6 +324,65 @@ export function buildCleanCatalog(overrides: FirestoreDoc = {}): FirestoreDoc {
     updatedAt: FIXED_NOW,
     ...overrides,
   };
+}
+
+// ---- onboarding (User.onboarding — TURNWRK-195) ----
+
+/**
+ * v1 tour + checklist-preference ids from ONBOARDING-FRAMEWORK.md.
+ * Seed these as completed so e2e specs never flash a coach-mark overlay.
+ * Catalogs (TURNWRK-196) may add more; pass extra ids via
+ * `buildFullyOnboardedOnboarding({ tourIds })`.
+ */
+export const KNOWN_V1_TOUR_IDS: readonly TourId[] = [
+  'hostfix:dispatch-orientation',
+  'hostfix:create-work-order',
+  'hostfix:vendor-orientation',
+  'hostfix:vendor-work-order-lifecycle',
+  'restock:first-supply-list',
+  'restock:invite-cleaner-and-qr',
+  'clean:first-booking',
+  checklistPreferenceTourId('hostfix'),
+  checklistPreferenceTourId('restock'),
+  checklistPreferenceTourId('clean'),
+];
+
+/**
+ * `User.onboarding` map with every known v1 tour marked completed.
+ * Spread into user builders: `buildManagerUser({ overrides: { onboarding: buildFullyOnboardedOnboarding() } })`.
+ */
+export function buildFullyOnboardedOnboarding(
+  args: { tourIds?: readonly TourId[]; at?: number; version?: number } = {},
+): UserOnboardingState {
+  const tourIds = args.tourIds ?? KNOWN_V1_TOUR_IDS;
+  const at = args.at ?? FIXED_NOW;
+  const version = args.version ?? 1;
+  const state: UserOnboardingState = {};
+  for (const id of tourIds) {
+    state[id] = { completedAt: at, version };
+  }
+  return state;
+}
+
+/** Manager user doc with `onboarding` fully settled (no auto-start tours). */
+export function buildFullyOnboardedManagerUser(
+  args: { uid?: string; email?: string; memberships?: Membership[]; overrides?: FirestoreDoc } = {},
+): FirestoreDoc {
+  return buildManagerUser({
+    ...args,
+    overrides: {
+      onboarding: buildFullyOnboardedOnboarding(),
+      ...args.overrides,
+    },
+  });
+}
+
+/** Tech `users/{uid}` doc with `onboarding` fully settled. */
+export function buildFullyOnboardedTechUser(overrides: FirestoreDoc = {}): FirestoreDoc {
+  return buildTechUser({
+    onboarding: buildFullyOnboardedOnboarding(),
+    ...overrides,
+  });
 }
 
 // ---- auth users (paired with the firestore user docs above) ----
