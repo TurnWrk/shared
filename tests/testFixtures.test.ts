@@ -73,6 +73,20 @@ describe('testFixtures scenarios', () => {
     expect(buildManagerUser().orgIds).toEqual([TEST_DATA.orgId]);
   });
 
+  it('base / cmms:workOrders seed fully-settled onboarding (e2e no-flash)', () => {
+    const base = resolveScenario('base');
+    const manager = base.firestore[COLLECTIONS.users][TEST_DATA.managerId] as {
+      onboarding?: Record<string, unknown>;
+    };
+    expect(manager.onboarding).toEqual(buildFullyOnboardedOnboarding());
+
+    const cmms = resolveScenario('cmms:workOrders');
+    const tech = cmms.firestore[COLLECTIONS.users][TEST_DATA.technicianId] as {
+      onboarding?: Record<string, unknown>;
+    };
+    expect(tech.onboarding).toEqual(buildFullyOnboardedOnboarding());
+  });
+
   it('buildFullyOnboardedOnboarding settles every known v1 tour (e2e no-flash)', () => {
     const onboarding = buildFullyOnboardedOnboarding();
     expect(Object.keys(onboarding).sort()).toEqual([...KNOWN_V1_TOUR_IDS].sort());

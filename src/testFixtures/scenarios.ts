@@ -9,7 +9,8 @@ import { COLLECTIONS } from '../collections';
 import {
   TEST_DATA,
   buildOrg,
-  buildManagerUser,
+  buildFullyOnboardedManagerUser,
+  buildFullyOnboardedTechUser,
   buildPlatformAdminUser,
   buildProperty,
   buildCategory,
@@ -18,7 +19,6 @@ import {
   buildResupplyToken,
   buildCuratedList,
   buildTechnician,
-  buildTechUser,
   buildWorkOrder,
   buildCustomer,
   buildBooking,
@@ -59,7 +59,8 @@ export const base: Scenario = (overrides) =>
       firestore: {
         [COLLECTIONS.orgs]: { [TEST_DATA.orgId]: buildOrg() },
         [COLLECTIONS.users]: {
-          [TEST_DATA.managerId]: buildManagerUser(),
+          // Fully-settled onboarding so e2e never flashes coach-marks (TURNWRK-203).
+          [TEST_DATA.managerId]: buildFullyOnboardedManagerUser(),
           [TEST_DATA.adminId]: buildPlatformAdminUser(),
         },
         [COLLECTIONS.properties]: { [TEST_DATA.propertyId]: buildProperty() },
@@ -83,8 +84,8 @@ export const multiTenantTwoOrgs: Scenario = (overrides) =>
           [TEST_DATA.orgBId]: buildOrg({ name: TEST_DATA.orgBName }),
         },
         [COLLECTIONS.users]: {
-          [TEST_DATA.managerId]: buildManagerUser(),
-          [TEST_DATA.managerBId]: buildManagerUser({
+          [TEST_DATA.managerId]: buildFullyOnboardedManagerUser(),
+          [TEST_DATA.managerBId]: buildFullyOnboardedManagerUser({
             uid: TEST_DATA.managerBId,
             email: TEST_DATA.managerBEmail,
             memberships: [{ orgId: TEST_DATA.orgBId, roles: ['owner'] }],
@@ -166,7 +167,7 @@ export const cmmsWorkOrders: Scenario = (overrides) => {
         ...b.firestore,
         [COLLECTIONS.users]: {
           ...b.firestore[COLLECTIONS.users],
-          [TEST_DATA.technicianId]: buildTechUser(),
+          [TEST_DATA.technicianId]: buildFullyOnboardedTechUser(),
         },
         [COLLECTIONS.cmms_technicians]: { [TEST_DATA.technicianId]: buildTechnician() },
         [COLLECTIONS.cmms_workOrders]: {
