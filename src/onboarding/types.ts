@@ -69,3 +69,23 @@ export type TourSuppressionStorageKey =
   | 'restock:tours-off'
   | 'clean:tours-off'
   | (string & {});
+
+/** App surface that owns a catalog (TURNWRK-196). */
+export type OnboardingCatalogApp = 'hostfix' | 'restock' | 'clean';
+
+/** Persona within an app (admin vs vendor SPA vs clean operator). */
+export type OnboardingCatalogPersona = 'admin' | 'vendor' | 'operator';
+
+/**
+ * Versioned tour + checklist content for one app/persona.
+ * English-only in shared; apps render as-is until locale files exist.
+ */
+export interface OnboardingCatalog {
+  id: string;
+  app: OnboardingCatalogApp;
+  persona: OnboardingCatalogPersona;
+  killSwitchKey: TourSuppressionStorageKey;
+  tours: TourDefinition[];
+  /** Empty for personas that use a setup wizard instead (hostfix vendor). */
+  checklist: ChecklistItemDefinition[];
+}

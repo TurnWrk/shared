@@ -7,6 +7,7 @@
  * are fully deterministic and reproducible.
  */
 import type { TourId, UserOnboardingState } from '../onboarding/types';
+import { allCatalogTourIds } from '../onboarding/catalogs';
 import { checklistPreferenceTourId } from '../onboarding/logic';
 import { deriveUserIndex, type Membership } from '../types/user';
 import type { AuthUser, FirestoreDoc } from './types';
@@ -329,19 +330,12 @@ export function buildCleanCatalog(overrides: FirestoreDoc = {}): FirestoreDoc {
 // ---- onboarding (User.onboarding — TURNWRK-195) ----
 
 /**
- * v1 tour + checklist-preference ids from ONBOARDING-FRAMEWORK.md.
+ * v1 tour + checklist-preference ids (catalogs TURNWRK-196 + preference pseudo-tours).
  * Seed these as completed so e2e specs never flash a coach-mark overlay.
- * Catalogs (TURNWRK-196) may add more; pass extra ids via
- * `buildFullyOnboardedOnboarding({ tourIds })`.
+ * Pass extra ids via `buildFullyOnboardedOnboarding({ tourIds })` when catalogs grow mid-PR.
  */
 export const KNOWN_V1_TOUR_IDS: readonly TourId[] = [
-  'hostfix:dispatch-orientation',
-  'hostfix:create-work-order',
-  'hostfix:vendor-orientation',
-  'hostfix:vendor-work-order-lifecycle',
-  'restock:first-supply-list',
-  'restock:invite-cleaner-and-qr',
-  'clean:first-booking',
+  ...allCatalogTourIds(),
   checklistPreferenceTourId('hostfix'),
   checklistPreferenceTourId('restock'),
   checklistPreferenceTourId('clean'),
