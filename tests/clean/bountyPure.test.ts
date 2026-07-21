@@ -8,6 +8,7 @@ import {
   computeBountyAmountMinor,
   checkBountyCaps,
   drawBountySpot,
+  bountyDrawCommitPreimage,
 } from '../../src/clean/bountyDraw';
 import {
   checkCaptureWindow,
@@ -38,6 +39,12 @@ describe('bountyDraw', () => {
     const a = mulberry32(42);
     const b = mulberry32(42);
     expect([a(), a(), a()]).toEqual([b(), b(), b()]);
+  });
+
+  it('bountyDrawCommitPreimage is stable for commit-reveal (TURNWRK-173)', () => {
+    expect(bountyDrawCommitPreimage(7, 'org:b1:2026-07-20', 'abc')).toBe(
+      '7\norg:b1:2026-07-20\nabc',
+    );
   });
 
   it('filterEligibleSpots respects active, requiresParameter, and assumed categories', () => {

@@ -3,8 +3,10 @@
  *
  * The draw is the feature's audit-integrity core: cleaners must not be able
  * to predict the spot, and operators must be able to prove it was random.
- * The server seeds `mulberry32` with a crypto-random seed and logs the seed +
- * roll + candidate list in the draw event, so any draw can be replayed.
+ * The server seeds `mulberry32` with a crypto-random seed, **commits**
+ * `SHA-256(seed‖binding‖nonce)` in `bounty.draw_committed` before the roll
+ * (TURNWRK-173), then reveals the seed in the outcome event so any draw can
+ * be replayed and the commitment verified.
  */
 import type { CleanBountySpot, CleanParamSnapshot } from '../types/clean';
 
@@ -129,4 +131,17 @@ export function drawBountySpot(
 ): CleanBountySpot {
   if (spots.length === 0) throw new Error('drawBountySpot: empty spot list');
   return spots[Math.min(spots.length - 1, Math.floor(rand() * spots.length))];
+}
+
+/**
+ * Canonical preimage for bounty draw commit-reveal (TURNWRK-173).
+ * Server hashes with SHA-256 → hex; binding should include org + booking +
+ * drawn date so a commitment cannot be replayed onto another job.
+ */
+export function bountyDrawCommitPreimage(
+  seed: number,
+  binding: string,
+  nonce: string,
+): string {
+  return `${seed}\n${binding}\n${nonce}`;
 }
