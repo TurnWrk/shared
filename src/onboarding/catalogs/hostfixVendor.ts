@@ -17,11 +17,21 @@ export const HOSTFIX_VENDOR_CATALOG: OnboardingCatalog = {
       trigger: 'mount',
       version: 1,
       steps: [
+        // The center FAB doubles as the Home entry — the old separate "Homes"
+        // step anchored the same element, so the two are folded into one.
         {
-          id: 'tab-homes',
-          anchor: 'hostfix-vendor-tab-homes',
-          title: 'Homes',
-          body: 'Properties assigned to you and upcoming jobs at each.',
+          id: 'home-fab',
+          anchor: 'hostfix-vendor-fab',
+          title: 'Home & quick actions',
+          body: 'Your properties and their chats live here — and the button also logs a quick work order wherever you are.',
+          placement: 'top',
+          advanceOn: 'next',
+        },
+        {
+          id: 'tab-schedule',
+          anchor: 'hostfix-vendor-tab-schedule',
+          title: 'Tasks',
+          body: 'Upcoming work across the week.',
           placement: 'top',
           advanceOn: 'next',
         },
@@ -34,14 +44,6 @@ export const HOSTFIX_VENDOR_CATALOG: OnboardingCatalog = {
           advanceOn: 'next',
         },
         {
-          id: 'tab-schedule',
-          anchor: 'hostfix-vendor-tab-schedule',
-          title: 'Schedule',
-          body: 'Upcoming work across the week.',
-          placement: 'top',
-          advanceOn: 'next',
-        },
-        {
           id: 'tab-pay',
           anchor: 'hostfix-vendor-tab-pay',
           title: 'Pay',
@@ -50,11 +52,11 @@ export const HOSTFIX_VENDOR_CATALOG: OnboardingCatalog = {
           advanceOn: 'next',
         },
         {
-          id: 'fab',
-          anchor: 'hostfix-vendor-fab',
-          title: 'Quick actions',
-          body: 'Create a quick work order or jump to common tools from here.',
-          placement: 'left',
+          id: 'tab-account',
+          anchor: 'hostfix-vendor-tab-account',
+          title: 'Account',
+          body: 'Profile, availability, and notifications — plus tour replays.',
+          placement: 'top',
           advanceOn: 'next',
         },
       ],

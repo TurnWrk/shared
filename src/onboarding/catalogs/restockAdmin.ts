@@ -57,6 +57,57 @@ export const RESTOCK_ADMIN_CATALOG: OnboardingCatalog = {
   ],
   tours: [
     {
+      // Orientation over the desktop sidebar. `surface`-triggered (not `mount`)
+      // because RestockTourHost is global: the host arms this only on the
+      // Overview dashboard with the desktop sidebar visible — which is exactly
+      // where the signup wizard lands, giving the wizard→tour handoff.
+      id: 'restock:dashboard-orientation',
+      trigger: 'surface',
+      version: 1,
+      steps: [
+        {
+          id: 'nav-overview',
+          anchor: 'restock-nav-overview',
+          title: 'Overview',
+          body: 'Your getting-started checklist and recent resupply activity live here.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+        {
+          id: 'nav-properties',
+          anchor: 'restock-nav-properties',
+          title: 'Properties',
+          body: 'Each home’s supplies, par levels, and inspect QR code.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+        {
+          id: 'nav-products',
+          anchor: 'restock-nav-products',
+          title: 'Master list',
+          body: 'The product catalog cleaners check on every turnover.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+        {
+          id: 'nav-inbox',
+          anchor: 'restock-nav-inbox',
+          title: 'Requests',
+          body: 'Resupply requests from cleaners land here for approval.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+        {
+          id: 'nav-cleaners',
+          anchor: 'restock-nav-cleaners',
+          title: 'Cleaners',
+          body: 'Invite cleaners and share inspect access.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+      ],
+    },
+    {
       id: 'restock:first-supply-list',
       trigger: 'surface',
       version: 1,

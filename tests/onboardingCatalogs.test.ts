@@ -101,10 +101,14 @@ describe('onboarding catalogs (TURNWRK-196)', () => {
       'hostfix:create-work-order',
     ]);
     expect(RESTOCK_ADMIN_CATALOG.tours.map((t) => t.id)).toEqual([
+      'restock:dashboard-orientation',
       'restock:first-supply-list',
       'restock:invite-cleaner-and-qr',
     ]);
-    expect(CLEAN_OPERATOR_CATALOG.tours.map((t) => t.id)).toEqual(['clean:first-booking']);
+    expect(CLEAN_OPERATOR_CATALOG.tours.map((t) => t.id)).toEqual([
+      'clean:operator-orientation',
+      'clean:first-booking',
+    ]);
     expect(HOSTFIX_ADMIN_CATALOG.checklist).toHaveLength(5);
     expect(RESTOCK_ADMIN_CATALOG.checklist).toHaveLength(6);
     expect(CLEAN_OPERATOR_CATALOG.checklist).toHaveLength(7);

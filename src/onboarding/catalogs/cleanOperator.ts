@@ -63,6 +63,57 @@ export const CLEAN_OPERATOR_CATALOG: OnboardingCatalog = {
   ],
   tours: [
     {
+      // Orientation over the AppShell sidebar (desktop only — mobile nav is a
+      // hamburger sheet). `surface`-triggered: the AppShell-level host arms it
+      // when the desktop nav is visible; the checklist remains clean's primary
+      // onboarding (this tour is a light nav layer on top).
+      id: 'clean:operator-orientation',
+      trigger: 'surface',
+      version: 1,
+      steps: [
+        {
+          id: 'nav-bookings',
+          anchor: 'clean-nav-bookings',
+          title: 'Bookings',
+          body: 'The day-to-day queue — every job from booked to paid.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+        {
+          id: 'nav-scheduler',
+          anchor: 'clean-nav-scheduler',
+          title: 'Scheduler',
+          body: 'Calendar view of who cleans what, when.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+        {
+          id: 'nav-payments',
+          anchor: 'clean-nav-payments',
+          title: 'Payments',
+          body: 'Job payments, invoices, and dunning in one place.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+        {
+          id: 'nav-services',
+          anchor: 'clean-nav-services',
+          title: 'Services',
+          body: 'What customers can book — pricing and duration.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+        {
+          id: 'nav-settings',
+          anchor: 'clean-nav-settings',
+          title: 'Settings',
+          body: 'Booking site, branding, payment policy, and templates.',
+          placement: 'right',
+          advanceOn: 'next',
+        },
+      ],
+    },
+    {
       id: 'clean:first-booking',
       trigger: 'surface',
       version: 1,
