@@ -21,6 +21,11 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:run
       - run: npm run build
+      # @turnwrk/email is the second package in this repo (TURNWRK-221).
+      - run: npm ci
+        working-directory: email
+      - run: npm run typecheck
+        working-directory: email
       # Suite-local only: skips when sibling apps are absent (this repo CI).
       # Full shared + email + testFixtures parity (TURNWRK-134).
       - run: npm run check:vendored

@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
-# Fail-closed: canonical @turnwrk/email (suite email/) must match app packages/email.
-# Lives in turnwrk-shared so GitHub CI can ship the script; canonical source is
-# ../email when the suite tree is present. Normalizes ESM `.js` suffixes on
-# relative imports so hostfix's Turbopack-friendly extensionless tree compares
-# equal to the canonical `.js` tree. Standalone / no siblings → skip exit 0.
+# Fail-closed: canonical @turnwrk/email (this repo's email/, TURNWRK-221) must
+# match app packages/email. Normalizes ESM `.js` suffixes on relative imports
+# so hostfix's Turbopack-friendly extensionless tree compares equal to the
+# canonical `.js` tree. Standalone / no siblings → skip exit 0.
 set -euo pipefail
 
 SHARED_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SUITE="$(cd "$SHARED_ROOT/.." && pwd)"
-ROOT="$SUITE/email"
+ROOT="$SHARED_ROOT/email"
 
 if [[ ! -d "$ROOT/src" ]]; then
-  echo "skip: canonical email/ not adjacent to turnwrk-shared (standalone checkout)"
-  exit 0
+  echo "FAIL: canonical email/ missing from turnwrk-shared (expected $ROOT/src)" >&2
+  exit 1
 fi
 
 CHECKS=(
@@ -55,7 +54,7 @@ for entry in "${CHECKS[@]}"; do
   found=1
   if [[ ! -d "$dest" ]]; then
     echo "FAIL: $app missing vendored email at $dest" >&2
-    echo "  Fix: .claude/skills/vendor-shared-package/scripts/sync-email-to-*.sh" >&2
+    echo "  Fix: scripts/sync-email-consumer.sh <app-root> [--strip-js]" >&2
     failed=1
     continue
   fi
