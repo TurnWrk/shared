@@ -1,0 +1,106 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if the file is an image
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // Helper function to check if the file is audio (for voice notes)
+    function isAudio() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+
+    // Helper function to check if the file is video
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+
+    // Helper function to validate file size (e.g., max 10MB)
+    function isValidSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Inspections path (includes images and voice notes)
+    match /inspections/{workOrderId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+                   && (isImage() || isAudio()) 
+                   && isValidSize();
+    }
+
+    // Work Orders path (includes before/after photos and receipts)
+    match /workorders/{workOrderId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+                   && isImage() 
+                   && isValidSize();
+    }
+
+    // Properties path (includes cover photos and storage location photos)
+    match /properties/{propertyId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() 
+                   && isImage() 
+                   && isValidSize();
+    }
+
+    // Relay Chat media (images, video, audio voice notes)
+    match /relay-chat/{propertyId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+                   && (isImage() || isAudio() || isVideo())
+                   && request.resource.size < 50 * 1024 * 1024;
+    }
+
+    // Audit log archive - written by Cloud Functions admin SDK only (bypasses rules).
+    // Clients must never read or write these files directly.
+    match /audit-archive/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Org branding assets (logo, watermark). Publicly readable so the image
+    // URL works on printouts and as a watermark without auth headers; writes
+    // are restricted (admin SDK uploads bypass rules — see app/api/orgs/[orgId]/logo).
+    match /orgs/{orgId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated()
+                   && isImage()
+                   && request.resource.size < 2 * 1024 * 1024;
+    }
+
+    // Standalone vendor expense receipt photos (vendorReceipts docs).
+    // Path embeds the owning vendor's uid, so writes are owner-scoped; reads
+    // stay open to any authenticated user (dispatch review later).
+    match /vendor-receipts/{vendorId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+                   && request.auth.uid == vendorId
+                   && isImage()
+                   && isValidSize();
+    }
+
+    // Vendor profile photos (avatars). Path embeds the owning vendor's uid,
+    // so writes are owner-scoped; reads stay open to any authenticated user
+    // (avatars are shown across dispatch/PM views). Tokenized download URLs
+    // also work in <img> tags regardless of the read rule.
+    match /vendor-avatars/{vendorId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated()
+                   && request.auth.uid == vendorId
+                   && isImage()
+                   && isValidSize();
+    }
+
+    // Deny access to any other paths by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

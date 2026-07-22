@@ -1,0 +1,75 @@
+name: Deploy Firebase rules
+
+# Owner-triggered deploy of Firestore rules / indexes / Storage rules to the
+# shared `turnwrk` project (TURNWRK-220). Never runs automatically — the
+# workflow_dispatch button IS the deploy gate. App repos never deploy rules.
+#
+# Secret: FIREBASE_SERVICE_ACCOUNT — full JSON key for a service account on
+# project `turnwrk` with roles:
+#   Firebase Rules Admin        (roles/firebaserules.admin — firestore + storage rules releases)
+#   Cloud Datastore Index Admin (roles/datastore.indexAdmin — index deploys)
+# Created and held by the owner.
+#
+# Index deletions: firebase-tools only deletes indexes missing from
+# firestore.indexes.json when --force is passed; without it, non-interactive
+# runs keep extra indexes and print a warning. Leave force off unless you have
+# reviewed which indexes will be dropped.
+
+on:
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'What to deploy'
+        type: choice
+        default: rules
+        options:
+          - rules
+          - indexes
+          - storage
+          - rules+indexes
+          - rules+indexes+storage
+      force:
+        description: 'Pass --force (auto-confirms index deletions)'
+        type: boolean
+        default: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Write service-account credentials
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [[ -z "$SA_JSON" ]]; then
+            echo "FIREBASE_SERVICE_ACCOUNT secret is not set" >&2
+            exit 1
+          fi
+          printf '%s' "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
+      - name: Deploy ${{ inputs.targets }}
+        run: |
+          case "${{ inputs.targets }}" in
+            rules)                  only="firestore:rules" ;;
+            indexes)                only="firestore:indexes" ;;
+            storage)                only="storage" ;;
+            rules+indexes)          only="firestore:rules,firestore:indexes" ;;
+            rules+indexes+storage)  only="firestore:rules,firestore:indexes,storage" ;;
+            *) echo "unknown targets '${{ inputs.targets }}'" >&2; exit 1 ;;
+          esac
+          force_flag=""
+          if [[ "${{ inputs.force }}" == "true" ]]; then
+            force_flag="--force"
+          fi
+          npx --yes firebase-tools@14 deploy --only "$only" --project turnwrk --non-interactive $force_flag
+
+      - name: Scrub credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"

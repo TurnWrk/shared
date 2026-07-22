@@ -1,0 +1,942 @@
+rules_version = '2';
+
+// ============================================================================
+// Canonical Firestore rules for the turnwrk suite (project: "turnwrk").
+//
+// This file is the single source of truth for both hostfix-cmms and restock.
+// The restock repo's firestore.rules.reference is NOT deployed.
+//
+// Model:
+//   - Every org-scoped document carries `orgId`.
+//   - Access is granted by the user's `users/{uid}.orgIds` / `adminOrgIds`
+//     denormalized membership lists.
+//   - `platformAdmin` on a user doc grants cross-org privileges.
+//   - Guest-QR flows (restock) use `restock_propertyTokens` as a bearer.
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // AUTH & MEMBERSHIP HELPERS
+    // ============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isRealUser() {
+      return request.auth != null &&
+             !request.auth.token.firebase.sign_in_provider.matches('anonymous');
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function userExists() {
+      return isRealUser() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isMemberOf(orgId) {
+      return userExists()
+        && 'orgIds' in userDoc()
+        && userDoc().orgIds is list
+        && orgId in userDoc().orgIds;
+    }
+
+    function isOrgAdmin(orgId) {
+      return userExists()
+        && 'adminOrgIds' in userDoc()
+        && userDoc().adminOrgIds is list
+        && orgId in userDoc().adminOrgIds;
+    }
+
+    function isPlatformAdmin() {
+      // Missing field must not throw — list queries OR into isPlatformAdmin()
+      // after canWriteOrgs/hasAny can't be proven, and an evaluation error
+      // denies the whole read (cmms_technicians array-contains-any hung the
+      // vendor shell on isLoading forever for users without the field set).
+      return userExists()
+        && 'platformAdmin' in userDoc()
+        && userDoc().platformAdmin == true;
+    }
+
+    // Shorthand used by every org-scoped write rule: a caller is authorized
+    // if they're a member of the target org OR a platform admin. Platform
+    // admins must be able to operate across orgs even when they have no
+    // explicit membership (e.g. the dispatch company's superadmin account).
+    function canWriteOrg(orgId) {
+      return isMemberOf(orgId) || isPlatformAdmin();
+    }
+    function canAdminOrg(orgId) {
+      return isOrgAdmin(orgId) || isPlatformAdmin();
+    }
+
+    // Variant for docs whose org affiliation is a *list* (e.g. technicians
+    // that service multiple client orgs). Grants access if the user belongs
+    // to any org the doc is affiliated with, or if they're a platform admin.
+    function canWriteOrgs(orgIds) {
+      return (orgIds is list
+          && userExists()
+          && 'orgIds' in userDoc()
+          && userDoc().orgIds is list
+          && orgIds.hasAny(userDoc().orgIds))
+          || isPlatformAdmin();
+    }
+
+    function isActivePropertyToken(tokenId, propertyId) {
+      return exists(/databases/$(database)/documents/restock_propertyTokens/$(tokenId)) &&
+             get(/databases/$(database)/documents/restock_propertyTokens/$(tokenId)).data.propertyId == propertyId &&
+             get(/databases/$(database)/documents/restock_propertyTokens/$(tokenId)).data.isActive == true;
+    }
+
+    // ============================================================
+    // VALIDATION
+    // ============================================================
+
+    function validOrgScoped(data) {
+      return data.orgId is string && data.orgId.size() > 0;
+    }
+
+    function isValidProperty(data) {
+      return validOrgScoped(data)
+          && (!('address' in data) || data.address is string)
+          && (!('isOccupied' in data) || data.isOccupied is bool);
+    }
+
+    function isValidOwner(data) {
+      return validOrgScoped(data)
+          && data.name is string
+          && (!('phone' in data) || data.phone is string)
+          && (!('email' in data) || data.email is string)
+          && (!('linkedUserId' in data) || data.linkedUserId is string);
+    }
+
+    function isValidWorkOrder(data) {
+      return validOrgScoped(data)
+          && (!('propertyId' in data) || data.propertyId is string)
+          && (!('status' in data) || (data.status is string && data.status in ['Pending Approval', 'Backlog', 'Scheduled', 'In Progress', 'Review', 'Completed', 'Cancelled']))
+          && (!('priority' in data) || (data.priority is string && data.priority in ['High', 'Medium', 'Low']))
+          && (!('type' in data) || (data.type is string && data.type in ['Repair', 'Onboarding', 'GuestExperience', 'Resupply', 'PreventativeMaintenance', 'Cleaning', 'Turnover']))
+          && (!('estimatedHours' in data) || data.estimatedHours is number)
+          && (!('estimatedCost' in data) || data.estimatedCost is number);
+    }
+
+    function isValidTechnician(data) {
+      return (data.orgIds is list && data.orgIds.size() > 0)
+          && (!('name' in data) || data.name is string)
+          && (!('status' in data) || (data.status is string && data.status in ['Active', 'Paused', 'Archived', 'Onboarding']))
+          && (!('isOnboarded' in data) || data.isOnboarded is bool);
+    }
+
+    // Self-edits (a vendor updating their own profile) may carry an empty
+    // orgIds list — vendors are org-independent. Same field-type checks as
+    // isValidTechnician but without the size() > 0 gate.
+    function isValidTechnicianSelfEdit(data) {
+      return data.orgIds is list
+          && (!('name' in data) || data.name is string)
+          && (!('status' in data) || (data.status is string && data.status in ['Active', 'Paused', 'Archived', 'Onboarding']))
+          && (!('isOnboarded' in data) || data.isOnboarded is bool);
+    }
+
+    function isValidResupplyRequest(data) {
+      return validOrgScoped(data)
+          && data.propertyId is string
+          && data.status in ['pending', 'approved', 'ordered', 'fulfilled', 'rejected']
+          && data.source in [
+               'manual', 'relay-chat', 'restock-app', 'guest-qr',
+               'sms-surge', 'telegram', 'purchase-link-sms'
+             ]
+          && data.items is list;
+    }
+
+    function isValidPurchaseRequest(data) {
+      return validOrgScoped(data)
+          && data.propertyId is string
+          && (!('status' in data) || data.status in ['pending', 'approved', 'purchased', 'delivered', 'rejected']);
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0
+          && data.source in ['amazon', 'walmart']
+          && data.categoryId is string
+          && data.itemType is string;
+    }
+
+    function isValidCategory(data) {
+      return data.name is string && data.slug is string;
+    }
+
+    // ============================================================
+    // SHARED: orgs
+    // ============================================================
+
+    // Privileged suite fields: entitlements, plan flags, SaaS billing, status.
+    // Org admins may update branding/settings but must not self-grant apps or
+    // billing. Platform Admin (or Admin SDK) is the only client-writable path.
+    function changesPrivilegedOrgFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['enabledApps', 'features', 'billing', 'status']);
+    }
+
+    match /orgs/{orgId} {
+      allow read: if isMemberOf(orgId) || isPlatformAdmin();
+      // Any real user may create an org; a server-side hook must then
+      // attach the creator as owner (see docs/unification-plan.md).
+      allow create: if isRealUser()
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+      allow update: if isPlatformAdmin()
+        || (isOrgAdmin(orgId) && !changesPrivilegedOrgFields());
+      allow delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // SHARED: users
+    // ============================================================
+
+    match /users/{userId} {
+      allow read: if request.auth.uid == userId || isPlatformAdmin();
+
+      // First-time self-create: empty memberships, no platformAdmin escalation.
+      allow create: if (isRealUser()
+        && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.memberships.size() == 0
+        && request.resource.data.orgIds.size() == 0
+        && request.resource.data.adminOrgIds.size() == 0
+        && request.resource.data.platformAdmin != true)
+        || isPlatformAdmin();
+
+      // Self-update: profile + heartbeat + onboarding tour state only.
+      // Privileged fields (memberships, platformAdmin, subscriptionStatus) require
+      // platformAdmin / Admin SDK — blocks client Pro self-escalation.
+      allow update: if request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+             'displayName', 'photoURL', 'email',
+             'lastLoginAt', 'updatedAt',
+             'stripeCustomerId',
+             'onboarding'
+           ]);
+
+      // Platform admin (typically via Admin SDK invite flow) updates memberships.
+      allow update: if isPlatformAdmin();
+
+      allow delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // SHARED: properties, owners, resupplyRequests, purchaseRequests, vendorReceipts
+    // ============================================================
+
+    match /properties/{propertyId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && isValidProperty(request.resource.data);
+      allow update: if canWriteOrg(resource.data.orgId)
+        && isValidProperty(request.resource.data)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
+    match /owners/{ownerId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      // FUTURE: owner mini-dashboard read path. Enable when linkedUserId is
+      // populated and the dashboard ships.
+      // allow read: if isRealUser() && resource.data.linkedUserId == request.auth.uid;
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && isValidOwner(request.resource.data);
+      allow update: if canWriteOrg(resource.data.orgId)
+        && isValidOwner(request.resource.data)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
+    match /resupplyRequests/{requestId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+
+      // Guest-QR flow: anonymous create permitted when a valid, active
+      // PropertyToken covers the propertyId. Same gate covers the Restock
+      // /inspect form (cleaners are unauthenticated; the token is the only
+      // bearer of identity), distinguished by source.
+      allow create: if isValidResupplyRequest(request.resource.data)
+        && request.resource.data.source in ['guest-qr', 'restock-app']
+        && ('tokenId' in request.resource.data)
+        && isActivePropertyToken(request.resource.data.tokenId, request.resource.data.propertyId);
+
+      // Member-originated create (manual, relay-chat, authenticated restock-app,
+      // or inbound SMS/Telegram/purchase-link sources written by Admin SDK —
+      // client sources stay in the list for validation symmetry).
+      allow create: if isValidResupplyRequest(request.resource.data)
+        && request.resource.data.source in [
+             'manual', 'relay-chat', 'restock-app',
+             'sms-surge', 'telegram', 'purchase-link-sms'
+           ]
+        && canWriteOrg(request.resource.data.orgId);
+
+      allow update: if canWriteOrg(resource.data.orgId)
+        && isValidResupplyRequest(request.resource.data)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
+    match /purchaseRequests/{requestId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update: if canWriteOrg(request.resource.data.orgId)
+        && isValidPurchaseRequest(request.resource.data);
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
+    function canReadVendor(vendorData) {
+      return isPlatformAdmin()
+        || (userExists() && vendorData.userId == request.auth.uid)
+        || (vendorData.orgIds is list && vendorData.orgIds.hasAny(userDoc().orgIds));
+    }
+
+    match /vendors/{vendorId} {
+      // Org-independent vendor identity; phone is the canonical match key.
+      allow read: if canReadVendor(resource.data);
+      // Profile writes go through Admin SDK (invite/migration flows). Linked
+      // vendors may update their own non-org identity fields.
+      allow create: if isPlatformAdmin();
+      allow update: if isPlatformAdmin()
+        || (userExists()
+            && resource.data.userId == request.auth.uid
+            && request.resource.data.userId == resource.data.userId
+            && request.resource.data.phone == resource.data.phone);
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /vendorAffiliations/{affiliationId} {
+      allow read: if canWriteOrg(resource.data.orgId)
+        || (userExists()
+            && exists(/databases/$(database)/documents/vendors/$(resource.data.vendorId))
+            && get(/databases/$(database)/documents/vendors/$(resource.data.vendorId)).data.userId == request.auth.uid);
+      allow create, update, delete: if isPlatformAdmin()
+        || canWriteOrg(request.resource.data.orgId);
+    }
+
+    match /vendorReceipts/{receiptId} {
+      // Standalone vendor expense receipts (cmms tech Pay tab today; restock
+      // authenticated cleaners later — they need a users/{uid} doc with org
+      // membership for canWriteOrg). Vendor-owned (vendorId == auth uid);
+      // org members may also read for a future dispatch review flow.
+      allow read: if (isRealUser() && resource.data.vendorId == request.auth.uid)
+        || canWriteOrg(resource.data.orgId);
+      allow create: if isRealUser()
+        && request.resource.data.vendorId == request.auth.uid
+        && request.resource.data.orgId is string
+        && canWriteOrg(request.resource.data.orgId)
+        && (!('propertyId' in request.resource.data) || request.resource.data.propertyId is string);
+      allow update: if ((isRealUser() && resource.data.vendorId == request.auth.uid)
+          || isPlatformAdmin())
+        && request.resource.data.vendorId == resource.data.vendorId
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if (isRealUser() && resource.data.vendorId == request.auth.uid)
+        || isPlatformAdmin();
+    }
+
+    // ============================================================
+    // CMMS-SCOPED (cmms_*)
+    // ============================================================
+
+    match /cmms_workOrders/{woId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      // Any org member may create (incl. vendors raising quick work orders).
+      // NOTE: createdByTechId/assignedTechId are NOT bound to the caller here —
+      // technician doc ids are not request.auth.uid, so a uid match would be wrong.
+      // Treat createdByTechId as advisory provenance for display/audit, not proof.
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && isValidWorkOrder(request.resource.data);
+      // System-generated PM work orders: protect core content from client edits.
+      // Use .get() — many manual WOs omit `source`; reading a missing field errors and denies.
+      allow update: if canWriteOrg(resource.data.orgId)
+        && isValidWorkOrder(request.resource.data)
+        && request.resource.data.orgId == resource.data.orgId
+        && (resource.data.get('source', 'manual') != 'system'
+            || (request.resource.data.title == resource.data.title
+                && request.resource.data.description == resource.data.description
+                && request.resource.data.type == resource.data.type));
+      allow delete: if canWriteOrg(resource.data.orgId);
+    }
+
+    // Owner-facing work-order estimates. The public /estimate/{token} page and
+    // the approve/decline writeback resolve these server-side via the Admin SDK,
+    // so there is deliberately NO public read here. Client writes go through the
+    // Admin-SDK API routes; these rules are defense-in-depth + org-scoped read.
+    match /cmms_estimates/{estimateId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.workOrderId is string
+        && request.resource.data.amountCents is number;
+      allow update, delete: if canWriteOrg(resource.data.orgId);
+    }
+
+    function isOwnTechnicianProfile(techId) {
+      return userExists() && (
+        techId == request.auth.uid ||
+        ('userId' in resource.data && resource.data.userId == request.auth.uid)
+      );
+    }
+
+    match /cmms_technicians/{techId} {
+      // Technicians are multi-org (orgIds[]) and also carry a primary orgId.
+      // Vendors may read/update their own profile doc by uid match.
+      //
+      // Split get/list: OR-ing isOwnTechnicianProfile into a single `read`
+      // rule breaks list queries with evaluation errors. Own-profile stays
+      // on get. List allows orgId (equality/`in` — same as properties) OR
+      // orgIds overlap; client subscribeToTechnicians uses orgId scoping
+      // because array-contains-any cannot be proven against userDoc().orgIds.
+      //
+      // isPlatformAdmin() MUST be top-level on list: nesting it inside
+      // canWriteOrg(resource.data.orgId) still makes the query planner
+      // require an orgId constraint, so platform-admin unscoped listens
+      // (dataService scopeOrgIds === undefined) fail permission-denied
+      // after the local cache snapshot (ok then error).
+      allow get: if isPlatformAdmin()
+        || ('orgId' in resource.data && canWriteOrg(resource.data.orgId))
+        || ('orgIds' in resource.data && canWriteOrgs(resource.data.orgIds))
+        || isOwnTechnicianProfile(techId);
+      allow list: if isPlatformAdmin()
+        || ('orgId' in resource.data && canWriteOrg(resource.data.orgId))
+        || ('orgIds' in resource.data && canWriteOrgs(resource.data.orgIds));
+      allow create: if canWriteOrgs(request.resource.data.orgIds)
+        && isValidTechnician(request.resource.data);
+      // Org members must keep the stricter validator (non-empty orgIds). A
+      // vendor editing their OWN profile may have an empty orgIds list, but
+      // must not change it (== pin prevents self-granting org membership).
+      allow update: if
+          (canWriteOrgs(resource.data.orgIds) && isValidTechnician(request.resource.data))
+       || (isOwnTechnicianProfile(techId)
+           && isValidTechnicianSelfEdit(request.resource.data)
+           && request.resource.data.orgIds == resource.data.orgIds);
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /cmms_bookings/{bookingId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      // Normal writes go through the Admin SDK (booking sync). Platform
+      // admins may write directly from any client for rescue/debug work.
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /cmms_calendarSyncs/{syncId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /cmms_pmTemplates/{templateId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /cmms_pmSchedules/{scheduleId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /cmms_techRoutes/{routeId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /cmms_relayChatMessages/{messageId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId);
+      allow update: if canWriteOrg(resource.data.orgId);
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /cmms_chatMeta/{propertyId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update: if canWriteOrg(request.resource.data.orgId);
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /cmms_propertyMappings/{mappingId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      // Normal writes come from the Akita crawl via the Admin SDK.
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /cmms_actionItems/{itemId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update: if canWriteOrg(request.resource.data.orgId);
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /cmms_apiTokens/{tokenId} {
+      allow read: if (resource.data.userId == request.auth.uid) || isPlatformAdmin();
+      allow create: if (isRealUser() && request.resource.data.userId == request.auth.uid)
+        || isPlatformAdmin();
+      allow update, delete: if (resource.data.userId == request.auth.uid) || isPlatformAdmin();
+    }
+
+    match /cmms_auditLogs/{logId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId);
+      allow update, delete: if false;
+    }
+
+    match /cmms_pushSubscriptions/{subId} {
+      // Subscription is user-owned (not org-scoped).
+      allow read: if (resource.data.userId == request.auth.uid) || isPlatformAdmin();
+      allow create: if (isRealUser() && request.resource.data.userId == request.auth.uid)
+        || isPlatformAdmin();
+      allow update, delete: if (resource.data.userId == request.auth.uid) || isPlatformAdmin();
+    }
+
+    match /cmms_notificationLog/{logId} {
+      allow read: if isPlatformAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /cmms_reviews/{reviewId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      // All writes flow through Admin SDK API routes.
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /cmms_reports/{reportId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // TURNWRK CLEAN (cleaning-operations product)
+    // Writes are server-side (Admin SDK API routes / Cloud Functions) so the
+    // transition layer + pricing recompute can't be bypassed; the public
+    // booking app also writes via Admin SDK only. The one client-writable doc
+    // is the org catalog (org-admin settings, like orgs/{orgId} edits).
+    // ============================================================
+
+    match /clean_customers/{customerId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /clean_leads/{leadId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // Doc id == orgId (one embedded catalog per org).
+    match /clean_catalogs/{orgId} {
+      allow read: if canWriteOrg(orgId);
+      allow create, update: if canAdminOrg(orgId)
+        && request.resource.data.orgId == orgId;
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /clean_bookings/{bookingId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /clean_bookingSeries/{seriesId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // Check-in/out also goes through API routes (auth binds the caller to the
+    // assignment's tech there — rules can't join to cmms_technicians cheaply).
+    match /clean_assignments/{assignmentId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // Payment data is org-admin only (pm/cleaner roles have no payments access).
+    match /clean_payments/{paymentId} {
+      allow read: if canAdminOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /clean_invoices/{invoiceId} {
+      allow read: if canAdminOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /clean_payoutPeriods/{periodId} {
+      allow read: if canAdminOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /clean_reviews/{reviewId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // Append-only audit stream (mirrors cmms_auditLogs, but server-write only).
+    match /clean_events/{eventId} {
+      allow read: if canAdminOrg(resource.data.orgId);
+      allow create, update, delete: if false;
+    }
+
+    // Per-org counters (invoice sequence, …). Doc id == orgId; the server
+    // increments in a transaction (Admin SDK). Admin-read for debugging.
+    match /clean_counters/{orgId} {
+      allow read: if canAdminOrg(orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // --- Change Order 1 collections (all writes via Admin SDK API routes) ---
+
+    // Org-edited notification template overrides (R2).
+    match /clean_notificationTemplates/{templateId} {
+      allow read: if canAdminOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // Per-send metering/audit (R2) — server-write only, like clean_events.
+    match /clean_notificationSends/{sendId} {
+      allow read: if canAdminOrg(resource.data.orgId);
+      allow create, update, delete: if false;
+    }
+
+    // Weekly working hours per contractor (R3).
+    match /clean_contractorAvailability/{availabilityId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // PTO/time-off request→approve lifecycle (R3).
+    match /clean_timeOff/{timeOffId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // Field-safety incidents / SOS (A4).
+    match /clean_incidents/{incidentId} {
+      allow read: if canAdminOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // Booking-site short links (A9). The public /s/{code} redirect resolves
+    // via the Admin SDK — no public read.
+    match /clean_shortLinks/{code} {
+      allow read: if canAdminOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // --- Change Order 2: bounty photo rewards (server-only writes) ---
+
+    // Program config + embedded spot list; doc id == orgId.
+    match /clean_bountyPrograms/{orgId} {
+      allow read: if canWriteOrg(orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /clean_bounties/{bountyId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // Submissions carry geo/phash/EXIF — admin-only direct reads; techs see
+    // their own submissions through the clean API projection.
+    match /clean_bountySubmissions/{submissionId} {
+      allow read: if canAdminOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // ============================================================
+    // SHARED INVITES (cross-app: cmms + restock)
+    // ============================================================
+
+    match /invites/{code} {
+      // All invite traffic flows through the Admin SDK
+      // (/api/invites/{generate,validate,consume,revoke,list}). Direct client
+      // reads/writes are forbidden — codes are sensitive and validation must
+      // happen server-side so usage can be marked atomically.
+      allow read, create, update, delete: if isPlatformAdmin();
+    }
+
+    // Vendor calendar share links (cross-app: created/revoked from cmms +
+    // restock UIs). The public /calendar/{token} page resolves tokens
+    // server-side via the Admin SDK, so there is deliberately NO public read
+    // here — unlike restock_propertyTokens. Client queries MUST filter by
+    // orgId equality so list rules can prove org scoping.
+    match /propertyShareTokens/{tokenId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.propertyId is string
+        && request.resource.data.orgId is string
+        && request.resource.data.isActive is bool;
+      allow update, delete: if canWriteOrg(resource.data.orgId);
+    }
+
+    // ============================================================
+    // RESTOCK-SCOPED (restock_*)
+    // ============================================================
+
+    match /restock_products/{productId} {
+      allow read: if true;
+      allow create, update: if isPlatformAdmin() && isValidProduct(request.resource.data);
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /restock_categories/{categoryId} {
+      allow read: if true;
+      allow create, update: if isPlatformAdmin() && isValidCategory(request.resource.data);
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /restock_curatedLists/{listId} {
+      allow read: if (resource.data.isPublished == true) || isPlatformAdmin();
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    match /restock_propertyTokens/{tokenId} {
+      // Public read enables guest QR-scan flows.
+      allow read: if true;
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.propertyId is string
+        && request.resource.data.orgId is string
+        && request.resource.data.isActive is bool;
+      allow update, delete: if canWriteOrg(resource.data.orgId);
+    }
+
+    match /restock_propertyResupplyRequests/{requestId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      // Anonymous guest creation gated by an active token for the propertyId.
+      allow create: if request.resource.data.orgId is string
+        && request.resource.data.propertyId is string
+        && ('tokenId' in request.resource.data)
+        && isActivePropertyToken(request.resource.data.tokenId, request.resource.data.propertyId)
+        && request.resource.data.status == 'pending';
+      allow update: if canWriteOrg(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
+    match /restock_supplyLists/{listId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      // Guest inspect: token-gated create (tokenId required).
+      allow create: if request.resource.data.orgId is string
+        && request.resource.data.propertyId is string
+        && ('tokenId' in request.resource.data)
+        && isActivePropertyToken(request.resource.data.tokenId, request.resource.data.propertyId);
+      // Org member regenerate (inbox / detail) — no token required.
+      allow create: if request.resource.data.orgId is string
+        && request.resource.data.propertyId is string
+        && canWriteOrg(request.resource.data.orgId);
+      allow update: if canWriteOrg(resource.data.orgId);
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
+    // Per-org product overrides (shadow master restock_products for one org).
+    match /restock_orgProducts/{overrideId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.baseProductId is string
+        && request.resource.data.name is string;
+      allow update: if canWriteOrg(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
+    match /restock_orderSnapshots/{snapshotId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId);
+      allow update, delete: if isPlatformAdmin();
+    }
+
+    match /restock_cleaners/{cleanerId} {
+      // Public read so the anonymous /inspect flow can list cleaners.
+      allow read: if true;
+      allow create: if canWriteOrg(request.resource.data.orgId);
+      // Org members can update or delete any cleaner in their org. A linked
+      // cleaner (one whose invite has been consumed and `userId` set) can
+      // additionally update their own doc to reflect activity (e.g.
+      // `lastActiveAt`). The `userId` and `orgId` fields are pinned by the
+      // server-side invite-consume flow and must not be rewritten by the
+      // cleaner themselves.
+      allow update: if canWriteOrg(resource.data.orgId)
+        || (isRealUser()
+            && resource.data.userId == request.auth.uid
+            && request.resource.data.userId == resource.data.userId
+            && request.resource.data.orgId == resource.data.orgId);
+      allow delete: if canWriteOrg(resource.data.orgId);
+    }
+
+    match /restock_shortlists/{listId} {
+      // Guest short-URL flow: anonymous itemType lists backing /r/<code>.
+      // Reads are public so the short URL resolves without auth; writes are
+      // open to any authenticated client (matches the existing legacy rule
+      // for the prior `restock_resupplyRequests` collection).
+      allow read: if true;
+      allow create: if isAuthenticated()
+        && request.resource.data.itemTypes is list
+        && request.resource.data.itemTypes.size() > 0;
+      allow update, delete: if isPlatformAdmin();
+    }
+
+    match /restock_shortUrls/{shortId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      // Anyone may increment clickCount; no other fields may change.
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clickCount']);
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /restock_affiliateEvents/{eventId} {
+      // Public click logging (no auth).
+      allow create: if request.resource.data.listId is string
+        && request.resource.data.productId is string
+        && request.resource.data.source in ['amazon', 'walmart'];
+      allow read: if isPlatformAdmin();
+      allow update, delete: if false;
+    }
+
+    // Onsite storage: per-property lockable cabinets / closets holding
+    // consumables and replacement items. Any org member can manage; the
+    // ledger is append-only.
+    match /restock_storage/{storageId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.propertyId is string
+        && request.resource.data.name is string;
+      allow update: if canWriteOrg(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId
+        && request.resource.data.propertyId == resource.data.propertyId;
+      allow delete: if canWriteOrg(resource.data.orgId);
+    }
+
+    match /restock_storageStock/{stockId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.propertyId is string
+        && request.resource.data.storageId is string
+        && request.resource.data.productId is string
+        && request.resource.data.quantityOnHand is number
+        && request.resource.data.quantityOnHand >= 0;
+      allow update: if canWriteOrg(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId
+        && request.resource.data.storageId == resource.data.storageId
+        && request.resource.data.productId == resource.data.productId
+        && request.resource.data.quantityOnHand is number
+        && request.resource.data.quantityOnHand >= 0;
+      allow delete: if canWriteOrg(resource.data.orgId);
+    }
+
+    match /restock_storageLedger/{entryId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      // Append-only: writes by org members; never updated or deleted.
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.storageId is string
+        && request.resource.data.productId is string
+        && request.resource.data.kind in ['receive', 'pull', 'adjust', 'fulfill']
+        && request.resource.data.delta is number
+        && request.resource.data.quantityAfter is number
+        && request.resource.data.performedBy is string;
+      allow update, delete: if false;
+    }
+
+    // Central warehouse (TURNWRK-122): one offsite stock-on-hand per org
+    // (MVP doc id === orgId). Members may read; org admins mutate stock;
+    // ledger is append-only. Distinct from per-property restock_storage*.
+    match /restock_warehouses/{warehouseId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canAdminOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.name is string
+        && warehouseId == request.resource.data.orgId;
+      allow update: if canAdminOrg(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
+    match /restock_warehouseStock/{stockId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canAdminOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.warehouseId is string
+        && request.resource.data.productId is string
+        && request.resource.data.quantityOnHand is number
+        && request.resource.data.quantityOnHand >= 0;
+      allow update: if canAdminOrg(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId
+        && request.resource.data.warehouseId == resource.data.warehouseId
+        && request.resource.data.productId == resource.data.productId
+        && request.resource.data.quantityOnHand is number
+        && request.resource.data.quantityOnHand >= 0;
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
+    match /restock_warehouseLedger/{entryId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canAdminOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.warehouseId is string
+        && request.resource.data.productId is string
+        && request.resource.data.kind in ['receive', 'fulfill', 'adjust', 'transfer-out']
+        && request.resource.data.delta is number
+        && request.resource.data.quantityAfter is number
+        && request.resource.data.performedBy is string;
+      allow update, delete: if false;
+    }
+
+    // Visual stock evidence from Clean bounty supply approvals (TURNWRK-171).
+    // Admin-only writes (clean dual-write on approve); org members may read.
+    match /restock_supplySignals/{signalId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if false;
+    }
+
+    // ============================================================
+    // WEBSITE PUBLIC LEAD CAPTURE (marketing site → website/)
+    // ============================================================
+    // Unauthenticated visitors submit lead/contact forms via client addDoc
+    // (website/lib/firestore.ts). Creates are validated and shape-locked; leads
+    // carry PII, so they are never client-readable — the team reads them
+    // server-side via the Admin SDK (which bypasses these rules). Platform
+    // admins may read for a future in-app view; updates are forbidden and
+    // deletes happen server-side.
+
+    function isValidWebsiteLead(allowMessage) {
+      let d = request.resource.data;
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 200
+        && d.email is string && d.email.size() > 0 && d.email.size() <= 320
+        && d.email.matches('.+@.+[.].+')
+        && (!('phone' in d) || (d.phone is string && d.phone.size() <= 60))
+        && (!('message' in d) || (allowMessage && d.message is string && d.message.size() <= 5000))
+        && d.timestamp == request.time
+        && d.source_page is string && d.source_page.size() <= 300
+        && d.user_agent is string && d.user_agent.size() <= 2000
+        && d.keys().hasOnly(['name', 'email', 'phone', 'message', 'timestamp', 'source_page', 'user_agent']);
+    }
+
+    match /property_manager_leads/{leadId} {
+      allow create: if isValidWebsiteLead(false);
+      allow read: if isPlatformAdmin();
+      allow update, delete: if false;
+    }
+
+    match /contractor_leads/{leadId} {
+      allow create: if isValidWebsiteLead(false);
+      allow read: if isPlatformAdmin();
+      allow update, delete: if false;
+    }
+
+    match /contact_submissions/{submissionId} {
+      allow create: if isValidWebsiteLead(true);
+      allow read: if isPlatformAdmin();
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // DENY ALL ELSE
+    // ============================================================
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

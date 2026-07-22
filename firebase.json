@@ -1,0 +1,12 @@
+{
+  "_comment": "Deploy config for the shared `turnwrk` Firebase project (TURNWRK-220). Canonical Firestore rules/indexes + Storage rules live in firebase/ and are vendored into every consumer's packages/shared/firebase/ for emulator use. Prod deploys run from .github/workflows/deploy-firebase.yml (owner-triggered workflow_dispatch) or `firebase deploy` from this repo — never from the app repos.",
+  "firestore": {
+    "database": "(default)",
+    "location": "nam5",
+    "rules": "firebase/firestore.rules",
+    "indexes": "firebase/firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "firebase/storage.rules"
+  }
+}
