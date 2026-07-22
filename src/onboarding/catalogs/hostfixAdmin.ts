@@ -43,7 +43,9 @@ export const HOSTFIX_ADMIN_CATALOG: OnboardingCatalog = {
       id: 'review-org-settings',
       label: 'Review org settings',
       description: 'Timezone, branding, and defaults.',
-      href: '/dispatch?view=settings',
+      // The real org-settings surface — NOT the dispatch ?view=settings tab
+      // (that renders API tokens/Mercury); the visit marker writes here.
+      href: '/settings/organization',
       signal: 'visited-org-settings',
     },
   ],
