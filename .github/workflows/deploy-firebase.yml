@@ -5,9 +5,15 @@ name: Deploy Firebase rules
 # workflow_dispatch button IS the deploy gate. App repos never deploy rules.
 #
 # Secret: FIREBASE_SERVICE_ACCOUNT — full JSON key for a service account on
-# project `turnwrk` with roles:
-#   Firebase Rules Admin        (roles/firebaserules.admin — firestore + storage rules releases)
-#   Cloud Datastore Index Admin (roles/datastore.indexAdmin — index deploys)
+# project `turnwrk` with ALL FIVE roles (each verified necessary 2026-07-22 —
+# the deploy fails at a different step without each one):
+#   roles/firebaserules.admin              — rules releases + the :test compile check
+#   roles/datastore.indexAdmin             — firestore index deploys
+#   roles/firebasestorage.viewer           — default-bucket lookup (storage target)
+#   roles/firebase.viewer                  — Firebase project visibility; WITHOUT it the
+#                                            defaultBucket call 404s and firebase-tools
+#                                            reports "Storage has not been set up"
+#   roles/serviceusage.serviceUsageConsumer — the "required API is enabled" preflight
 # Created and held by the owner.
 #
 # Index deletions: firebase-tools only deletes indexes missing from
