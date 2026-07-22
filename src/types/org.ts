@@ -100,15 +100,24 @@ export type OrgBillingSubscriptionStatus =
  */
 export interface OrgBilling {
   stripeCustomerId?: string;
+  /** Stripe Subscription id for suite SaaS (sub_…); not Clean Connect. */
+  stripeSubscriptionId?: string;
   subscriptionStatus?: OrgBillingSubscriptionStatus;
-  /** e.g. 'comp' | 'founder_ltd' | 'restock_pro' | 'trial' | Stripe price alias */
+  /**
+   * e.g. 'comp' | 'founder_ltd' | 'restock_pro' | 'trial' | suite plan SKU
+   * (`dispatch` | `restock` | `bundle` | `clean_addon`) — see `@turnwrk/shared/billing`.
+   */
   planId?: string;
+  /** Billable property/unit count mirrored onto the Stripe subscription quantity. */
+  unitCount?: number;
+  /** Last applied volume discount percent (0–25); mirrored from suite quote. */
+  volumeDiscountPct?: number;
   /** UTC epoch ms when the current period ends (if known). */
   currentPeriodEnd?: number;
   /**
    * UTC epoch ms when an indefinite trial should start counting down.
-   * Absent = indefinite trial (no countdown). A later migration may set this
-   * for early signups when paid plans launch (TURNWRK-145 / TURNWRK-151).
+   * Absent = indefinite trial (no countdown). Paid-plan Checkout uses
+   * `createSuiteTrialBilling` (45-day) via `@turnwrk/shared/billing` SUITE_TRIAL_DAYS.
    */
   trialEndsAt?: number;
   /** Support / comp reason — free text. */
@@ -133,12 +142,34 @@ export const DEFAULT_TRIAL_ENABLED_APPS: Required<
 /**
  * Indefinite suite trial billing for newly bootstrapped orgs.
  * No `trialEndsAt` / `currentPeriodEnd` until a future migration sets them.
+ * Prefer `createSuiteTrialBilling` once suite Checkout / paid plans go live.
  */
 export function createIndefiniteTrialBilling(now: number = Date.now()): OrgBilling {
   return {
     subscriptionStatus: 'trialing',
     planId: 'trial',
     notes: 'Indefinite trial — ends-at deferred until paid plans launch',
+    updatedAt: now,
+  };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 45-day suite trial aligned with Stripe Checkout trial_period_days
+ * (`SUITE_TRIAL_DAYS` in `@turnwrk/shared/billing`). Use when wiring paid plans;
+ * bootstrap still uses `createIndefiniteTrialBilling` until cutover.
+ */
+export function createSuiteTrialBilling(
+  now: number = Date.now(),
+  trialDays: number = 45,
+): OrgBilling {
+  const days = Math.max(1, Math.trunc(trialDays));
+  return {
+    subscriptionStatus: 'trialing',
+    planId: 'trial',
+    trialEndsAt: now + days * DAY_MS,
+    notes: `${days}-day suite trial`,
     updatedAt: now,
   };
 }

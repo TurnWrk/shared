@@ -5,6 +5,7 @@ export * from './members';
 export * from './phone';
 export * from './whisper';
 export * from './clean';
+export * from './billing';
 export * from './authFlow';
 export * from './resupplyNormalize';
 export * from './resupplyBackfill';

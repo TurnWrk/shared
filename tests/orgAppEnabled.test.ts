@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   createIndefiniteTrialBilling,
+  createSuiteTrialBilling,
   DEFAULT_TRIAL_ENABLED_APPS,
   normalizeEnabledApps,
   orgAppEnabled,
@@ -74,6 +75,14 @@ describe('resolveBootstrapEnabledApps / createIndefiniteTrialBilling', () => {
     expect(billing.updatedAt).toBe(1_700_000_000_000);
     expect(billing.trialEndsAt).toBeUndefined();
     expect(billing.currentPeriodEnd).toBeUndefined();
+  });
+
+  it('creates 45-day suite trial with trialEndsAt', () => {
+    const now = 1_700_000_000_000;
+    const billing = createSuiteTrialBilling(now, 45);
+    expect(billing.subscriptionStatus).toBe('trialing');
+    expect(billing.trialEndsAt).toBe(now + 45 * 24 * 60 * 60 * 1000);
+    expect(billing.notes).toContain('45-day');
   });
 });
 
