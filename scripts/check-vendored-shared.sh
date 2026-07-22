@@ -10,6 +10,9 @@ SUITE="$(cd "$ROOT/.." && pwd)"
 
 # Paths the App Hosting sync scripts copy (package.json intentionally preserved
 # per-app with src/*.ts exports — compared separately via export keys).
+# email/ vendors separately at packages/email; firebase.json/.firebaserc are
+# this repo's deploy config; .vendor-manifest.json exists only in vendored
+# copies (written by sync-consumer.sh).
 EXCLUDES=(
   --exclude=node_modules
   --exclude=.git
@@ -18,6 +21,10 @@ EXCLUDES=(
   --exclude=package-lock.json
   --exclude=dist
   --exclude='*.tsbuildinfo'
+  --exclude=email
+  --exclude=firebase.json
+  --exclude=.firebaserc
+  --exclude=.vendor-manifest.json
 )
 
 # label|relative path under suite|compare_package_json (0|1)
@@ -46,7 +53,7 @@ for entry in "${CHECKS[@]}"; do
   found=1
   if [[ ! -d "$dest" ]]; then
     echo "FAIL: $app missing vendored shared at $dest" >&2
-    echo "  Fix: .claude/skills/vendor-shared-package/scripts/sync-to-*.sh" >&2
+    echo "  Fix: scripts/sync-consumer.sh <app-root> <apphosting|full>" >&2
     failed=1
     continue
   fi

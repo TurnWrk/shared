@@ -1,0 +1,166 @@
+name: Sync consumers
+
+# Ships @turnwrk/shared (+ @turnwrk/email + firebase/ rules assets) into each
+# consumer repo as an updatable PR on the bot-owned branch `bot/sync-shared`
+# (TURNWRK-219). Merging the PR is the deploy gate — App Hosting / Coolify
+# deploy on merge to the app's deploy branch. This workflow never merges and
+# never deploys.
+#
+# Secrets (fine-grained PATs, created and held by the owner; fine-grained PATs
+# are single-org, and restock lives in Breezy-Keys — hence two):
+#   TURNWRK_REPOS_TOKEN — resource owner TurnWrk; repos clean, cmms,
+#                         dispatch-assistant-api; Contents RW + Pull requests RW
+#   BREEZY_REPOS_TOKEN  — resource owner Breezy-Keys; repo
+#                         bed-breakfast-and-beyond; Contents RW + Pull requests RW
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      only:
+        description: 'Limit to one consumer (clean | hostfix-cmms | restock | turnwrk-cortex)'
+        required: false
+        default: ''
+
+concurrency:
+  group: sync-consumers
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: clean
+            repo: TurnWrk/clean
+            base: trunk
+            variant: apphosting
+            email: plain
+            token: TURNWRK_REPOS_TOKEN
+          - name: hostfix-cmms
+            repo: TurnWrk/cmms
+            base: main
+            variant: apphosting
+            email: strip-js # Turbopack tree keeps extensionless relative imports
+            token: TURNWRK_REPOS_TOKEN
+          - name: restock
+            repo: Breezy-Keys/bed-breakfast-and-beyond
+            base: main
+            variant: apphosting
+            email: plain
+            token: BREEZY_REPOS_TOKEN
+          - name: turnwrk-cortex
+            repo: TurnWrk/dispatch-assistant-api
+            base: main
+            variant: full # canonical package.json + lock; Docker builds dist/
+            email: none
+            token: TURNWRK_REPOS_TOKEN
+    steps:
+      - name: Gate on dispatch filter
+        id: gate
+        env:
+          ONLY: ${{ github.event.inputs.only }}
+        run: |
+          if [[ -n "$ONLY" && "$ONLY" != "${{ matrix.name }}" ]]; then
+            echo "run=0" >> "$GITHUB_OUTPUT"
+            echo "Skipping ${{ matrix.name }} (only=$ONLY)"
+          else
+            echo "run=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout turnwrk-shared
+        if: steps.gate.outputs.run == '1'
+        uses: actions/checkout@v4
+        with:
+          path: shared
+          fetch-depth: 0
+
+      - name: Checkout ${{ matrix.repo }} @ ${{ matrix.base }}
+        if: steps.gate.outputs.run == '1'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repo }}
+          ref: ${{ matrix.base }}
+          token: ${{ secrets[matrix.token] }}
+          path: consumer
+
+      - name: Setup Node
+        if: steps.gate.outputs.run == '1'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Sync vendored trees
+        if: steps.gate.outputs.run == '1'
+        id: sync
+        run: |
+          prev_sha="$(node -p "try { require('./consumer/packages/shared/.vendor-manifest.json').sha } catch { '' }" 2>/dev/null || true)"
+          echo "prev_sha=$prev_sha" >> "$GITHUB_OUTPUT"
+          bash shared/scripts/sync-consumer.sh consumer "${{ matrix.variant }}"
+          case "${{ matrix.email }}" in
+            plain)    bash shared/scripts/sync-email-consumer.sh consumer ;;
+            strip-js) bash shared/scripts/sync-email-consumer.sh consumer --strip-js ;;
+            none)     echo "email: skipped for ${{ matrix.name }}" ;;
+          esac
+
+      - name: Refresh lockfile when vendored package metadata changed
+        if: steps.gate.outputs.run == '1'
+        run: |
+          cd consumer
+          if ! git diff --quiet -- packages/shared/package.json packages/email/package.json 2>/dev/null; then
+            npm install --package-lock-only --ignore-scripts
+          fi
+
+      - name: Commit, push, open/update PR
+        if: steps.gate.outputs.run == '1'
+        env:
+          GH_TOKEN: ${{ secrets[matrix.token] }}
+          PREV_SHA: ${{ steps.sync.outputs.prev_sha }}
+        run: |
+          cd consumer
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No drift for ${{ matrix.name }} — nothing to ship."
+            exit 0
+          fi
+          sha="$(git -C ../shared rev-parse HEAD)"
+          sha_short="$(git -C ../shared rev-parse --short HEAD)"
+          version="$(node -p "require('../shared/package.json').version")"
+          git config user.name "turnwrk-sync-bot"
+          git config user.email "sync-bot@users.noreply.github.com"
+          git commit -m "Sync @turnwrk/shared ${sha_short} (v${version}) (TURNWRK-219)."
+          git push -f origin HEAD:refs/heads/bot/sync-shared
+
+          {
+            echo "Automated vendored sync from [TurnWrk/shared](https://github.com/TurnWrk/shared) @ \`${sha}\` (v${version})."
+            echo
+            if [[ -n "$PREV_SHA" ]] && git -C ../shared cat-file -e "$PREV_SHA" 2>/dev/null; then
+              echo "Source commits since last sync:"
+              echo '```'
+              git -C ../shared log --oneline "$PREV_SHA"..HEAD | head -50
+              echo '```'
+            else
+              echo "First manifest-tracked sync (no previous SHA on ${{ matrix.base }})."
+            fi
+            echo
+            echo "Merging this PR ships the update (App Hosting / Coolify deploy on ${{ matrix.base }})."
+            echo "Review authz-relevant changes under \`packages/shared/firebase/\` before merging;"
+            echo "prod rules/indexes deploy separately via the Deploy Firebase rules workflow in TurnWrk/shared."
+          } > "$RUNNER_TEMP/pr-body.md"
+
+          existing="$(gh pr list --repo "${{ matrix.repo }}" --head bot/sync-shared --base "${{ matrix.base }}" --state open --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            gh pr edit "$existing" --repo "${{ matrix.repo }}" \
+              --title "Sync @turnwrk/shared ${sha_short}" \
+              --body-file "$RUNNER_TEMP/pr-body.md"
+            echo "Updated PR #$existing on ${{ matrix.repo }}"
+          else
+            gh pr create --repo "${{ matrix.repo }}" \
+              --head bot/sync-shared --base "${{ matrix.base }}" \
+              --title "Sync @turnwrk/shared ${sha_short}" \
+              --body-file "$RUNNER_TEMP/pr-body.md"
+          fi
