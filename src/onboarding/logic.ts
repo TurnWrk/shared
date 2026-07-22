@@ -97,13 +97,13 @@ export function completeTour(
   version: number,
   now: number = Date.now(),
 ): UserOnboardingState {
+  // Omit dismissedAt entirely — Firestore rejects `undefined` field values, and
+  // checklist collapse persists through the same helper (TURNWRK-201).
   return {
     ...(state ?? {}),
     [tourId]: {
-      ...(state?.[tourId] ?? {}),
-      completedAt: now,
       version,
-      dismissedAt: undefined,
+      completedAt: now,
     },
   };
 }
@@ -115,13 +115,12 @@ export function dismissTour(
   version: number,
   now: number = Date.now(),
 ): UserOnboardingState {
+  // Omit completedAt entirely — see completeTour note above.
   return {
     ...(state ?? {}),
     [tourId]: {
-      ...(state?.[tourId] ?? {}),
-      dismissedAt: now,
       version,
-      completedAt: undefined,
+      dismissedAt: now,
     },
   };
 }

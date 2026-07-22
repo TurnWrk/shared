@@ -112,8 +112,8 @@ describe('completeTour / dismissTour', () => {
     expect(afterComplete.t1).toEqual({
       completedAt: 20,
       version: 2,
-      dismissedAt: undefined,
     });
+    expect('dismissedAt' in afterComplete.t1).toBe(false);
   });
 
   it('writes dismissedAt and clears completedAt', () => {
@@ -122,8 +122,8 @@ describe('completeTour / dismissTour', () => {
     expect(afterDismiss.t1).toEqual({
       dismissedAt: 20,
       version: 1,
-      completedAt: undefined,
     });
+    expect('completedAt' in afterDismiss.t1).toBe(false);
   });
 });
 
