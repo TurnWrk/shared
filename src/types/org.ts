@@ -105,7 +105,7 @@ export interface OrgBilling {
   subscriptionStatus?: OrgBillingSubscriptionStatus;
   /**
    * e.g. 'comp' | 'founder_ltd' | 'restock_pro' | 'trial' | suite plan SKU
-   * (`dispatch` | `restock` | `bundle` | `clean_addon`) — see `@turnwrk/shared/billing`.
+   * (comma-separated `dispatch` | `restock` | `clean`) — see `@turnwrk/shared/billing`.
    */
   planId?: string;
   /** Billable property/unit count mirrored onto the Stripe subscription quantity. */
