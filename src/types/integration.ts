@@ -117,6 +117,20 @@ export function usesSyncedBookings(bookingSource?: BookingSource | string | null
   return !!bookingSource && bookingSource !== 'manual';
 }
 
+/**
+ * True only for PMS-style providers that own the property's calendar end-to-end
+ * (`akita`, `external-sync`). Self-managed ICS feed sources (`airbnb`, `vrbo`,
+ * `ics-sync`) return false: they import availability but the operator still adds
+ * and manages the feeds in-app, so the Calendar Feeds UI must stay unlocked.
+ * Distinct from `usesSyncedBookings`, which is true for any non-manual source and
+ * is the right check for occupancy derivation.
+ */
+export function isExternallyManagedBookingSource(
+  bookingSource?: BookingSource | string | null,
+): boolean {
+  return bookingSource === 'akita' || bookingSource === 'external-sync';
+}
+
 /** Owner/contact snapshots synced from an external provider (legacy field fallback). */
 export function getIntegrationOwnerSnapshot(
   maintenance?: {
