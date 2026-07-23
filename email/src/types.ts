@@ -37,6 +37,8 @@ export type EstimateData = {
   kind?: 'repair' | 'proposal';
   /** Proposal headline when kind is proposal. */
   title?: string;
+  /** True when re-notifying after an in-place revise (same public link). */
+  isUpdate?: boolean;
 };
 
 export type CleanNotificationDetail = { label: string; value: string };

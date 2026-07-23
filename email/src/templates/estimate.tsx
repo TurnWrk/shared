@@ -6,7 +6,8 @@ import { brand, Shell, styles } from './_components';
 export function subject(data: EstimateData): string {
   const isProposal = data.kind === 'proposal';
   const label = isProposal ? 'Proposal' : 'Estimate';
-  return `${label} for ${data.propertyAddress} — ${data.amount}`;
+  const prefix = data.isUpdate ? `Updated ${label.toLowerCase()}` : label;
+  return `${prefix} for ${data.propertyAddress} — ${data.amount}`;
 }
 
 export default function Estimate({
@@ -21,6 +22,7 @@ export default function Estimate({
   sharedImageUrls,
   kind,
   title,
+  isUpdate,
 }: EstimateData) {
   const isProposal = kind === 'proposal';
   const noun = isProposal ? 'proposal' : 'estimate';
@@ -29,11 +31,19 @@ export default function Estimate({
     : `Estimate for ${propertyAddress}`;
 
   return (
-    <Shell preview={`${orgName} sent you a ${noun} — ${amount}`}>
+    <Shell
+      preview={
+        isUpdate
+          ? `${orgName} updated their ${noun} — ${amount}`
+          : `${orgName} sent you a ${noun} — ${amount}`
+      }
+    >
       <Text style={styles.h1}>{heading}</Text>
       <Text style={styles.p}>
-        Hi {ownerName}, {orgName} has prepared a {noun} for the following
-        work at {propertyAddress}.
+        Hi {ownerName},{' '}
+        {isUpdate
+          ? `${orgName} has updated the ${noun} for the following work at ${propertyAddress}. The link below is the same as before.`
+          : `${orgName} has prepared a ${noun} for the following work at ${propertyAddress}.`}
       </Text>
 
       <Section
