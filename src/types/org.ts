@@ -309,6 +309,21 @@ export interface Org {
     maxLaborHours?: number;  // default 2
     maxCostUsd?: number;     // default 200
   };
+  /**
+   * Dispatch-panel operational settings. Deliberately NON-privileged (org-admin
+   * client-writable — see firestore.rules changesPrivilegedOrgFields, which
+   * guards enabledApps/features/billing/status only) so the Planning-board
+   * toggle can write it directly, like `quickWorkOrder` above. NOT an
+   * entitlement — do not move under `features`.
+   */
+  dispatch?: {
+    /**
+     * AI auto-assignment of unassigned Scheduled work orders (hostfix Kanban
+     * sweep + drag-to-Scheduled trigger + cortex `auto-assign` job + expired-
+     * offer re-assign). Absent = false: orgs opt in via the dispatch toggle.
+     */
+    autoAssignEnabled?: boolean;
+  };
   /** SOP-05 after-hours on-call rotation. */
   onCallRotation?: OnCallRotationEntry[];
   /** SOP-05/08 SLA defaults for this org. */
