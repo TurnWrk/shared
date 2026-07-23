@@ -6,6 +6,15 @@ name: Sync consumers
 # deploy on merge to the app's deploy branch. This workflow never merges and
 # never deploys.
 #
+# Conflict hygiene: .vendor-manifest.json is DETERMINISTIC (no timestamp) and
+# CONTENT-GATED (stamp-vendor-manifest.sh rewrites it only when the vendored
+# trees actually changed), so a dev local sync and a bot PR at the same
+# canonical SHA auto-merge instead of conflicting, and doc-only canonical
+# pushes produce no PR churn. The cron re-run rebuilds each bot branch from
+# the CURRENT base tip, so a PR that went conflicted self-heals within ≤4h;
+# when a base branch has already caught up (dev local sync merged), the
+# no-drift path auto-closes the stale bot PR.
+#
 # Secrets (fine-grained PATs, created and held by the owner; fine-grained PATs
 # are single-org, and restock lives in Breezy-Keys — hence two):
 #   TURNWRK_REPOS_TOKEN — resource owner TurnWrk; repos clean, cmms,
@@ -16,6 +25,10 @@ name: Sync consumers
 on:
   push:
     branches: [main]
+  schedule:
+    # Self-heal cadence: rebuild bot branches from current base tips so
+    # conflicted PRs recover without waiting for the next canonical push.
+    - cron: '17 */4 * * *'
   workflow_dispatch:
     inputs:
       only:
@@ -106,6 +119,9 @@ jobs:
             strip-js) bash shared/scripts/sync-email-consumer.sh consumer --strip-js ;;
             none)     echo "email: skipped for ${{ matrix.name }}" ;;
           esac
+          # Stamp AFTER both syncs (manifest SHA covers packages/email too);
+          # deterministic + content-gated — see stamp-vendor-manifest.sh.
+          bash shared/scripts/stamp-vendor-manifest.sh consumer
 
       - name: Refresh lockfile when vendored package metadata changed
         if: steps.gate.outputs.run == '1'
@@ -125,6 +141,15 @@ jobs:
           git add -A
           if git diff --cached --quiet; then
             echo "No drift for ${{ matrix.name }} — nothing to ship."
+            # Base already carries this canonical state (e.g. a dev's local
+            # sync merged) — close any lingering bot PR instead of leaving it
+            # open and conflicted forever.
+            stale="$(gh pr list --repo "${{ matrix.repo }}" --head bot/sync-shared --base "${{ matrix.base }}" --state open --json number --jq '.[0].number // empty')"
+            if [[ -n "$stale" ]]; then
+              gh pr close "$stale" --repo "${{ matrix.repo }}" \
+                --comment "Superseded — ${{ matrix.base }} already carries this canonical state." \
+                --delete-branch || echo "warn: could not close stale PR #$stale"
+            fi
             exit 0
           fi
           sha="$(git -C ../shared rev-parse HEAD)"

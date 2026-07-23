@@ -55,11 +55,10 @@ if [[ "$VARIANT" == "apphosting" ]]; then
   node "$SRC/scripts/gen-vendored-package-json.mjs" "$SRC/package.json" > "$DEST/package.json"
 fi
 
-# Provenance manifest — consumer CI verifies the committed vendored tree
-# against this exact canonical SHA (check-vendored-integrity.sh).
+# Provenance manifest is written by stamp-vendor-manifest.sh, which must run
+# AFTER the email sync too (the manifest SHA covers packages/email as well —
+# an email-only canonical change still needs a fresh stamp). Wrappers and the
+# sync-consumers workflow call it as their final step.
 SHA="$(git -C "$SRC" rev-parse HEAD 2>/dev/null || echo unknown)"
 VERSION="$(node -p "require('$SRC/package.json').version")"
-printf '{\n  "source": "TurnWrk/shared",\n  "sha": "%s",\n  "version": "%s",\n  "syncedAt": "%s"\n}\n' \
-  "$SHA" "$VERSION" "$(date -u +%FT%TZ)" > "$DEST/.vendor-manifest.json"
-
 echo "Synced @turnwrk/shared ($VARIANT) -> $DEST @ ${SHA:0:9} (v$VERSION)"
