@@ -1,6 +1,7 @@
 import type { InspectMode } from './property';
 import type { LaundryVendorConfig } from './property';
 import type { CleanOrgSettings } from './clean';
+import type { WOType } from './workOrder';
 
 export interface OrgBranding {
   logoUrl?: string;
@@ -323,6 +324,19 @@ export interface Org {
      * offer re-assign). Absent = false: orgs opt in via the dispatch toggle.
      */
     autoAssignEnabled?: boolean;
+  };
+  /**
+   * CMMS work-order settings. Same NON-privileged class as `dispatch` /
+   * `quickWorkOrder` above (org-admin client-writable).
+   */
+  cmms?: {
+    /**
+     * Default checklist template (cmms_pmTemplates doc id) seeded onto new
+     * work orders per WOType when the creation path has no more specific
+     * source (clean services carry their own `checklistTemplateId`). Absent
+     * entry = no checklist for that type.
+     */
+    checklistDefaults?: Partial<Record<WOType, string>>;
   };
   /** SOP-05 after-hours on-call rotation. */
   onCallRotation?: OnCallRotationEntry[];
