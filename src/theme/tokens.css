@@ -1,0 +1,113 @@
+/* ============================================================================
+   Turnwrk Suite Design System — canonical tokens  (TURNWRK-143 → suite scope)
+   ----------------------------------------------------------------------------
+   Thesis: "Warm brand, cool workspace." Warmth (terracotta / Fraunces / clay)
+   is BRAND SIGNAL and appears as punctuation; the operational surfaces where
+   dispatchers, cleaners and technicians work stay a calm, dense, cool Slate.
+
+   This file is the SOURCE OF TRUTH, not an import. Per the suite's documented
+   decision we duplicate tokens per-repo (each app's globals.css `@theme`) to
+   avoid vendoring pain; a drift-gate diffs those copies against this file.
+   When the system changes, edit HERE first, then reconcile each app.
+
+   Three tiers, separated by role:
+     1. Brand      — constant Turnwrk identity (default accent + editorial).
+     2. Workspace  — cool Slate operational spine, shared across apps.
+     3. Accent slot — `--color-primary*`; defaults to terracotta, overridden
+                      per-org at runtime by brandVarsForOrg() (./theme.ts).
+   The seam: `--color-primary` is a SLOT, not a constant. The accent engine
+   fills it per org and touches nothing else — the workspace neutrals never move.
+   ========================================================================== */
+@theme {
+  /* --- Tier 1: BRAND (constant identity — marketing + app punctuation) ------ */
+  /* Terracotta is the default value of the accent slot below.
+     restock/shadcn HSL mapping: #DD562D = `14 72% 52%`. */
+  --color-terracotta: #DD562D;
+  --color-terracotta-hover: #BC4926;
+  --color-terracotta-light: #F8E4DC;
+
+  /* Editorial paper + warm hairline (marketing pages; app punctuation) */
+  --color-cream: #F8F3E9;
+  --color-sand: #EFE8DA;
+  --color-rule: #E4DCCC; /* warm hairline (editorial), distinct from workspace --color-border */
+
+  /* Clay — the dark editorial band (footers, AI bands, masthead moments) */
+  --color-clay: #271F1B;
+  --color-clay-foreground: #F2ECE0;
+  --color-clay-muted: #A79E93;
+  --color-clay-rule: #40372F;
+
+  /* Editorial secondary accents */
+  --color-gold: hsl(41 78% 47%);
+  --color-teal: hsl(175 44% 34%);
+
+  /* --- Tier 2: WORKSPACE (cool Slate spine — dense operational surfaces) ----- */
+  /* Canonical values already shipped in clean + hostfix; restock migrates to these. */
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F1F5F9;
+  --color-background: #F8FAFC;
+
+  --color-border: #CBD5E1;
+  --color-border-light: #E2E8F0;
+
+  /* --- Tier 3: ACCENT SLOT (resolved; default = terracotta) ------------------ */
+  /* brandVarsForOrg() overrides these four inline per org (WCAG-guarded).
+     They are the ONLY tokens the whitelabel engine writes. */
+  --color-primary: #DD562D;
+  --color-primary-hover: #BC4926;
+  --color-primary-light: #F8E4DC;
+  --color-primary-fg: #FFFFFF;
+
+  /* --- Semantic status (solid / tint) --------------------------------------- */
+  --color-info: #2563EB;
+  --color-info-bg: #DBEAFE;
+  --color-warning: #D97706;
+  --color-warning-bg: #FEF3C7;
+  --color-success: #15803D;
+  --color-success-bg: #DCFCE7;
+  --color-error: #B91C1C;
+  --color-error-bg: #FEE2E2;
+  --color-neutral: #64748B;
+  --color-neutral-bg: #F1F5F9;
+
+  /* --- Typography ----------------------------------------------------------- */
+  /* The raw --font-* vars come from each app's next/font/google (generated).
+     These stacks reference them and are what components consume. */
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-body: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* Type scale. Body base is 15px — a deliberate operational density step under
+     the 16px marketing base. Display (Fraunces) for mastheads/headers only. */
+  --text-display-lg: 3rem;      /* hero / page masthead */
+  --text-display-md: 2.25rem;   /* section header */
+  --text-display-sm: 1.5rem;    /* card / panel title */
+  --text-lg: 1.125rem;
+  --text-base: 0.9375rem;       /* 15px — workspace body default */
+  --text-sm: 0.8125rem;
+  --text-xs: 0.75rem;
+  --text-eyebrow: 0.72rem;      /* mono, 0.16em tracking, uppercase (see .eyebrow) */
+
+  /* --- Radius / shadow / motion --------------------------------------------- */
+  /* Workspace radius is tight for density; editorial/marketing cards go larger. */
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;             /* workspace default */
+  --radius-lg: 0.75rem;        /* editorial / marketing cards */
+
+  /* Warm soft depth (hairline-first on dense tables; shadows for raised cards). */
+  --shadow-soft: 0 2px 8px -2px hsl(20 16% 12% / 0.08);
+  --shadow-elegant: 0 12px 32px -12px hsl(20 16% 12% / 0.16);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ----------------------------------------------------------------------------
+   Signature: the "masthead" device — the one warm moment in a cool app.
+   eyebrow (mono, uppercase, terracotta) + Fraunces title. Structural: it marks
+   top-of-context. Apps define `.eyebrow` from these tokens; keep ≤1 clay band
+   per view. See docs/projects/website/DESIGN_SYSTEM.md.
+   -------------------------------------------------------------------------- */
