@@ -890,6 +890,27 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Inspect QR scan ledger (TURNWRK-252). Anonymous create when an active
+    // property token covers the property; never client-mutable after create.
+    match /restock_scanEvents/{scanId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if validOrgScoped(request.resource.data)
+        && request.resource.data.propertyId is string
+        && request.resource.data.tokenId is string
+        && request.resource.data.clientScanId is string
+        && request.resource.data.resupplyRequestId is string
+        && request.resource.data.createdAt is number
+        && (!('workOrderId' in request.resource.data)
+            || (request.resource.data.workOrderId is string
+                && request.resource.data.workOrderId.size() > 0
+                && request.resource.data.workOrderId.size() <= 128))
+        && isActivePropertyToken(
+             request.resource.data.tokenId,
+             request.resource.data.propertyId
+           );
+      allow update, delete: if false;
+    }
+
     // ============================================================
     // WEBSITE PUBLIC LEAD CAPTURE (marketing site → website/)
     // ============================================================
