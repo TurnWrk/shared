@@ -45,6 +45,11 @@
       "require": "./dist/clean/index.js",
       "default": "./dist/clean/index.js"
     },
+    "./checklist": {
+      "types": "./dist/checklist/index.d.ts",
+      "require": "./dist/checklist/index.js",
+      "default": "./dist/checklist/index.js"
+    },
     "./billing": {
       "types": "./dist/billing/index.d.ts",
       "require": "./dist/billing/index.js",
