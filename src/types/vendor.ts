@@ -14,6 +14,9 @@ export interface VendorSmsConsent {
   verifiedAt?: number;
   optedOutAt?: number;
   lastKeyword?: string;
+  /** Express-written consent at signup / phone register (TURNWRK-254). */
+  expressWrittenAt?: number;
+  expressWrittenSource?: 'vendor_add' | 'phone_register' | 'phone_update';
 }
 
 /** Canonical vendor profile — one per phone number. */

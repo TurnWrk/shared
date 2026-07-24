@@ -111,6 +111,9 @@ export const COLLECTIONS = {
   // Visual stock evidence from Clean bounty supply-relevant approvals
   // (TURNWRK-171). Written by clean Admin on approve; restock reads.
   restock_supplySignals: 'restock_supplySignals',
+  // Inspect QR scan ledger (TURNWRK-252). Client create via active
+  // property token; doc id = scan_{tokenId}_{clientScanId} for idempotency.
+  restock_scanEvents: 'restock_scanEvents',
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
