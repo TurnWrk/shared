@@ -4,6 +4,8 @@ export type {
   PasswordResetData,
   CleanNotificationData,
   CleanNotificationDetail,
+  InvoiceData,
+  InvoiceLineItem,
   SendEmailParams,
   SendEmailResult,
   TemplateName,

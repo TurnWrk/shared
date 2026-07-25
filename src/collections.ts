@@ -46,6 +46,9 @@ export const COLLECTIONS = {
   // Owner-facing work-order estimates. Public /estimate/{token} page + the
   // approve/decline writeback resolve these via the Admin SDK — no public read.
   cmms_estimates: 'cmms_estimates',
+  // Owner-facing direct/email invoices. Public /invoice/{token} resolves via
+  // Admin SDK — no public Firestore read.
+  cmms_ownerInvoices: 'cmms_ownerInvoices',
 
   // Turnwrk Clean (cleaning-operations product; operator portal + public
   // booking app both live in `clean/`, sharing this Firestore project). Types

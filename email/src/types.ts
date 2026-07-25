@@ -59,12 +59,30 @@ export type CleanNotificationData = {
   footnote?: string;
 };
 
+export type InvoiceLineItem = {
+  title: string;
+  /** Pre-formatted USD, e.g. "$120.00". */
+  amount: string;
+};
+
+export type InvoiceData = {
+  orgName: string;
+  ownerName: string;
+  propertyAddress: string;
+  /** Pre-formatted USD total, e.g. "$1,250.00". */
+  amount: string;
+  lineItems: InvoiceLineItem[];
+  /** Public /invoice/{token} link. */
+  viewUrl: string;
+};
+
 export type Templates = {
   invite: InviteData;
   'password-reset': PasswordResetData;
   'magic-link': MagicLinkData;
   estimate: EstimateData;
   'clean-notification': CleanNotificationData;
+  invoice: InvoiceData;
 };
 
 export type TemplateName = keyof Templates;
