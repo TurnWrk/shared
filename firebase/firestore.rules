@@ -375,6 +375,18 @@ service cloud.firestore {
       allow update, delete: if canWriteOrg(resource.data.orgId);
     }
 
+    // Direct/email owner invoices. Public /invoice/{token} uses Admin SDK — no
+    // public read. Client writes go through Admin-SDK API routes.
+    match /cmms_ownerInvoices/{invoiceId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.propertyId is string
+        && request.resource.data.amountCents is number
+        && request.resource.data.publicToken is string;
+      allow update, delete: if canWriteOrg(resource.data.orgId);
+    }
+
     function isOwnTechnicianProfile(techId) {
       return userExists() && (
         techId == request.auth.uid ||
