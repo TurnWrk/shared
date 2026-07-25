@@ -65,6 +65,11 @@
       "require": "./dist/onboarding/index.js",
       "default": "./dist/onboarding/index.js"
     },
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "require": "./dist/theme/index.js",
+      "default": "./dist/theme/index.js"
+    },
     "./testFixtures": {
       "types": "./dist/testFixtures/index.d.ts",
       "require": "./dist/testFixtures/index.js",
