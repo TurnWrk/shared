@@ -200,6 +200,14 @@
       ]
     },
     {
+      "collectionGroup": "cmms_ownerInvoices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "orgId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "cmms_techRoutes",
       "queryScope": "COLLECTION",
       "fields": [
