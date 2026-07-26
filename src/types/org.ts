@@ -303,7 +303,7 @@ export interface Org {
    * Vendor "quick work order" thresholds. When a vendor raises a small work
    * order on-site that falls under either cap (or is an emergency) it skips the
    * dispatcher approval gate. Absent fields fall back to app-level defaults
-   * (see hostfix-cmms/lib/quickWorkOrder.ts DEFAULT_QUICK_WO_CONFIG).
+   * (see dispatch/lib/quickWorkOrder.ts DEFAULT_QUICK_WO_CONFIG).
    */
   quickWorkOrder?: {
     enabled?: boolean;       // default true

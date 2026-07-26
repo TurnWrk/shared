@@ -294,7 +294,7 @@ export interface Property {
    */
   lifecycleStatus?: PropertyLifecycleStatus;
 
-  // occupancy (shared signal; hostfix-cmms writes, restock reads)
+  // occupancy (shared signal; dispatch writes, restock reads)
   isOccupied?: boolean;
   currentGuestName?: string;
   /** Last on-site occupancy/readiness confirmation (SOP field SMS). */

@@ -62,7 +62,7 @@ if ! diff -qr "${EXCLUDES[@]}" "$TMP/shared" "$PKG_DIR"; then
 fi
 echo "OK: packages/shared matches TurnWrk/shared @ $SHA"
 
-# packages/email (App Hosting apps): hostfix strips ESM .js suffixes for
+# packages/email (App Hosting apps): dispatch strips ESM .js suffixes for
 # Turbopack, so normalize relative-import suffixes on both sides before diffing
 # (same normalization as check-vendored-email.sh).
 if [[ -d "$APP_ROOT/packages/email" && -d "$TMP/shared/email" ]]; then

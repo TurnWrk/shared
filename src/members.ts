@@ -1,7 +1,7 @@
 // ============================================================================
 // Shared types + API client for org-member management.
 //
-// Both restock and hostfix-cmms expose the same endpoints under
+// Both restock and dispatch expose the same endpoints under
 // `/api/orgs/{orgId}/members` (+ the existing `/api/invites/*` endpoints).
 // This module provides the typed data contract and a fetch-based client so
 // both apps' UIs can call the same endpoints with the same response shape.

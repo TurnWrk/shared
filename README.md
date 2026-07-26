@@ -1,7 +1,7 @@
 # @turnwrk/shared
 
 Canonical types and constants shared across the turnwrk app suite
-(`hostfix-cmms`, `restock`, `clean`, `turnwrk-cortex`, browser extensions).
+(`dispatch`, `restock`, `clean`, `turnwrk-cortex`, browser extensions).
 This repo also carries `email/` (`@turnwrk/email` templates, TURNWRK-221) and
 `firebase/` (canonical Firestore rules/indexes + Storage rules for the shared
 `turnwrk` project, TURNWRK-220).
@@ -15,7 +15,7 @@ so each consumer carries a committed vendored copy:
 - `<app>/packages/shared` ← this repo (`"@turnwrk/shared": "file:./packages/shared"`)
 - `<app>/packages/email`  ← `email/` (`"@turnwrk/email": "file:./packages/email"`)
 
-Vendored copies for App Hosting apps (`clean`, `hostfix-cmms`, `restock`) get
+Vendored copies for App Hosting apps (`clean`, `dispatch`, `restock`) get
 a **generated** `package.json` whose exports point at `./src/*.ts`
 (`scripts/gen-vendored-package-json.mjs`) — Next transpiles the raw TS via
 `transpilePackages`; `dist/` is gitignored and must never be referenced.
@@ -26,7 +26,7 @@ and compiles `dist/` inside Docker.
 
 1. Merge to `main` here.
 2. `.github/workflows/sync-consumers.yml` re-syncs each consumer and opens or
-   updates a PR on its `bot/sync-shared` branch (clean → `trunk`; hostfix-cmms,
+   updates a PR on its `bot/sync-shared` branch (clean → `trunk`; dispatch,
    restock, turnwrk-cortex → `main`). Each sync stamps
    `packages/shared/.vendor-manifest.json` with the source SHA.
 3. Merging the app PR is the deploy gate (App Hosting / Coolify deploy from the
@@ -62,7 +62,7 @@ import { COLLECTIONS } from '@turnwrk/shared/collections';
   `firestore.indexes.json`, `storage.rules` for the shared `turnwrk` project.
   One monolithic ruleset covers cmms_* + restock_* + clean_* + shared
   collections; vendored into every app so emulators load real rules, deployed
-  only from this repo (TURNWRK-220 — moved here from hostfix-cmms).
+  only from this repo (TURNWRK-220 — moved here from dispatch).
 - **Email templates** (`email/`) — `@turnwrk/email`, a second package vendored
   to `<app>/packages/email` (not part of the `@turnwrk/shared` export map).
 

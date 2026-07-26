@@ -1,7 +1,7 @@
 /**
  * Deterministic multi-org context-dot palette (Turnwrk Suite Design System).
  *
- * Promoted from hostfix-cmms/lib/orgColors.ts so every app that shows a vendor's
+ * Promoted from dispatch/lib/orgColors.ts so every app that shows a vendor's
  * multi-org membership tags dots them the same, index-stable way. Org identity,
  * not brand — intentionally distinct from the terracotta accent slot.
  */

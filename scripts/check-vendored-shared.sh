@@ -30,7 +30,7 @@ EXCLUDES=(
 # label|relative path under suite|compare_package_json (0|1)
 # cortex syncs package.json too (builds to dist in Docker).
 CHECKS=(
-  "hostfix-cmms|hostfix-cmms/packages/shared|0"
+  "dispatch|dispatch/packages/shared|0"
   "restock|restock/packages/shared|0"
   "clean|clean/packages/shared|0"
   "turnwrk-cortex|turnwrk-cortex/packages/shared|1"

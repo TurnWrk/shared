@@ -10,9 +10,9 @@
  */
 
 /**
- * Same value set as hostfix-cmms `InspectionInputType` (types.ts) — hostfix
+ * Same value set as dispatch `InspectionInputType` (types.ts) — hostfix
  * aliases its union to this one. Keep in sync with the widget set in
- * hostfix-cmms components/ui/InspectionInputs.tsx.
+ * dispatch components/ui/InspectionInputs.tsx.
  */
 export type ChecklistInputType =
   | 'checkbox'

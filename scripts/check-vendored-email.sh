@@ -15,7 +15,7 @@ if [[ ! -d "$ROOT/src" ]]; then
 fi
 
 CHECKS=(
-  "hostfix-cmms|hostfix-cmms/packages/email"
+  "dispatch|dispatch/packages/email"
   "restock|restock/packages/email"
   "clean|clean/packages/email"
 )

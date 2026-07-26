@@ -4,7 +4,7 @@
 # bot has a remote canonical.
 #
 # Usage: sync-email-consumer.sh <consumer-root> [--strip-js]
-#   --strip-js  hostfix-cmms only: strip ESM `.js` suffixes off relative
+#   --strip-js  dispatch only: strip ESM `.js` suffixes off relative
 #               imports (Turbopack needs extensionless; webpack is fine).
 #               check-vendored-email.sh normalizes both forms when comparing.
 set -euo pipefail

@@ -1,6 +1,6 @@
 # @turnwrk/email
 
-Transactional email for the turnwrk app suite (`hostfix-cmms`, `restock`).
+Transactional email for the turnwrk app suite (`dispatch`, `restock`).
 Wraps the Resend SDK and ships React Email templates so every app sends
 identical-looking mail.
 

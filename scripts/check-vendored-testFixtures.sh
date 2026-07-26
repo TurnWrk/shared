@@ -16,7 +16,7 @@ fi
 
 # label|relative path under suite
 CHECKS=(
-  "hostfix-cmms|hostfix-cmms/packages/shared/src/testFixtures"
+  "dispatch|dispatch/packages/shared/src/testFixtures"
   "restock|restock/packages/shared/src/testFixtures"
   "clean|clean/packages/shared/src/testFixtures"
 )

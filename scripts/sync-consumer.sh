@@ -6,7 +6,7 @@
 # check-vendored-integrity.sh (consumer side).
 #
 # Usage: sync-consumer.sh <consumer-root> <apphosting|full>
-#   apphosting  clean / hostfix-cmms / restock — vendored package.json is
+#   apphosting  clean / dispatch / restock — vendored package.json is
 #               GENERATED with src/*.ts exports (dist/ is gitignored; a
 #               dist-pointing vendored package.json breaks App Hosting builds).
 #   full        turnwrk-cortex — full tree incl. canonical package.json/lock
