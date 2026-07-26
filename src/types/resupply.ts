@@ -31,7 +31,7 @@ export type ResupplyVendorType = 'cleaning' | 'maintenance';
  * Two origin styles share this shape:
  *   - Restock (catalog-linked): `itemType` is the canonical catalog key
  *     (e.g. 'toilet-paper'); `productId` optionally pins a specific product.
- *   - Hostfix-CMMS (free-text): `name` is a human label (e.g. "dish sponges").
+ *   - Dispatch (free-text): `name` is a human label (e.g. "dish sponges").
  *
  * At least one of `itemType` or `name` must be set.
  */
@@ -80,7 +80,7 @@ export interface ResupplyRequest {
   acknowledgedAt?: number;
   acknowledgedBy?: string;
 
-  // Hostfix-CMMS workflow fields — optional because restock writers don't
+  // Dispatch workflow fields — optional because restock writers don't
   // populate them. Kept on the shared type so both apps can read a single
   // canonical document without casting.
   vendorId?: string;
@@ -180,7 +180,7 @@ export function restockScanResupplyDocId(
 
 // ==================== PURCHASE REQUESTS ====================
 // One-off, non-consumable purchases (furniture, appliances, decor, …).
-// Originates in hostfix-cmms but lives in the shared `purchaseRequests`
+// Originates in dispatch but lives in the shared `purchaseRequests`
 // collection so other suite apps can read it.
 
 export type PurchaseRequestStatus =

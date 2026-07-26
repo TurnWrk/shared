@@ -1,6 +1,6 @@
 /**
  * Standalone expense receipt submitted by a vendor outside any work order.
- * Stored in the shared `vendorReceipts` collection — written by hostfix-cmms
+ * Stored in the shared `vendorReceipts` collection — written by dispatch
  * (technician Pay tab) today; restock will write the same shape when
  * authenticated cleaners submit supply-purchase receipts.
  *

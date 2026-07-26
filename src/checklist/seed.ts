@@ -1,7 +1,7 @@
 /**
  * Pure template → checklist-instance seeding. No firebase imports — runs in
  * Next server routes, Cloud Functions (mirrored copy in
- * hostfix-cmms/functions/src/checklistSeed.ts), and vitest.
+ * dispatch/functions/src/checklistSeed.ts), and vitest.
  *
  * Firestore constraint: emitted objects must never carry `undefined` values —
  * optional fields are omitted, not set to undefined.

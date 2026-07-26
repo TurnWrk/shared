@@ -1,5 +1,5 @@
 /**
- * Pure unit-occupancy helpers shared by hostfix-cmms (public vendor calendar,
+ * Pure unit-occupancy helpers shared by dispatch (public vendor calendar,
  * dispatch scheduling pre-fill) and turnwrk-cortex (AI assignment scheduling).
  * No firebase imports — runs in server components, Express services, and vitest.
  *
@@ -8,7 +8,7 @@
  * `checkIn <= day < checkOut` — the checkout day itself is VACANT (turnover
  * cleans are scheduled on checkout day by design).
  *
- * Lifted from hostfix-cmms/lib/publicCalendar.ts (TURNWRK-224); that module
+ * Lifted from dispatch/lib/publicCalendar.ts (TURNWRK-224); that module
  * re-exports these so the public calendar keeps a single implementation.
  */
 

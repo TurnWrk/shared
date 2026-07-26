@@ -3,7 +3,7 @@ rules_version = '2';
 // ============================================================================
 // Canonical Firestore rules for the turnwrk suite (project: "turnwrk").
 //
-// This file is the single source of truth for both hostfix-cmms and restock.
+// This file is the single source of truth for both dispatch and restock.
 // The restock repo's firestore.rules.reference is NOT deployed.
 //
 // Model:

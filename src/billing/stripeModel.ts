@@ -32,7 +32,7 @@
  * - Clean product may still be labeled "Clean add-on" in Dashboard; list
  *   Price amount is correct at $4/unit.
  *
- * Runtime lives in hostfix-cmms (`lib/billing/`, `/api/webhooks/suite-stripe`).
+ * Runtime lives in dispatch (`lib/billing/`, `/api/webhooks/suite-stripe`).
  * Clean Connect is a separate Stripe surface (`clean/…/connect/`).
  */
 

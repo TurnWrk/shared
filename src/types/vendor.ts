@@ -1,5 +1,5 @@
 /**
- * Org-independent vendor identity shared across hostfix-cmms and restock.
+ * Org-independent vendor identity shared across dispatch and restock.
  * Org access is modeled in `vendorAffiliations` (and denormalized `orgIds`
  * on the vendor doc for rules/queries).
  */

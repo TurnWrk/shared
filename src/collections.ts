@@ -16,7 +16,7 @@ export const COLLECTIONS = {
   purchaseRequests: 'purchaseRequests',
   invites: 'invites',
   // Vendor-owned standalone expense receipts (see types/receipt.ts).
-  // Written by hostfix-cmms today; restock cleaners later.
+  // Written by dispatch today; restock cleaners later.
   vendorReceipts: 'vendorReceipts',
   // Org-independent vendor identity (keyed by phone); shared across CMMS + Restock.
   vendors: 'vendors',
@@ -26,7 +26,7 @@ export const COLLECTIONS = {
   // served by cmms resolves them via the Admin SDK — no public read).
   propertyShareTokens: 'propertyShareTokens',
 
-  // hostfix-cmms-scoped
+  // dispatch-scoped
   cmms_workOrders: 'cmms_workOrders',
   cmms_technicians: 'cmms_technicians',
   cmms_bookings: 'cmms_bookings',

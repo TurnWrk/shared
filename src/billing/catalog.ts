@@ -41,7 +41,7 @@ export const SUITE_PRODUCTS: Readonly<Record<SuiteProductSku, SuiteProductDefini
       name: 'Dispatch',
       unitAmountCents: 600,
       enablesApps: ['hostfixCmms'],
-      notes: 'Maintenance ops / hostfix-cmms — core wedge',
+      notes: 'Maintenance ops / dispatch — core wedge',
     },
     restock: {
       sku: 'restock',

@@ -2,7 +2,7 @@
  * Public vendor calendar share links.
  *
  * A share token is an evergreen, revocable bearer secret for one property:
- * the public occupancy-calendar page (served by hostfix-cmms at
+ * the public occupancy-calendar page (served by dispatch at
  * `/calendar/{tokenId}`) resolves it server-side via the Admin SDK. Tokens
  * are created/revoked from both the hostfix dispatch UI and restock's
  * property detail page, hence the unprefixed shared collection

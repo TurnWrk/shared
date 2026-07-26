@@ -17,10 +17,10 @@ name: Sync consumers
 #
 # Secrets (fine-grained PATs, created and held by the owner; fine-grained PATs
 # are single-org, and restock lives in Breezy-Keys — hence two):
-#   TURNWRK_REPOS_TOKEN — resource owner TurnWrk; repos clean, cmms,
-#                         dispatch-assistant-api; Contents RW + Pull requests RW
-#   BREEZY_REPOS_TOKEN  — resource owner Breezy-Keys; repo
-#                         bed-breakfast-and-beyond; Contents RW + Pull requests RW
+#   TURNWRK_REPOS_TOKEN — resource owner TurnWrk; repos clean, dispatch,
+#                         turnwrk-cortex; Contents RW + Pull requests RW
+#   BREEZY_REPOS_TOKEN  — resource owner Breezy-Keys; repo restock;
+#                         Contents RW + Pull requests RW
 
 on:
   push:
@@ -32,7 +32,7 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: 'Limit to one consumer (clean | hostfix-cmms | restock | turnwrk-cortex)'
+        description: 'Limit to one consumer (clean | dispatch | restock | turnwrk-cortex)'
         required: false
         default: ''
 
@@ -54,20 +54,20 @@ jobs:
             variant: apphosting
             email: plain
             token: TURNWRK_REPOS_TOKEN
-          - name: hostfix-cmms
-            repo: TurnWrk/cmms
+          - name: dispatch
+            repo: TurnWrk/dispatch
             base: main
             variant: apphosting
             email: strip-js # Turbopack tree keeps extensionless relative imports
             token: TURNWRK_REPOS_TOKEN
           - name: restock
-            repo: Breezy-Keys/bed-breakfast-and-beyond
+            repo: Breezy-Keys/restock
             base: main
             variant: apphosting
             email: plain
             token: BREEZY_REPOS_TOKEN
           - name: turnwrk-cortex
-            repo: TurnWrk/dispatch-assistant-api
+            repo: TurnWrk/turnwrk-cortex
             base: main
             variant: full # canonical package.json + lock; Docker builds dist/
             email: none
