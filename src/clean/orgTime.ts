@@ -54,6 +54,32 @@ export function preauthDueAtFor(scheduledStartUtc: number): number {
   return scheduledStartUtc - 48 * 60 * 60 * 1000;
 }
 
+/**
+ * Today as YYYY-MM-DD in an IANA timezone (org/property-local).
+ *
+ * Anything deriving "today" from server wall-clock must use this: App Hosting
+ * containers run UTC, so `new Date().toISOString().slice(0, 10)` rolls the day
+ * over during the US evening and reports tomorrow. Falls back to the UTC date
+ * only when `Intl` rejects the zone.
+ */
+export function todayYmdInTz(timeZone?: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timeZone || DEFAULT_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const y = parts.find((p) => p.type === 'year')?.value;
+    const m = parts.find((p) => p.type === 'month')?.value;
+    const d = parts.find((p) => p.type === 'day')?.value;
+    if (y && m && d) return `${y}-${m}-${d}`;
+  } catch {
+    /* unknown timezone — fall through to UTC */
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
 /** Add whole days to an org-local YYYY-MM-DD (pure calendar math, DST-immune). */
 export function addDaysToDate(date: string, days: number): string {
   const [y, m, d] = date.split('-').map(Number);
