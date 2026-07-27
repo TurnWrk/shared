@@ -15,12 +15,14 @@ name: Sync consumers
 # when a base branch has already caught up (dev local sync merged), the
 # no-drift path auto-closes the stale bot PR.
 #
-# Secrets (fine-grained PATs, created and held by the owner; fine-grained PATs
-# are single-org, and restock lives in Breezy-Keys — hence two):
+# Secrets (fine-grained PAT, created and held by the owner). Fine-grained PATs
+# are single-org: every consumer now lives in TurnWrk (restock moved out of
+# Breezy-Keys 2026-07-27), so one token covers all four.
 #   TURNWRK_REPOS_TOKEN — resource owner TurnWrk; repos clean, dispatch,
-#                         turnwrk-cortex; Contents RW + Pull requests RW
-#   BREEZY_REPOS_TOKEN  — resource owner Breezy-Keys; repo restock;
-#                         Contents RW + Pull requests RW
+#                         restock, turnwrk-cortex; Contents RW + Pull requests RW
+# BREEZY_REPOS_TOKEN is obsolete and can be deleted. A transferred repo drops
+# out of its old owner's fine-grained PAT scope immediately — the restock leg
+# 403'd with "Write access to repository not granted" until this switch.
 
 on:
   push:
@@ -61,11 +63,11 @@ jobs:
             email: strip-js # Turbopack tree keeps extensionless relative imports
             token: TURNWRK_REPOS_TOKEN
           - name: restock
-            repo: Breezy-Keys/restock
+            repo: TurnWrk/restock
             base: main
             variant: apphosting
             email: plain
-            token: BREEZY_REPOS_TOKEN
+            token: TURNWRK_REPOS_TOKEN
           - name: turnwrk-cortex
             repo: TurnWrk/turnwrk-cortex
             base: main
