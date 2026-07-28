@@ -237,6 +237,24 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
       },
     },
   },
+  visit_report: {
+    // Verticals V2 — the "digital door hanger". Sent unprompted on visit
+    // completion; the CTA opens the retained full report (photos + checklist).
+    audience: 'customer',
+    ctaUrlVar: 'report.url',
+    channels: {
+      sms: {
+        body: '{{org.name}}: your {{booking.service}} on {{booking.date}} is done — {{report.photo_count}} photos, {{report.checklist_summary}}. View: {{report.url}}',
+      },
+      email: {
+        subject: 'Your {{org.name}} service report — {{booking.date}}',
+        heading: 'Your visit report',
+        body: 'Hi {{customer.first_name}}, your {{booking.service}} on {{booking.date}} is complete. We took {{report.photo_count}} photos and {{report.checklist_summary}}. Tap below for the full report.',
+        ctaLabel: 'View full report',
+        footnote: 'Kept on file so you can look back any time.',
+      },
+    },
+  },
   sos_triggered: {
     // Operator-audience safety alert — exempt from plan gating (A4).
     audience: 'operator',
@@ -292,6 +310,9 @@ export const SAMPLE_TEMPLATE_VARS: Record<string, string | number> = {
   'incident.url': 'https://example.com/app/bookings',
   'bounty.spot': 'Under the kitchen sink',
   'bounty.review_url': 'https://example.com/app/bounties',
+  'report.photo_count': 4,
+  'report.checklist_summary': 'Checklist 12/14 complete',
+  'report.url': 'https://example.com/app/reports/sample',
   eta: '15 min',
 };
 
