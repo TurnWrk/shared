@@ -89,6 +89,8 @@ export const COLLECTIONS = {
   clean_bounties: 'clean_bounties',
   // Cleaner photo submissions incl. auto-rejected rows (audit trail).
   clean_bountySubmissions: 'clean_bountySubmissions',
+  // Verticals V2 proof-of-service reports; doc id = assignment id (one per visit).
+  clean_visitReports: 'clean_visitReports',
 
   // restock-scoped
   restock_products: 'restock_products',

@@ -8,6 +8,7 @@ export * from './assignmentVendor';
 export * from './templateRender';
 export * from './availability';
 export * from './notificationDefaults';
+export * from './visitReport';
 export * from './bountyDraw';
 export * from './bountySubmission';
 export * from './bountyDefaults';

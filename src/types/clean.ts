@@ -11,6 +11,8 @@
  * @turnwrk/shared/clean/transitions.ts — writers must go through that layer.
  */
 
+import type { ChecklistItemStatus } from './checklist';
+
 // ---------------------------------------------------------------------------
 // Customers & leads
 // ---------------------------------------------------------------------------
@@ -42,6 +44,12 @@ export interface CleanCustomer {
   termsDays?: number;
   /** Set when the customer texts STOP; cleared on START. Blocks all SMS sends. */
   smsOptOutAt?: number;
+  /**
+   * Per-customer opt-out of the Verticals V2 proof-of-service visit report.
+   * When true, no report is sent for this customer even if the org toggle is
+   * on. Absent/false inherits the org default.
+   */
+  visitReportOptOut?: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -664,7 +672,8 @@ export type CleanNotificationEventKey =
   | 'invoice_reminder' // A2 (dunning stage is a template variable, not N keys)
   | 'invoice_overdue' // A2
   | 'sos_triggered' // A4 — exempt from plan gating (safety is not a tier)
-  | 'bounty_submitted'; // CO2 — operator review-queue nudge (manual approval mode)
+  | 'bounty_submitted' // CO2 — operator review-queue nudge (manual approval mode)
+  | 'visit_report'; // Verticals V2 — proof-of-service auto-report after a visit
 
 /**
  * Org-edited template override for one (eventKey, channel, audience). Only
@@ -723,6 +732,92 @@ export interface CleanNotificationSend {
   segments?: number;
   error?: string;
   idempotencyKey?: string;
+  createdAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Proof-of-service visit report (Verticals V2 — TURNWRK-291)
+// ---------------------------------------------------------------------------
+
+export type VisitReportPhotoKind = 'before' | 'in_progress' | 'after';
+
+/** One photo in the customer-facing report (mapped from a WO timeline entry). */
+export interface VisitReportPhoto {
+  kind: VisitReportPhotoKind;
+  url: string;
+  /** Timeline entry timestamp, when known (used for stable ordering). */
+  timestamp?: number;
+  caption?: string;
+}
+
+/** A completed checklist item, flattened for the customer report. */
+export interface VisitReportChecklistItem {
+  label: string;
+  status?: ChecklistItemStatus;
+  note?: string;
+  notApplicable?: boolean;
+  /** How many photos back this item up. */
+  photoCount: number;
+}
+
+export interface VisitReportChecklistSection {
+  title: string;
+  items: VisitReportChecklistItem[];
+}
+
+export interface VisitReportPhotoCounts {
+  before: number;
+  inProgress: number;
+  after: number;
+  total: number;
+}
+
+/**
+ * The assembled proof-of-service report — a self-contained snapshot composed
+ * from a work order's before/after photos and completed checklist at the
+ * moment a visit finishes. Pure data: assembled by `assembleVisitReport`
+ * (src/clean/visitReport.ts), persisted for later viewing, and summarized into
+ * the `visit_report` notification. `readings` (water chemistry etc.) arrives
+ * with the pool vertical V5.
+ */
+export interface VisitReport {
+  /** Service name shown to the customer (e.g. "Weekly Pool Service"). */
+  service: string;
+  /** Display date, pre-formatted by the caller. */
+  date: string;
+  photos: {
+    before: VisitReportPhoto[];
+    inProgress: VisitReportPhoto[];
+    after: VisitReportPhoto[];
+  };
+  photoCounts: VisitReportPhotoCounts;
+  checklist: {
+    sections: VisitReportChecklistSection[];
+    /** Complete / total across the WHOLE checklist (honest even when only completed items are listed). */
+    done: number;
+    total: number;
+    /** One-line summary, e.g. "Checklist 12/14 complete". */
+    summaryLine: string;
+  };
+}
+
+/**
+ * Persisted report doc (`clean_visitReports`) — retained so the customer
+ * record can show past reports and so re-completing a visit stays idempotent
+ * (doc id = assignmentId). One report per visit.
+ */
+export interface CleanVisitReport {
+  /** Doc id — the assignment id, making writes idempotent per visit. */
+  id: string;
+  orgId: string;
+  bookingId: string;
+  assignmentId: string;
+  customerId?: string;
+  workOrderId?: string;
+  report: VisitReport;
+  /** Channel that carried the report to the customer, when one did. */
+  sentChannel?: CleanNotificationChannel;
+  sentStatus?: CleanNotificationSendStatus;
   createdAt: number;
 }
 
@@ -1059,6 +1154,12 @@ export interface CleanCommunicationsSettings {
   operatorAlertPhone?: string;
   /** A1 on-my-way customer notification (default true). */
   enRouteEnabled?: boolean;
+  /**
+   * Verticals V2 proof-of-service report on visit completion (default true).
+   * Org-level master switch; a per-customer opt-out can override it (see
+   * CleanCustomer.visitReportOptOut).
+   */
+  visitReportEnabled?: boolean;
 }
 
 /** A/R dunning schedule (Change Order 1 A2). */
