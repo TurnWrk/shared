@@ -43,6 +43,11 @@ export const COLLECTIONS = {
   cmms_propertyMappings: 'cmms_propertyMappings',
   cmms_reviews: 'cmms_reviews',
   cmms_reports: 'cmms_reports',
+  // Async AI work-order generation queue. dispatch enqueues; turnwrk-cortex
+  // claims, runs Ollama out-of-band, and writes the resulting work orders.
+  // Server-write only (Admin SDK on both sides); clients read to render the
+  // in-flight / failed cards in the Incoming Requests inbox.
+  cmms_woIntakeRequests: 'cmms_woIntakeRequests',
   // Owner-facing work-order estimates. Public /estimate/{token} page + the
   // approve/decline writeback resolve these via the Admin SDK — no public read.
   cmms_estimates: 'cmms_estimates',

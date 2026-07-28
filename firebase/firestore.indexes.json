@@ -19,6 +19,15 @@
       ]
     },
     {
+      "collectionGroup": "cmms_woIntakeRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "orgId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "receivedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "cmms_workOrders",
       "queryScope": "COLLECTION",
       "fields": [
