@@ -14,7 +14,7 @@ export * from './invoiceKind';
 export * from './paymentPolicy';
 export * from './assignmentVendor';
 
-
+export * from './availability';
 /**
  * @deprecated Verticals C6 (TURNWRK-325) — notifications moved to
  * `@turnwrk/shared/notifications`. Re-exported for one release.
