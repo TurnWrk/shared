@@ -65,6 +65,11 @@
       "require": "./dist/verticals/index.js",
       "default": "./dist/verticals/index.js"
     },
+    "./routing": {
+      "types": "./dist/routing/index.d.ts",
+      "require": "./dist/routing/index.js",
+      "default": "./dist/routing/index.js"
+    },
     "./notifications": {
       "types": "./dist/notifications/index.d.ts",
       "require": "./dist/notifications/index.js",
