@@ -8,7 +8,12 @@ export * from './assignmentVendor';
 export * from './templateRender';
 export * from './availability';
 export * from './notificationDefaults';
-export * from './visitReport';
+/**
+ * @deprecated Verticals C1 (TURNWRK-319) — the visit report moved to
+ * `@turnwrk/shared/proof`. Re-exported for one release so vendored copies and
+ * app imports keep compiling.
+ */
+export * from '../proof';
 export * from './bountyDraw';
 export * from './bountySubmission';
 export * from './bountyDefaults';

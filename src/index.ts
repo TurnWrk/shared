@@ -15,3 +15,4 @@ export * from './propertyAddress';
 export * from './propertyStorage';
 export * from './occupancy';
 export * from './verticals';
+export * from './proof';

@@ -65,6 +65,11 @@
       "require": "./dist/verticals/index.js",
       "default": "./dist/verticals/index.js"
     },
+    "./proof": {
+      "types": "./dist/proof/index.d.ts",
+      "require": "./dist/proof/index.js",
+      "default": "./dist/proof/index.js"
+    },
     "./onboarding": {
       "types": "./dist/onboarding/index.d.ts",
       "require": "./dist/onboarding/index.js",
