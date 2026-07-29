@@ -60,6 +60,11 @@
       "require": "./dist/authFlow.js",
       "default": "./dist/authFlow.js"
     },
+    "./verticals": {
+      "types": "./dist/verticals/index.d.ts",
+      "require": "./dist/verticals/index.js",
+      "default": "./dist/verticals/index.js"
+    },
     "./onboarding": {
       "types": "./dist/onboarding/index.d.ts",
       "require": "./dist/onboarding/index.js",

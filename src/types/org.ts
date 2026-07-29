@@ -2,6 +2,7 @@ import type { InspectMode } from './property';
 import type { LaundryVendorConfig } from './property';
 import type { CleanOrgSettings } from './clean';
 import type { WOType } from './workOrder';
+import type { VerticalKey } from '../verticals/types';
 
 export interface OrgBranding {
   logoUrl?: string;
@@ -293,6 +294,20 @@ export interface Org {
   tax?: { pct: number };
   /** Turnwrk Clean org configuration (booking site, windows, reviews, …). */
   cleanSettings?: CleanOrgSettings;
+  /**
+   * Trades this org runs (TURNWRK-315). The SHAPE axis — terminology, cadences,
+   * seeds and copy — distinct from `enabledApps` / `features`, which are the
+   * ENTITLEMENT axes. A vertical never gates a paid feature.
+   *
+   * Deliberately NON-privileged (org-admin client-writable), same class as
+   * `dispatch` / `cmms` / `quickWorkOrder` below: an admin picks their own
+   * trade. Do NOT add these to firestore.rules changesPrivilegedOrgFields.
+   *
+   * Absent resolves via `resolveOrgVerticals` (src/verticals/resolve.ts).
+   */
+  verticals?: VerticalKey[];
+  /** Trade driving terminology defaults. Absent = first of `verticals`. */
+  primaryVertical?: VerticalKey;
   /**
    * Default inspect mode applied to newly created properties for this org.
    * Individual properties can still override via `PropertySupply.inspectMode`.
