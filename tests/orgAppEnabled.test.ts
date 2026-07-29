@@ -44,8 +44,10 @@ describe('normalizeEnabledApps', () => {
     expect(next).toEqual({
       hostfixCmms: true,
       restock: true,
-      clean: false,
+      // TURNWRK-331: writers emit `service`; `clean` is read-only compat.
+      service: false,
     });
+    expect((next as { clean?: boolean }).clean).toBeUndefined();
     expect((next as { cmms?: boolean }).cmms).toBeUndefined();
   });
 });
@@ -55,7 +57,7 @@ describe('resolveBootstrapEnabledApps / createIndefiniteTrialBilling', () => {
     expect(resolveBootstrapEnabledApps()).toEqual({
       hostfixCmms: true,
       restock: true,
-      clean: false,
+      service: false,
     });
     expect(resolveBootstrapEnabledApps(null)).toEqual(DEFAULT_TRIAL_ENABLED_APPS);
   });
@@ -64,7 +66,7 @@ describe('resolveBootstrapEnabledApps / createIndefiniteTrialBilling', () => {
     expect(resolveBootstrapEnabledApps({ cmms: true, restock: false })).toEqual({
       hostfixCmms: true,
       restock: false,
-      clean: false,
+      service: false,
     });
   });
 

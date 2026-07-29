@@ -43,31 +43,61 @@ export interface OrgSlaSettings {
  */
 export type OrgFeatureKey =
   /** Operator may edit notification templates (default on). */
-  | 'clean_editable_templates'
+  | 'svc_editable_templates'
   /** Removes "Powered by Turnwrk" badging from the public booking surfaces (default off). */
-  | 'clean_white_label_booking'
+  | 'svc_white_label_booking'
   /** SMS channel available to this org (default on; sends still require org smsEnabled + provider config). */
-  | 'clean_sms'
+  | 'svc_sms'
   /** Bounty photo rewards (Change Order 2). Default off: zero UI, zero rows. */
-  | 'clean_bounties';
+  | 'svc_bounties';
 
 export const ORG_FEATURE_DEFAULTS: Record<OrgFeatureKey, boolean> = {
-  clean_editable_templates: true,
-  clean_white_label_booking: false,
-  clean_sms: true,
-  clean_bounties: false,
+  svc_editable_templates: true,
+  svc_white_label_booking: false,
+  svc_sms: true,
+  svc_bounties: false,
 };
 
-/** Resolve a feature flag with its default. */
+/**
+ * Legacy `clean_*` feature keys, still present on live `orgs` docs
+ * (TURNWRK-331). Read-only compat: `orgFeatureEnabled` falls back to these when
+ * the `svc_*` key is absent, so an org that has not been re-saved keeps its
+ * settings. Writers emit only `svc_*`.
+ */
+export const LEGACY_ORG_FEATURE_KEYS: Readonly<Record<OrgFeatureKey, string>> = Object.freeze({
+  svc_editable_templates: 'clean_editable_templates',
+  svc_white_label_booking: 'clean_white_label_booking',
+  svc_sms: 'clean_sms',
+  svc_bounties: 'clean_bounties',
+});
+
+/**
+ * Resolve a feature flag with its default, dual-reading the legacy `clean_*`
+ * key. An explicit `false` under either name is honoured — only an ABSENT value
+ * falls through to the default, otherwise an operator who turned a feature off
+ * would silently have it turned back on by the rename.
+ */
 export function orgFeatureEnabled(
   org: Pick<Org, 'features'> | null | undefined,
   key: OrgFeatureKey,
 ): boolean {
-  return org?.features?.[key] ?? ORG_FEATURE_DEFAULTS[key];
+  const features = org?.features as Record<string, boolean | undefined> | undefined;
+  const current = features?.[key];
+  if (current !== undefined) return current;
+  const legacy = features?.[LEGACY_ORG_FEATURE_KEYS[key]];
+  if (legacy !== undefined) return legacy;
+  return ORG_FEATURE_DEFAULTS[key];
 }
 
-/** Suite product keys on `Org.enabledApps`. */
-export type OrgAppKey = 'hostfixCmms' | 'restock' | 'clean';
+/**
+ * Suite product keys on `Org.enabledApps`.
+ *
+ * `'clean'` became `'service'` in Verticals F2 (TURNWRK-331). `orgs` docs are
+ * LIVE and not disposable — unlike the `clean_*` collections — so the old key
+ * is dual-read forever-ish rather than dropped, exactly as `cmms` is for
+ * `hostfixCmms`. Writers emit only `service`.
+ */
+export type OrgAppKey = 'hostfixCmms' | 'restock' | 'service';
 
 /**
  * Legacy Firestore docs sometimes store `enabledApps.cmms` instead of
@@ -76,7 +106,12 @@ export type OrgAppKey = 'hostfixCmms' | 'restock' | 'clean';
 export type OrgEnabledApps = {
   hostfixCmms?: boolean;
   restock?: boolean;
-  /** Turnwrk Clean (cleaning-operations product). */
+  /** Turnwrk Service (the general booking/recurring-service product). */
+  service?: boolean;
+  /**
+   * @deprecated Verticals F2 (TURNWRK-331) — read via `orgAppEnabled('service')`.
+   * Still present on live org docs; never written by `normalizeEnabledApps`.
+   */
   clean?: boolean;
   /**
    * @deprecated Legacy key — dual-read only. Prefer `hostfixCmms`.
@@ -134,11 +169,12 @@ export interface OrgBilling {
  * Dispatch + Restock on; Clean stays opt-in. Callers may override via bootstrap body.
  */
 export const DEFAULT_TRIAL_ENABLED_APPS: Required<
-  Pick<OrgEnabledApps, 'hostfixCmms' | 'restock' | 'clean'>
+  Pick<OrgEnabledApps, 'hostfixCmms' | 'restock' | 'service'>
 > = {
   hostfixCmms: true,
   restock: true,
-  clean: false,
+  // New orgs are written with the current key only (TURNWRK-331).
+  service: false,
 };
 
 /**
@@ -198,7 +234,8 @@ export function resolveBootstrapEnabledApps(
 /**
  * Whether an org may use a suite app.
  *
- * - Dual-reads legacy `enabledApps.cmms` as `hostfixCmms`.
+ * - Dual-reads legacy `enabledApps.cmms` as `hostfixCmms` and legacy
+ *   `enabledApps.clean` as `service` (TURNWRK-331).
  * - Missing `enabledApps` entirely: allow hostfixCmms + restock (legacy
  *   grandfather); Clean stays off until explicitly enabled (matches Clean app).
  * - `status === 'suspended'`: all apps off.
@@ -216,10 +253,17 @@ export function orgAppEnabled(
   if (app === 'hostfixCmms') {
     return apps.hostfixCmms === true || apps.cmms === true;
   }
+  if (app === 'service') {
+    return apps.service === true || apps.clean === true;
+  }
   return apps[app] === true;
 }
 
-/** Normalize enabledApps for writes: always `hostfixCmms`, never `cmms`. */
+/**
+ * Normalize enabledApps for writes: always `hostfixCmms`/`service`, never the
+ * legacy `cmms`/`clean`. Reading stays tolerant of both (`orgAppEnabled`);
+ * only writes are canonicalised, so a doc is upgraded the next time it is saved.
+ */
 export function normalizeEnabledApps(
   input: OrgEnabledApps | null | undefined,
 ): Org['enabledApps'] {
@@ -228,7 +272,9 @@ export function normalizeEnabledApps(
   return {
     ...(hostfixCmms ? { hostfixCmms: true } : { hostfixCmms: false }),
     ...(input.restock === true ? { restock: true } : { restock: false }),
-    ...(input.clean === true ? { clean: true } : { clean: false }),
+    ...(input.service === true || input.clean === true
+      ? { service: true }
+      : { service: false }),
   };
 }
 
