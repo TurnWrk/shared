@@ -375,6 +375,16 @@ service cloud.firestore {
       allow update, delete: if canWriteOrg(resource.data.orgId);
     }
 
+    // Async AI work-order generation queue. dispatch enqueues via an Admin-SDK
+    // API route and turnwrk-cortex claims/completes with the Admin SDK, so
+    // every client write is denied — including platform admins. Clients read
+    // to render the in-flight / failed cards in Incoming Requests; PM-role
+    // users see their own submissions, hence canWriteOrg not canAdminOrg.
+    match /cmms_woIntakeRequests/{intakeId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if false;
+    }
+
     // Direct/email owner invoices. Public /invoice/{token} uses Admin SDK — no
     // public read. Client writes go through Admin-SDK API routes.
     match /cmms_ownerInvoices/{invoiceId} {

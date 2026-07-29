@@ -1200,6 +1200,19 @@ export interface CleanOrgSettings {
   photoCloseoutRequired?: boolean;
   /** Auto-turnover automation (WOType 'Turnover' from occupancy checkouts). */
   turnover?: CleanTurnoverSettings;
+  /**
+   * Stripe Connect — the org's OWN account, and the merchant of record for its
+   * customers' payments. Charges execute on it directly, so funds never enter
+   * the platform balance and disputes settle against the org (see
+   * `billing/connect.ts`). Field names are mirrored in `CLEAN_CONNECT_ORG_FIELDS`.
+   */
+  stripeConnectAccountId?: string;
+  /** Stripe has enabled card acceptance. No charges until true. */
+  stripeConnectChargesEnabled?: boolean;
+  /** Stripe has enabled payouts to the org's bank. */
+  stripeConnectPayoutsEnabled?: boolean;
+  /** Express onboarding finished (KYC satisfied at the time it was recorded). */
+  stripeConnectOnboardingComplete?: boolean;
 }
 
 export interface CleanTurnoverSettings {
