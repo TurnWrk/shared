@@ -6,15 +6,20 @@
  */
 import type { VerticalKey, VerticalPack } from './types';
 import { VERTICAL_KEYS } from './types';
+import { CLEANING_PACK } from './packs/cleaning';
+import { STR_TURNOVER_PACK } from './packs/strTurnover';
 
 /**
  * Packs land per phase (docs/projects/VERTICAL-MODULES.md § Sequencing), so
- * this is deliberately `Partial`: `cleaning` + `str_turnover` in phase A,
- * `pool` / `lawn` / `handyman` in phase E. Callers use `packFor` (tolerant) or
- * `requirePack` (loud) rather than indexing it directly.
+ * this is deliberately `Partial`: `cleaning` + `str_turnover` in phase A
+ * (TURNWRK-316), `pool` / `lawn` / `handyman` in phase E. Callers use `packFor`
+ * (tolerant) or `requirePack` (loud) rather than indexing it directly.
  */
 export const VERTICAL_REGISTRY: Readonly<Partial<Record<VerticalKey, VerticalPack>>> =
-  Object.freeze({});
+  Object.freeze({
+    cleaning: CLEANING_PACK,
+    str_turnover: STR_TURNOVER_PACK,
+  });
 
 /** The pack for a trade, or undefined while that trade is unauthored. */
 export function packFor(key: VerticalKey): VerticalPack | undefined {
