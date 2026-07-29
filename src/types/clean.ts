@@ -739,87 +739,22 @@ export interface CleanNotificationSend {
 // Proof-of-service visit report (Verticals V2 — TURNWRK-291)
 // ---------------------------------------------------------------------------
 
-export type VisitReportPhotoKind = 'before' | 'in_progress' | 'after';
-
-/** One photo in the customer-facing report (mapped from a WO timeline entry). */
-export interface VisitReportPhoto {
-  kind: VisitReportPhotoKind;
-  url: string;
-  /** Timeline entry timestamp, when known (used for stable ordering). */
-  timestamp?: number;
-  caption?: string;
-}
-
-/** A completed checklist item, flattened for the customer report. */
-export interface VisitReportChecklistItem {
-  label: string;
-  status?: ChecklistItemStatus;
-  note?: string;
-  notApplicable?: boolean;
-  /** How many photos back this item up. */
-  photoCount: number;
-}
-
-export interface VisitReportChecklistSection {
-  title: string;
-  items: VisitReportChecklistItem[];
-}
-
-export interface VisitReportPhotoCounts {
-  before: number;
-  inProgress: number;
-  after: number;
-  total: number;
-}
-
 /**
- * The assembled proof-of-service report — a self-contained snapshot composed
- * from a work order's before/after photos and completed checklist at the
- * moment a visit finishes. Pure data: assembled by `assembleVisitReport`
- * (src/clean/visitReport.ts), persisted for later viewing, and summarized into
- * the `visit_report` notification. `readings` (water chemistry etc.) arrives
- * with the pool vertical V5.
+ * @deprecated Verticals C1 (TURNWRK-319) moved these to `@turnwrk/shared/proof`.
+ * Re-exported here for one release so vendored copies keep compiling; import
+ * from the new subpath in new code. `CleanVisitReport` is now
+ * `VisitReportRecord`.
  */
-export interface VisitReport {
-  /** Service name shown to the customer (e.g. "Weekly Pool Service"). */
-  service: string;
-  /** Display date, pre-formatted by the caller. */
-  date: string;
-  photos: {
-    before: VisitReportPhoto[];
-    inProgress: VisitReportPhoto[];
-    after: VisitReportPhoto[];
-  };
-  photoCounts: VisitReportPhotoCounts;
-  checklist: {
-    sections: VisitReportChecklistSection[];
-    /** Complete / total across the WHOLE checklist (honest even when only completed items are listed). */
-    done: number;
-    total: number;
-    /** One-line summary, e.g. "Checklist 12/14 complete". */
-    summaryLine: string;
-  };
-}
-
-/**
- * Persisted report doc (`clean_visitReports`) — retained so the customer
- * record can show past reports and so re-completing a visit stays idempotent
- * (doc id = assignmentId). One report per visit.
- */
-export interface CleanVisitReport {
-  /** Doc id — the assignment id, making writes idempotent per visit. */
-  id: string;
-  orgId: string;
-  bookingId: string;
-  assignmentId: string;
-  customerId?: string;
-  workOrderId?: string;
-  report: VisitReport;
-  /** Channel that carried the report to the customer, when one did. */
-  sentChannel?: CleanNotificationChannel;
-  sentStatus?: CleanNotificationSendStatus;
-  createdAt: number;
-}
+export type {
+  VisitReportPhotoKind,
+  VisitReportPhoto,
+  VisitReportChecklistItem,
+  VisitReportChecklistSection,
+  VisitReportPhotoCounts,
+  VisitReport,
+  VisitReportRecord,
+  VisitReportRecord as CleanVisitReport,
+} from '../proof/types';
 
 // ---------------------------------------------------------------------------
 // Contractor availability & time off (Change Order 1 R3)

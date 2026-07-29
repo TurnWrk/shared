@@ -19,7 +19,7 @@ import type {
   VisitReportChecklistSection,
   VisitReportPhoto,
   VisitReportPhotoCounts,
-} from '../types/clean';
+} from './types';
 import {
   checklistProgress,
   checklistSummaryLine,

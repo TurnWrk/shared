@@ -3,8 +3,8 @@ import {
   assembleVisitReport,
   visitReportNotification,
   type AssembleVisitReportInput,
-} from '../../src/clean/visitReport';
-import type { VisitReportPhoto } from '../../src/types/clean';
+} from '../../src/proof/visitReport';
+import type { VisitReportPhoto } from '../../src/proof/types';
 import type { ChecklistItem, WorkOrderChecklist } from '../../src/types/checklist';
 
 const photo = (overrides: Partial<VisitReportPhoto>): VisitReportPhoto => ({
