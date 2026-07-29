@@ -23,13 +23,35 @@ export interface ChecklistRepeatParam {
   qty: number;
 }
 
+/** Countables a section can repeat over. `beds`/`baths` are the historical keys. */
+export type PropertyCounts = Record<string, number | undefined>;
+
+/**
+ * The bed/bath heuristic this module carried before packs existed. Kept as the
+ * default so un-migrated callers are unchanged; pack-aware callers pass
+ * `VerticalPack.repeatSources` instead. Remove once every caller resolves a
+ * pack (phase C).
+ */
+export const DEFAULT_REPEAT_SOURCES: readonly string[] = ['bed', 'bath'];
+
 export interface SeedChecklistOptions {
   templateId?: string;
   templateName?: string;
   /** Booking params ("Bedrooms" ×3) — primary repeat-count source. */
   paramsSnapshot?: ChecklistRepeatParam[];
-  /** Property counts — fallback when no booking params exist (turnovers). */
-  propertyCounts?: { beds?: number; baths?: number };
+  /**
+   * Property counts — fallback when no booking params exist (turnovers).
+   * Conventionally `beds` / `baths`; keyed openly so a vertical can supply its
+   * own countable ("bays", "zones") alongside its `repeatSources`.
+   */
+  propertyCounts?: PropertyCounts;
+  /**
+   * Label substrings whose match lets a section repeat from `propertyCounts`
+   * — `VerticalPack.repeatSources` (TURNWRK-317). Absent falls back to
+   * DEFAULT_REPEAT_SOURCES so callers that do not yet resolve a pack (dispatch
+   * PM generation, the Cloud Functions mirror) keep today's behaviour.
+   */
+  repeatSources?: readonly string[];
   /** Injectable for tests; defaults to Date.now(). */
   seededAt?: number;
 }
@@ -42,13 +64,18 @@ const normalize = (s: string): string => s.trim().toLowerCase();
 /**
  * How many copies of a template section to emit. Matching order:
  * 1. paramsSnapshot entry whose label or paramId matches `repeatPerParamLabel`
- * 2. propertyCounts.beds / .baths when the label mentions bed / bath
+ * 2. a `repeatSources` entry the label mentions, resolved against propertyCounts
  * 3. 1 (single copy)
  * A matched qty of 0 drops the section entirely (return 0).
+ *
+ * Step 2 used to hardcode bed → `propertyCounts.beds` and bath → `.baths`
+ * (TURNWRK-317). It now walks pack-provided sources in order, accepting both
+ * the bare source and its plural as the count key so `['bed','bath']` still
+ * reads today's `{ beds, baths }` callers unchanged.
  */
 export function resolveRepeatCount(
   section: ChecklistTemplateSection,
-  opts: Pick<SeedChecklistOptions, 'paramsSnapshot' | 'propertyCounts'>,
+  opts: Pick<SeedChecklistOptions, 'paramsSnapshot' | 'propertyCounts' | 'repeatSources'>,
 ): number {
   const label = section.repeatPerParamLabel;
   if (!label) return 1;
@@ -61,11 +88,12 @@ export function resolveRepeatCount(
   );
   if (param) return clampRepeat(param.qty);
 
-  if (wanted.includes('bed') && typeof opts.propertyCounts?.beds === 'number') {
-    return clampRepeat(opts.propertyCounts.beds);
-  }
-  if (wanted.includes('bath') && typeof opts.propertyCounts?.baths === 'number') {
-    return clampRepeat(opts.propertyCounts.baths);
+  const sources = opts.repeatSources ?? DEFAULT_REPEAT_SOURCES;
+  for (const source of sources) {
+    const key = normalize(source);
+    if (!key || !wanted.includes(key)) continue;
+    const count = opts.propertyCounts?.[key] ?? opts.propertyCounts?.[`${key}s`];
+    if (typeof count === 'number') return clampRepeat(count);
   }
   return 1;
 }

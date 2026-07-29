@@ -39,3 +39,11 @@ export interface CleaningJobDetails {
   /** Residential mode: whether the customer expects to be home. */
   customerHome?: boolean;
 }
+
+/**
+ * Trade-neutral name for the same snapshot (TURNWRK-317). Verticals B1 writes
+ * it as `WorkOrder.serviceDetails` while continuing to write the identical
+ * object to the deprecated `cleaning` key, so existing readers are untouched
+ * until they migrate. Deliberately an ALIAS, not a copy — one shape, no drift.
+ */
+export type ServiceJobDetails = CleaningJobDetails;

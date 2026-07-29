@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_REPEAT_SOURCES,
   MAX_SECTION_REPEAT,
   resolveRepeatCount,
   seedChecklistFromTemplate,
@@ -132,5 +133,88 @@ describe('templateSections', () => {
 
   it('returns empty for a template with neither', () => {
     expect(templateSections({})).toEqual([]);
+  });
+});
+
+describe('pack-provided repeatSources (TURNWRK-317)', () => {
+  const bath: ChecklistTemplateSection = {
+    id: 'bath',
+    title: 'Bathroom',
+    repeatPerParamLabel: 'Full Baths',
+    items: [],
+  };
+  const bay: ChecklistTemplateSection = {
+    id: 'bay',
+    title: 'Bay',
+    repeatPerParamLabel: 'Service Bays',
+    items: [],
+  };
+
+  it('defaults to the legacy bed/bath pair when no pack passes sources', () => {
+    // Un-migrated callers (dispatch PM generation, the Cloud Functions mirror)
+    // must be byte-identical to pre-flip behaviour.
+    expect(DEFAULT_REPEAT_SOURCES).toEqual(['bed', 'bath']);
+    expect(resolveRepeatCount(bath, { propertyCounts: { baths: 3 } })).toBe(3);
+  });
+
+  it('accepts both the bare source and its plural as the count key', () => {
+    expect(resolveRepeatCount(bath, { propertyCounts: { baths: 3 }, repeatSources: ['bath'] })).toBe(3);
+    expect(resolveRepeatCount(bath, { propertyCounts: { bath: 3 }, repeatSources: ['bath'] })).toBe(3);
+  });
+
+  it('lets a vertical declare its own countable', () => {
+    expect(
+      resolveRepeatCount(bay, { propertyCounts: { bays: 4 }, repeatSources: ['bay'] }),
+    ).toBe(4);
+  });
+
+  it('degrades to one copy when no declared source matches the label', () => {
+    expect(
+      resolveRepeatCount(bath, { propertyCounts: { baths: 3 }, repeatSources: ['bay'] }),
+    ).toBe(1);
+  });
+
+  it('degrades to one copy when the source matches but no count is supplied', () => {
+    expect(resolveRepeatCount(bath, { propertyCounts: {}, repeatSources: ['bath'] })).toBe(1);
+  });
+
+  it('still prefers a matching booking param over any declared source', () => {
+    expect(
+      resolveRepeatCount(bath, {
+        paramsSnapshot: [{ label: 'Full Baths', qty: 2 }],
+        propertyCounts: { baths: 9 },
+        repeatSources: ['bath'],
+      }),
+    ).toBe(2);
+  });
+
+  it('honours source order when a label mentions two of them', () => {
+    const both: ChecklistTemplateSection = {
+      id: 'both',
+      title: 'Bed and bath',
+      repeatPerParamLabel: 'Bed & bath combo',
+      items: [],
+    };
+    expect(
+      resolveRepeatCount(both, {
+        propertyCounts: { beds: 2, baths: 5 },
+        repeatSources: ['bath', 'bed'],
+      }),
+    ).toBe(5);
+  });
+
+  it('clamps a count coming from a declared source', () => {
+    expect(
+      resolveRepeatCount(bath, { propertyCounts: { baths: 400 }, repeatSources: ['bath'] }),
+    ).toBe(MAX_SECTION_REPEAT);
+  });
+
+  it('seeds whole checklists off a declared source', () => {
+    const checklist = seedChecklistFromTemplate([bay], {
+      propertyCounts: { bays: 3 },
+      repeatSources: ['bay'],
+      seededAt: 1,
+    });
+    expect(checklist.sections.map((s) => s.title)).toEqual(['Bay 1', 'Bay 2', 'Bay 3']);
   });
 });
