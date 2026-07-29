@@ -15,6 +15,7 @@ import {
 } from '../src/verticals';
 import type { VerticalPack } from '../src/verticals';
 import { DEFAULT_CLEAN_FREQUENCIES } from '../src/types/clean';
+import type { CleanFrequency, CleanFrequencyKey } from '../src/types/clean';
 import { DEFAULT_CLEAN_TEMPLATES } from '../src/clean/notificationDefaults';
 import { catalogById } from '../src/onboarding/catalogs';
 
@@ -125,5 +126,26 @@ describe('str_turnover pack', () => {
   it('inherits the shipped notification copy verbatim', () => {
     const merged = { ...DEFAULT_CLEAN_TEMPLATES, ...STR_TURNOVER_PACK.notificationCopy };
     expect(merged).toEqual(DEFAULT_CLEAN_TEMPLATES);
+  });
+});
+
+describe('cadence keys are open to pack declarations (TURNWRK-318)', () => {
+  it('still accepts the four cleaning literals', () => {
+    const keys: CleanFrequencyKey[] = ['once', 'weekly', 'fortnightly', 'monthly'];
+    expect(keys).toEqual(CLEANING_PACK.cadences.map((c) => c.key));
+  });
+
+  it('accepts a cadence key the old enum could not express', () => {
+    // The pool case the card names: 10-day and seasonal cycles.
+    const tenDay: CleanFrequency = { key: 'every_10_days', widgetLabel: 'Every 10 days', discountPct: 15 };
+    const seasonal: CleanFrequency = { key: 'seasonal', widgetLabel: 'Seasonal', discountPct: 0 };
+    expect([tenDay.key, seasonal.key]).toEqual(['every_10_days', 'seasonal']);
+  });
+
+  it('lets a pack cadence be used directly as a catalog frequency', () => {
+    // VerticalCadence and CleanFrequency stay structurally identical, so a pack
+    // can seed catalog.frequencies with no mapping layer.
+    const asFrequencies: CleanFrequency[] = [...CLEANING_PACK.cadences];
+    expect(asFrequencies).toEqual(DEFAULT_CLEAN_FREQUENCIES);
   });
 });
