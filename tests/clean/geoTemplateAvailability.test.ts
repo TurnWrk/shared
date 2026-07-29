@@ -9,7 +9,7 @@ import {
   availableTechCountForSlot,
   hasContractorAvailabilityData,
   effectiveSlotCapacity,
-} from '../../src/clean/availability';
+} from '../../src/booking/availability';
 import type { CleanContractorAvailability, CleanTimeOff } from '../../src/types/clean';
 
 describe('haversineMeters', () => {

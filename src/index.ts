@@ -18,3 +18,5 @@ export * from './verticals';
 export * from './proof';
 export * from './service';
 export * from './notifications';
+export * from './routing';
+export * from './booking';
