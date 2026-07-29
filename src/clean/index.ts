@@ -3,14 +3,18 @@
  * `@turnwrk/shared/service`. Re-exported for one release.
  */
 export * from '../service';
-export * from './transitions';
+/**
+ * @deprecated Verticals C4 (TURNWRK-323) — booking/series/availability moved to
+ * `@turnwrk/shared/booking`. Re-exported for one release.
+ */
+export * from '../booking';
 export * from './orgTime';
 export * from './payments';
 export * from './invoiceKind';
 export * from './paymentPolicy';
 export * from './assignmentVendor';
 
-export * from './availability';
+
 /**
  * @deprecated Verticals C6 (TURNWRK-325) — notifications moved to
  * `@turnwrk/shared/notifications`. Re-exported for one release.
