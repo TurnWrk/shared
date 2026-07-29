@@ -323,3 +323,24 @@ export function defaultTemplateFor(
 ): CleanTemplateBody | undefined {
   return DEFAULT_CLEAN_TEMPLATES[eventKey]?.channels[channel];
 }
+
+/**
+ * Resolve the effective code-level defaults for a vertical (Verticals C6 —
+ * TURNWRK-325).
+ *
+ * The fallback chain is **code default → pack override → org override**. This
+ * function owns the first two rungs; the engine layers `clean_notificationTemplates`
+ * on top, so **an operator's own edit always wins over their pack**. That order
+ * is deliberate: a pack is a shipped default, not a policy the operator cannot
+ * escape.
+ *
+ * Merging is per EVENT, not per channel — a pack that overrides `receipt`
+ * replaces that event's whole entry, so it cannot half-describe an event and
+ * leave a channel rendering someone else's trade.
+ */
+export function resolveNotificationDefaults(
+  packCopy?: Partial<Record<CleanNotificationEventKey, CleanTemplateDefault>>,
+): Record<CleanNotificationEventKey, CleanTemplateDefault> {
+  if (!packCopy) return DEFAULT_CLEAN_TEMPLATES;
+  return { ...DEFAULT_CLEAN_TEMPLATES, ...packCopy };
+}

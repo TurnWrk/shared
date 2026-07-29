@@ -9,9 +9,13 @@ export * from './payments';
 export * from './invoiceKind';
 export * from './paymentPolicy';
 export * from './assignmentVendor';
-export * from './templateRender';
+
 export * from './availability';
-export * from './notificationDefaults';
+/**
+ * @deprecated Verticals C6 (TURNWRK-325) — notifications moved to
+ * `@turnwrk/shared/notifications`. Re-exported for one release.
+ */
+export * from '../notifications';
 /**
  * @deprecated Verticals C1 (TURNWRK-319) — the visit report moved to
  * `@turnwrk/shared/proof`. Re-exported for one release so vendored copies and

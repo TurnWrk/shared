@@ -15,7 +15,7 @@ import {
 } from '../src/verticals';
 import type { VerticalPack } from '../src/verticals';
 import { DEFAULT_CLEAN_FREQUENCIES } from '../src/types/clean';
-import { DEFAULT_CLEAN_TEMPLATES } from '../src/clean/notificationDefaults';
+import { DEFAULT_CLEAN_TEMPLATES } from '../src/notifications/defaults';
 import { catalogById } from '../src/onboarding/catalogs';
 
 const AUTHORED: VerticalPack[] = [CLEANING_PACK, STR_TURNOVER_PACK];

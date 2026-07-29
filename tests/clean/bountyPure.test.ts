@@ -23,7 +23,7 @@ import {
   DHASH_WIDTH,
   DHASH_HEIGHT,
 } from '../../src/clean/imageHash';
-import { DEFAULT_CLEAN_TEMPLATES } from '../../src/clean/notificationDefaults';
+import { DEFAULT_CLEAN_TEMPLATES } from '../../src/notifications/defaults';
 
 function spot(partial: Partial<CleanBountySpot> & Pick<CleanBountySpot, 'id' | 'category'>): CleanBountySpot {
   return {
