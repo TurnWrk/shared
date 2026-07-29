@@ -1,4 +1,8 @@
-export * from './pricing';
+/**
+ * @deprecated Verticals C2 (TURNWRK-321) — catalog + pricing moved to
+ * `@turnwrk/shared/service`. Re-exported for one release.
+ */
+export * from '../service';
 export * from './transitions';
 export * from './orgTime';
 export * from './payments';

@@ -85,45 +85,25 @@ export interface CleanLead {
 // Catalog (one embedded doc per org: clean_catalogs/{orgId})
 // ---------------------------------------------------------------------------
 
-export type CleanServiceMode = 'residential' | 'str' | 'both';
-
-/** A ± stepper row on the wizard ("Bedrooms", "Full Baths", …). */
-export interface CleanPricingParam {
-  id: string;
-  label: string;
-  unitPriceMinor: number;
-  unitMinutes: number;
-  min: number;
-  max: number;
-  sort: number;
-}
-
-export interface CleanService {
-  id: string;
-  name: string;
-  description?: string;
-  basePriceMinor: number;
-  baseMinutes: number;
-  mode: CleanServiceMode;
-  active: boolean;
-  /** Optional cmms_pmTemplates doc id — attaches a checklist to jobs. */
-  checklistTemplateId?: string;
-  params: CleanPricingParam[];
-  /** Which org extras are offered for this service. */
-  extraIds: string[];
-  /** Per-service payment-policy override (e.g. commercial services on terms). */
-  paymentPolicy?: CleanPaymentPolicy;
-}
-
-export interface CleanExtra {
-  id: string;
-  label: string;
-  priceMinor: number;
-  minutes: number;
-  /** When true the wizard shows a qty stepper ("Carpets ×3"). */
-  qtyEnabled: boolean;
-  description?: string;
-}
+/**
+ * @deprecated Verticals C2 (TURNWRK-321) moved the catalog types to
+ * `@turnwrk/shared/service`. Re-exported here for one release so vendored
+ * copies and app imports keep compiling.
+ */
+export type {
+  ServiceMode,
+  ServiceMode as CleanServiceMode,
+  PricingParam,
+  PricingParam as CleanPricingParam,
+  ServiceOffering,
+  ServiceOffering as CleanService,
+  ServiceExtra,
+  ServiceExtra as CleanExtra,
+  ServiceDiscountCode,
+  ServiceDiscountCode as CleanDiscountCode,
+  ServiceCatalog,
+  ServiceCatalog as CleanCatalog,
+} from '../service/types';
 
 export type CleanFrequencyKey = 'once' | 'weekly' | 'fortnightly' | 'monthly';
 
@@ -142,29 +122,6 @@ export const DEFAULT_CLEAN_FREQUENCIES: CleanFrequency[] = [
   { key: 'monthly', widgetLabel: 'Monthly', discountPct: 10 },
 ];
 
-export interface CleanDiscountCode {
-  /** Whole percent off the subtotal. Mutually exclusive with fixedMinor. */
-  pct?: number;
-  /** Fixed amount off in minor units. */
-  fixedMinor?: number;
-  active: boolean;
-}
-
-/**
- * The org's whole service catalog as ONE doc — a single read serves the
- * booking widget and edits are atomic. Catalogs are small (well under the
- * 1 MiB doc limit). Prices/labels are snapshotted onto bookings, so editing
- * the catalog never mutates history.
- */
-export interface CleanCatalog {
-  orgId: string;
-  services: CleanService[];
-  extras: CleanExtra[];
-  frequencies: CleanFrequency[];
-  /** Keyed by uppercase code. */
-  discountCodes?: Record<string, CleanDiscountCode>;
-  updatedAt: number;
-}
 
 // ---------------------------------------------------------------------------
 // Quotes (shared FE/BE pricing result — see ../clean/pricing.ts)

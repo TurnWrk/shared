@@ -7,7 +7,7 @@
  * Spec: docs/projects/clean/02-ENGINEERING-SPEC.md §M4 (payments lifecycle).
  */
 import type { CleanDunningSettings, CleanInvoice, CleanPayment } from '../types/clean';
-import { splitAllocatedMinutes } from './pricing';
+import { splitAllocatedMinutes } from '../service/pricing';
 import { isArInvoice } from './invoiceKind';
 
 // ---------------------------------------------------------------------------
