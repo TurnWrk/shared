@@ -20,11 +20,39 @@ export type TemplateRenderResult =
 
 const TOKEN_RE = /\{\{\s*([a-z0-9_]+(?:\.[a-z0-9_]+)*)\s*\}\}/g;
 
+/**
+ * Dual-read for renamed template variables (Verticals C6 — TURNWRK-325).
+ *
+ * A trade-neutral template says `{{worker.first_name}}`, but context builders
+ * and saved org override docs still speak `{{cleaner.first_name}}`. Resolving
+ * through the alias means the rename can land in copy WITHOUT a coordinated
+ * deploy of every builder, and an override doc written before the rename keeps
+ * rendering instead of failing closed and suppressing the send.
+ *
+ * Aliases are checked only when the primary key is missing, so a caller that
+ * supplies the new name always wins. Remove an entry once every builder and
+ * stored override has moved.
+ */
+export const TEMPLATE_VAR_ALIASES: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  'worker.first_name': ['cleaner.first_name'],
+});
+
+/** Value for `token`, falling back to its legacy aliases. */
+function lookupVar(token: string, vars: TemplateVars): string | number | undefined | null {
+  const direct = vars[token];
+  if (direct !== undefined && direct !== null && direct !== '') return direct;
+  for (const alias of TEMPLATE_VAR_ALIASES[token] ?? []) {
+    const value = vars[alias];
+    if (value !== undefined && value !== null && value !== '') return value;
+  }
+  return direct;
+}
+
 /** Render `text`, substituting {{tokens}} from `vars` (dotted keys, flat map). */
 export function renderTemplate(text: string, vars: TemplateVars): TemplateRenderResult {
   const missing: string[] = [];
   const out = text.replace(TOKEN_RE, (_m, token: string) => {
-    const value = vars[token];
+    const value = lookupVar(token, vars);
     if (value === undefined || value === null || value === '') {
       if (!missing.includes(token)) missing.push(token);
       return '';
