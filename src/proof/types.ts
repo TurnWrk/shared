@@ -9,7 +9,7 @@ import type { ChecklistItemStatus } from '../types/checklist';
 import type {
   CleanNotificationChannel,
   CleanNotificationSendStatus,
-} from '../types/clean';
+} from '../notifications/types';
 
 export type VisitReportPhotoKind = 'before' | 'in_progress' | 'after';
 

@@ -65,6 +65,11 @@
       "require": "./dist/verticals/index.js",
       "default": "./dist/verticals/index.js"
     },
+    "./notifications": {
+      "types": "./dist/notifications/index.d.ts",
+      "require": "./dist/notifications/index.js",
+      "default": "./dist/notifications/index.js"
+    },
     "./service": {
       "types": "./dist/service/index.d.ts",
       "require": "./dist/service/index.js",

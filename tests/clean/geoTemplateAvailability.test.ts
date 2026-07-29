@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { haversineMeters } from '../../src/clean/geo';
-import { renderTemplate, extractTemplateVars } from '../../src/clean/templateRender';
+import { renderTemplate, extractTemplateVars } from '../../src/notifications/render';
 import {
   dowForDate,
   timeToMinutes,

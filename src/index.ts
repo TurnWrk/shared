@@ -17,3 +17,4 @@ export * from './occupancy';
 export * from './verticals';
 export * from './proof';
 export * from './service';
+export * from './notifications';
