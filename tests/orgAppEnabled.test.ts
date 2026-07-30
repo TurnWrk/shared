@@ -25,7 +25,7 @@ describe('orgAppEnabled', () => {
     const org = { id: 'x', name: 'n', createdAt: 0, updatedAt: 0 } as Org;
     expect(orgAppEnabled(org, 'hostfixCmms')).toBe(true);
     expect(orgAppEnabled(org, 'restock')).toBe(true);
-    expect(orgAppEnabled(org, 'clean')).toBe(false);
+    expect(orgAppEnabled(org, 'service')).toBe(false);
   });
 
   it('blocks all apps when suspended', () => {
