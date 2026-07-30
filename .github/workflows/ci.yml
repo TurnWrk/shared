@@ -2,15 +2,31 @@ name: CI
 
 # Unit + typecheck gate for @turnwrk/shared. Tests only — never deploys.
 # This package is the dependency root of the suite; keep it green first.
+# Draft PRs run nothing. The board loop opens every PR as a draft and marks it ready
+# only when the card is finished and `bin/validate` passed locally — and local validation
+# now mirrors this job step for step, so the minute spent here confirms a verdict rather
+# than discovering one. `ready_for_review` is in the type list because it is not a
+# default: without it, taking a PR out of draft would start no run at all.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
+
+# Nothing in this org cancelled a superseded run before 2026-07-30; 218 min/week was
+# spent finishing suites for commits that had already been replaced. Cancel on PRs, where
+# only the latest push matters — but never on trunk, where each commit is a distinct
+# thing someone may need a verdict about.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   unit:
     name: typecheck + unit
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
