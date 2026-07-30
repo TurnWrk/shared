@@ -37,7 +37,9 @@ export function resolveOrgVerticals(
 
   const apps = org?.enabledApps;
   if (!apps) return ['str_turnover'];
-  if (apps.clean === true) return ['cleaning'];
+  // Dual-read: `service` is the current key, `clean` the legacy one still on
+  // live org docs (TURNWRK-331).
+  if (apps.service === true || apps.clean === true) return ['cleaning'];
   if (apps.hostfixCmms === true || apps.cmms === true) return ['str_turnover'];
   return [];
 }

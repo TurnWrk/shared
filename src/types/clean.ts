@@ -105,7 +105,27 @@ export type {
   ServiceCatalog as CleanCatalog,
 } from '../service/types';
 
-export type CleanFrequencyKey = 'once' | 'weekly' | 'fortnightly' | 'monthly';
+/**
+ * A booking cadence key.
+ *
+ * Was a closed four-value enum; opened in Verticals B2 (TURNWRK-318) so a
+ * vertical can declare its own cycles — a pool route wants 10-day and seasonal,
+ * which the enum could not express. The four literals stay listed for editor
+ * autocomplete and because the `cleaning` pack still declares exactly them;
+ * `(string & {})` is what keeps that autocomplete while admitting any
+ * pack-declared key.
+ *
+ * The type is deliberately NOT the validation boundary — `priceCleanQuote`
+ * already rejects a key absent from `catalog.frequencies` with
+ * `unknown_frequency`, so the org catalog (seeded from `VerticalPack.cadences`,
+ * labels and discounts editable per org) remains the runtime source of truth.
+ */
+export type CleanFrequencyKey =
+  | 'once'
+  | 'weekly'
+  | 'fortnightly'
+  | 'monthly'
+  | (string & {});
 
 export interface CleanFrequency {
   key: CleanFrequencyKey;

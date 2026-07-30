@@ -124,3 +124,13 @@ describe('resolvePrimaryVertical', () => {
     expect(resolvePrimaryVertical(org({ enabledApps: { restock: true } }))).toBeUndefined();
   });
 });
+
+describe('service/clean key rename dual-read (TURNWRK-331)', () => {
+  it('resolves cleaning from the new service key', () => {
+    expect(resolveOrgVerticals(org({ enabledApps: { service: true } }))).toEqual(['cleaning']);
+  });
+
+  it('still resolves cleaning from a legacy org doc', () => {
+    expect(resolveOrgVerticals(org({ enabledApps: { clean: true } }))).toEqual(['cleaning']);
+  });
+});
