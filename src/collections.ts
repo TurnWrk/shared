@@ -41,6 +41,9 @@ export const COLLECTIONS = {
   cmms_auditLogs: 'cmms_auditLogs',
   cmms_pushSubscriptions: 'cmms_pushSubscriptions',
   cmms_propertyMappings: 'cmms_propertyMappings',
+  // Twenty CRM owner sync (TURNWRK-354). Maps an external CRM record to a CMMS
+  // owner; doc id === ownermap_{orgId}_{externalId}. Server-write only.
+  cmms_ownerMappings: 'cmms_ownerMappings',
   cmms_reviews: 'cmms_reviews',
   cmms_reports: 'cmms_reports',
   // Async AI work-order generation queue. dispatch enqueues; turnwrk-cortex

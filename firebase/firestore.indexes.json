@@ -209,6 +209,30 @@
       ]
     },
     {
+      "collectionGroup": "cmms_ownerMappings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "orgId", "order": "ASCENDING" },
+        { "fieldPath": "externalName", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cmms_ownerMappings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "orgId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cmms_ownerMappings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "orgId", "order": "ASCENDING" },
+        { "fieldPath": "lastSeenAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "cmms_ownerInvoices",
       "queryScope": "COLLECTION",
       "fields": [

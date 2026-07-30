@@ -36,6 +36,62 @@ export interface PropertyMapping {
   lastSeenAt: number;
 }
 
+export type OwnerMappingStatus =
+  | 'mapped'
+  | 'unmapped'
+  | 'ignored'
+  | 'external-deleted';
+
+/**
+ * Maps an external CRM record (Twenty `people`/`companies`/custom object) to a
+ * CMMS {@link Owner}. Modelled on {@link PropertyMapping}: the vendor identity
+ * lives here, not bolted onto the Owner. Server-write only (Admin SDK) —
+ * created and reconciled by the Twenty sync (inbound webhook + cortex cron).
+ *
+ * The document id is deterministic — `ownermap_{orgId}_{externalId}`, see
+ * {@link ownerMappingDocId} — so webhook, reconcile, and backfill all converge
+ * on the same doc instead of racing to create duplicates. `orgId` is required
+ * (unlike PropertyMapping's optional one) because the doc id encodes it.
+ */
+export interface OwnerMapping {
+  id: string;
+  orgId: string;
+  /** Integration provider id, e.g. `twenty`. */
+  provider: string;
+  /** Twenty object slug the record came from (`people`, `companies`, custom). */
+  externalObjectSlug: string;
+  /** Stable record id in the external system (part of the deterministic id). */
+  externalId: string;
+  /** Human-readable name in the external system, for admin display/search. */
+  externalName: string;
+  /** Linked CMMS owner doc id; null while unmapped/ignored/external-deleted. */
+  ownerId: string | null;
+  status: OwnerMappingStatus;
+  /** Hash of the last applied field set — the apply-side idempotency guard. */
+  lastAppliedHash?: string;
+  /** External record's last-updated time (epoch ms), for reconcile ordering. */
+  externalUpdatedAt?: number;
+  /** Which pass last wrote this row, e.g. `webhook` | `reconcile` | `backfill`. */
+  lastSyncSource?: string;
+  /** Last sync error message, cleared on the next clean pass. */
+  lastSyncError?: string;
+  /** When the external record was observed deleted (epoch ms). */
+  externalDeletedAt?: number;
+  createdAt: number;
+  updatedAt: number;
+  lastSeenAt: number;
+}
+
+/**
+ * Deterministic document id for an {@link OwnerMapping}. This id IS the
+ * idempotency key: the same `(orgId, externalId)` always resolves to the same
+ * doc, so the webhook, the reconcile cron, and the backfill converge instead
+ * of creating duplicate mappings.
+ */
+export function ownerMappingDocId(orgId: string, externalId: string): string {
+  return `ownermap_${orgId}_${externalId}`;
+}
+
 export interface ExternalPropertyIngest {
   provider: string;
   names: string[];

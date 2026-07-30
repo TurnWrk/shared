@@ -111,7 +111,8 @@ service cloud.firestore {
           && data.name is string
           && (!('phone' in data) || data.phone is string)
           && (!('email' in data) || data.email is string)
-          && (!('linkedUserId' in data) || data.linkedUserId is string);
+          && (!('linkedUserId' in data) || data.linkedUserId is string)
+          && (!('managedBy' in data) || data.managedBy == null || data.managedBy == 'twenty');
     }
 
     function isValidWorkOrder(data) {
@@ -248,9 +249,13 @@ service cloud.firestore {
       // allow read: if isRealUser() && resource.data.linkedUserId == request.auth.uid;
       allow create: if canWriteOrg(request.resource.data.orgId)
         && isValidOwner(request.resource.data);
+      // `managedBy` is server-managed (Twenty sync, Admin SDK). Clients may edit
+      // every other owner field but must not add, change, or remove it — same
+      // affectedKeys() guard the orgs privileged-fields rule uses above.
       allow update: if canWriteOrg(resource.data.orgId)
         && isValidOwner(request.resource.data)
-        && request.resource.data.orgId == resource.data.orgId;
+        && request.resource.data.orgId == resource.data.orgId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['managedBy']);
       allow delete: if canAdminOrg(resource.data.orgId);
     }
 
@@ -482,6 +487,15 @@ service cloud.firestore {
     match /cmms_propertyMappings/{mappingId} {
       allow read: if canWriteOrg(resource.data.orgId);
       // Normal writes come from the Akita crawl via the Admin SDK.
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // Twenty CRM owner sync (TURNWRK-354). Doc id === ownermap_{orgId}_{externalId}.
+    // Writes come only from the sync (inbound webhook + cortex reconcile) via the
+    // Admin SDK; the per-org config lives in cmms_orgTwentyConfigs, which has NO
+    // rules entry at all (default-deny → Admin-SDK-only, like dispatch_orgTelegramBots).
+    match /cmms_ownerMappings/{mappingId} {
+      allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
