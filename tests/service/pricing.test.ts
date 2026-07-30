@@ -3,10 +3,11 @@ import {
   priceCleanQuote,
   splitAllocatedMinutes,
   CleanQuoteError,
-} from '../../src/clean/pricing';
-import type { CleanCatalog, CleanQuoteSelection } from '../../src/types/clean';
+} from '../../src/service/pricing';
+import type { ServiceCatalog } from '../../src/service/types';
+import type { CleanQuoteSelection } from '../../src/types/clean';
 
-const catalog: CleanCatalog = {
+const catalog: ServiceCatalog = {
   orgId: 'org1',
   services: [
     {

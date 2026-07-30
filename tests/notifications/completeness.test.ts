@@ -4,9 +4,9 @@ import {
   SAMPLE_TEMPLATE_VARS,
   CLEAN_NOTIFICATION_EVENT_KEYS,
   defaultTemplateFor,
-} from '../../src/clean/notificationDefaults';
-import type { CleanTemplateBody } from '../../src/clean/notificationDefaults';
-import { extractTemplateVars, renderTemplate } from '../../src/clean/templateRender';
+} from '../../src/notifications/defaults';
+import type { CleanTemplateBody } from '../../src/notifications/defaults';
+import { extractTemplateVars, renderTemplate } from '../../src/notifications/render';
 import type { CleanNotificationChannel } from '../../src/types/clean';
 
 const CHANNELS: CleanNotificationChannel[] = ['email', 'sms', 'push'];

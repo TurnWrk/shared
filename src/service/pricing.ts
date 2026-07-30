@@ -12,7 +12,7 @@
  */
 
 import type {
-  CleanCatalog,
+  ServiceCatalog,
   CleanExtraSnapshot,
   CleanParamSnapshot,
   CleanQuote,
@@ -57,7 +57,7 @@ const clamp = (value: number, min: number, max: number): number =>
  * not in the service are ignored. Extras must be offered by the service.
  */
 export function priceCleanQuote(
-  catalog: CleanCatalog,
+  catalog: ServiceCatalog,
   selection: CleanQuoteSelection,
   context: CleanQuoteContext,
 ): CleanQuote {

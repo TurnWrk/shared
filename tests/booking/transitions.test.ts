@@ -8,7 +8,7 @@ import {
   woStatusForBookingStatus,
   CleanTransitionError,
   PREAUTH_ELIGIBLE_STATUSES,
-} from '../../src/clean/transitions';
+} from '../../src/booking/transitions';
 
 describe('booking transitions', () => {
   it('allows the happy path', () => {

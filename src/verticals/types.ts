@@ -11,8 +11,8 @@
  * deliberately NOT privileged (see `Org.verticals` in src/types/org.ts).
  */
 import type { ChecklistTemplateSection } from '../types/checklist';
-import type { CleanNotificationEventKey } from '../types/clean';
-import type { CleanTemplateDefault } from '../clean/notificationDefaults';
+import type { CleanNotificationEventKey } from '../notifications/types';
+import type { CleanTemplateDefault } from '../notifications/defaults';
 import type { WOType } from '../types/workOrder';
 
 /** Trades the suite models. Packs land per phase — see `VERTICAL_REGISTRY`. */

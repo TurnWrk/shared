@@ -65,6 +65,26 @@
       "require": "./dist/verticals/index.js",
       "default": "./dist/verticals/index.js"
     },
+    "./booking": {
+      "types": "./dist/booking/index.d.ts",
+      "require": "./dist/booking/index.js",
+      "default": "./dist/booking/index.js"
+    },
+    "./routing": {
+      "types": "./dist/routing/index.d.ts",
+      "require": "./dist/routing/index.js",
+      "default": "./dist/routing/index.js"
+    },
+    "./notifications": {
+      "types": "./dist/notifications/index.d.ts",
+      "require": "./dist/notifications/index.js",
+      "default": "./dist/notifications/index.js"
+    },
+    "./service": {
+      "types": "./dist/service/index.d.ts",
+      "require": "./dist/service/index.js",
+      "default": "./dist/service/index.js"
+    },
     "./proof": {
       "types": "./dist/proof/index.d.ts",
       "require": "./dist/proof/index.js",

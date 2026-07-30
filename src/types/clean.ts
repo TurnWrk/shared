@@ -85,45 +85,25 @@ export interface CleanLead {
 // Catalog (one embedded doc per org: clean_catalogs/{orgId})
 // ---------------------------------------------------------------------------
 
-export type CleanServiceMode = 'residential' | 'str' | 'both';
-
-/** A ± stepper row on the wizard ("Bedrooms", "Full Baths", …). */
-export interface CleanPricingParam {
-  id: string;
-  label: string;
-  unitPriceMinor: number;
-  unitMinutes: number;
-  min: number;
-  max: number;
-  sort: number;
-}
-
-export interface CleanService {
-  id: string;
-  name: string;
-  description?: string;
-  basePriceMinor: number;
-  baseMinutes: number;
-  mode: CleanServiceMode;
-  active: boolean;
-  /** Optional cmms_pmTemplates doc id — attaches a checklist to jobs. */
-  checklistTemplateId?: string;
-  params: CleanPricingParam[];
-  /** Which org extras are offered for this service. */
-  extraIds: string[];
-  /** Per-service payment-policy override (e.g. commercial services on terms). */
-  paymentPolicy?: CleanPaymentPolicy;
-}
-
-export interface CleanExtra {
-  id: string;
-  label: string;
-  priceMinor: number;
-  minutes: number;
-  /** When true the wizard shows a qty stepper ("Carpets ×3"). */
-  qtyEnabled: boolean;
-  description?: string;
-}
+/**
+ * @deprecated Verticals C2 (TURNWRK-321) moved the catalog types to
+ * `@turnwrk/shared/service`. Re-exported here for one release so vendored
+ * copies and app imports keep compiling.
+ */
+export type {
+  ServiceMode,
+  ServiceMode as CleanServiceMode,
+  PricingParam,
+  PricingParam as CleanPricingParam,
+  ServiceOffering,
+  ServiceOffering as CleanService,
+  ServiceExtra,
+  ServiceExtra as CleanExtra,
+  ServiceDiscountCode,
+  ServiceDiscountCode as CleanDiscountCode,
+  ServiceCatalog,
+  ServiceCatalog as CleanCatalog,
+} from '../service/types';
 
 /**
  * A booking cadence key.
@@ -162,29 +142,6 @@ export const DEFAULT_CLEAN_FREQUENCIES: CleanFrequency[] = [
   { key: 'monthly', widgetLabel: 'Monthly', discountPct: 10 },
 ];
 
-export interface CleanDiscountCode {
-  /** Whole percent off the subtotal. Mutually exclusive with fixedMinor. */
-  pct?: number;
-  /** Fixed amount off in minor units. */
-  fixedMinor?: number;
-  active: boolean;
-}
-
-/**
- * The org's whole service catalog as ONE doc — a single read serves the
- * booking widget and edits are atomic. Catalogs are small (well under the
- * 1 MiB doc limit). Prices/labels are snapshotted onto bookings, so editing
- * the catalog never mutates history.
- */
-export interface CleanCatalog {
-  orgId: string;
-  services: CleanService[];
-  extras: CleanExtra[];
-  frequencies: CleanFrequency[];
-  /** Keyed by uppercase code. */
-  discountCodes?: Record<string, CleanDiscountCode>;
-  updatedAt: number;
-}
 
 // ---------------------------------------------------------------------------
 // Quotes (shared FE/BE pricing result — see ../clean/pricing.ts)
@@ -253,169 +210,31 @@ export interface CleanArrivalWindow {
   end: string;
 }
 
-export type CleanBookingStatus =
-  | 'draft'
-  | 'booked'
-  | 'assigned'
-  | 'in_progress'
-  | 'completed'
-  | 'closed'
-  | 'on_hold'
-  | 'canceled';
-
-export type CleanBookingSource = 'widget' | 'manual' | 'ai_intake' | 'auto_turnover' | 'series';
+import type { CleanGeoStamp } from '../booking/types';
+export type { CleanGeoStamp };
 
 /**
- * One booking occurrence. 1:1 with a `cmms_workOrders` doc
- * (`WOType 'Cleaning'`); turnover jobs created from occupancy checkouts have
- * a WO but no booking/payment.
+ * @deprecated Verticals C4 (TURNWRK-323) moved these to
+ * `@turnwrk/shared/booking`. Re-exported for one release so vendored copies and
+ * app imports keep compiling.
  */
-export interface CleanBooking {
-  id: string;
-  orgId: string;
-  customerId: string;
-  propertyId: string;
-  serviceId: string;
-  serviceLabel: string;
-  frequencyKey: CleanFrequencyKey;
-  status: CleanBookingStatus;
-  paramsSnapshot: CleanParamSnapshot[];
-  extrasSnapshot: CleanExtraSnapshot[];
-  pricing: CleanPricing;
-  priceOverridden?: boolean;
-  /** Required whenever priceOverridden is set. */
-  overrideComment?: string;
-  estMinutes: number;
-  /** Org-local calendar date. */
-  scheduledDate: string;
-  arrivalWindow: CleanArrivalWindow;
-  /**
-   * Epoch ms of the window start, computed ONCE in the org timezone at write
-   * time. The T-48h pre-auth worker queries `preauthDueAt` derived from this —
-   * never recompute timezone math in workers.
-   */
-  scheduledStartUtc: number;
-  /** Visible to the customer. */
-  notesCustomer?: string;
-  /** Never customer-visible; visible to contractors. */
-  notesStaff?: string;
-  parking?: string;
-  access?: string;
-  discountCode?: string;
-  seriesId?: string;
-  workOrderId?: string;
-  leadId?: string;
-  source: CleanBookingSource;
-  canceledReason?: string;
-  /**
-   * Payment policy resolved (customer → service → org → default) and
-   * snapshotted at creation — settings edits never mutate in-flight money.
-   * Absent (legacy docs) = 'card_required_preauth'.
-   */
-  paymentPolicy?: CleanPaymentPolicy;
-  /** The job's bounty, when drawn (CO2) — zero-read gate for the cancel hook. */
-  bountyId?: string;
-  /** Status the booking held before `on_hold`, restored on release. */
-  heldFromStatus?: CleanBookingStatus;
-  /** Contractor-push reminder markers (written by the hostfix sendCleanReminders worker). */
-  reminder24hAt?: number;
-  reminder2hAt?: number;
-  /** Contractor unreported nudge (hostfix sendCleanOpsPushes — past start, no check-in). */
-  unreportedPushAt?: number;
-  /** Customer reminder markers (written by clean/'s notifications sweep — R2). */
-  customerReminder24hAt?: number;
-  customerReminder2hAt?: number;
-  createdAt: number;
-  updatedAt: number;
-}
+export type {
+  BookingStatus,
+  BookingStatus as CleanBookingStatus,
+  ServiceBookingSource,
+  ServiceBookingSource as CleanBookingSource,
+  ServiceBooking,
+  ServiceBooking as CleanBooking,
+  BookingSeries,
+  BookingSeries as CleanBookingSeries,
+  SeriesStatus,
+  SeriesStatus as CleanSeriesStatus,
+  Assignment,
+  Assignment as CleanAssignment,
+  AssignmentStatus,
+  AssignmentStatus as CleanAssignmentStatus,
+} from '../booking/types';
 
-export type CleanSeriesStatus = 'active' | 'paused' | 'canceled';
-
-/** Recurrence template; a scheduled worker materializes N future bookings. */
-export interface CleanBookingSeries {
-  id: string;
-  orgId: string;
-  customerId: string;
-  propertyId: string;
-  frequencyKey: CleanFrequencyKey;
-  selection: CleanQuoteSelection;
-  arrivalWindow: CleanArrivalWindow;
-  /** First occurrence date (org-local). */
-  anchorDate: string;
-  /** Last date (inclusive) through which bookings exist. */
-  materializedThrough?: string;
-  status: CleanSeriesStatus;
-  /** Set when a payment failure paused the series. */
-  pausedReason?: string;
-  /** First occurrence booking (source of the vaulted card for occurrences). */
-  anchorBookingId?: string;
-  /** Cached vaulted card from the anchor booking, reused to auto-charge occurrences. */
-  stripeCustomerId?: string;
-  paymentMethodId?: string;
-  /** Epoch ms of the last successful materialization run. */
-  lastMaterializedAt?: number;
-  createdAt: number;
-  updatedAt: number;
-}
-
-// ---------------------------------------------------------------------------
-// Assignments (assignment + timesheet merged; payroll source of truth)
-// ---------------------------------------------------------------------------
-
-export type CleanAssignmentStatus =
-  | 'assigned'
-  | 'notified'
-  | 'accepted'
-  | 'declined'
-  | 'removed';
-
-export interface CleanGeoStamp {
-  lat: number;
-  lng: number;
-  /** Horizontal accuracy in meters, when the device reports it. */
-  accuracy?: number;
-}
-
-/**
- * One contractor on one job. The LEAD assignment mirrors
- * `WorkOrder.assignedTechId` so the existing offer/push pipeline works
- * unmodified; secondary assignees exist only here. Check-in/out is 1:1 per
- * assignment — payroll reads these fields (override wins over actual).
- */
-export interface CleanAssignment {
-  id: string;
-  orgId: string;
-  workOrderId: string;
-  bookingId?: string;
-  /** cmms_technicians doc id. */
-  techId: string;
-  /** Cross-org vendor identity, when linked. */
-  vendorId?: string;
-  allocatedMinutes: number;
-  /** Org-scoped rate frozen at assignment time (vendorAffiliations.hourlyRateMinor). */
-  hourlyRateMinorSnapshot: number;
-  status: CleanAssignmentStatus;
-  isLead: boolean;
-  checkedInAt?: number;
-  checkedOutAt?: number;
-  /** Derived checkedOutAt − checkedInAt, minutes. */
-  actualMinutes?: number;
-  overrideMinutes?: number;
-  /** Required whenever overrideMinutes is set. */
-  overrideReason?: string;
-  source: 'app' | 'manual';
-  checkInGeo?: CleanGeoStamp;
-  checkOutGeo?: CleanGeoStamp;
-  /** Set by the "On my way" tap (A1); one-shot, cleared never. */
-  enRouteAt?: number;
-  /**
-   * The job's bounty, when drawn (CO2) — zero-read gate for the check-in/out
-   * hooks and the field app's sealed-chip signal.
-   */
-  bountyId?: string;
-  createdAt: number;
-  updatedAt: number;
-}
 
 // ---------------------------------------------------------------------------
 // Payments, invoices, payouts
@@ -665,95 +484,20 @@ export interface CleanEvent {
 // Notifications (Change Order 1 R2 — template engine + SMS channel)
 // ---------------------------------------------------------------------------
 
-export type CleanNotificationChannel = 'email' | 'sms' | 'push';
-
-export type CleanNotificationAudience = 'customer' | 'contractor' | 'operator';
-
 /**
- * Every templated send in the product. The ENG §12 matrix + Change Order 1
- * additions. Default copy per (eventKey, channel) lives in
- * clean/notificationDefaults.ts; org overrides in clean_notificationTemplates.
+ * @deprecated Verticals C6 (TURNWRK-325) moved these to
+ * `@turnwrk/shared/notifications`. Re-exported here for one release so
+ * vendored copies and app imports keep compiling.
  */
-export type CleanNotificationEventKey =
-  | 'booking_confirmed'
-  | 'booking_assigned'
-  | 'booking_changed'
-  | 'booking_canceled'
-  | 'reminder_24h'
-  | 'reminder_2h'
-  | 'preauth_upcoming_hold'
-  | 'payment_risk'
-  | 'receipt'
-  | 'review_request'
-  | 'lead_recovery'
-  // Change Order 1:
-  | 'cleaner_en_route' // A1
-  | 'invoice_issued' // R1/A2
-  | 'invoice_reminder' // A2 (dunning stage is a template variable, not N keys)
-  | 'invoice_overdue' // A2
-  | 'sos_triggered' // A4 — exempt from plan gating (safety is not a tier)
-  | 'bounty_submitted' // CO2 — operator review-queue nudge (manual approval mode)
-  | 'visit_report'; // Verticals V2 — proof-of-service auto-report after a visit
+export type {
+  CleanNotificationChannel,
+  CleanNotificationAudience,
+  CleanNotificationEventKey,
+  CleanNotificationTemplate,
+  CleanNotificationSendStatus,
+  CleanNotificationSend,
+} from '../notifications/types';
 
-/**
- * Org-edited template override for one (eventKey, channel, audience). Only
- * materialized when an operator edits — the merged view is defaults ∪ these.
- * Body/subject use {{dotted.variable}} tokens; rendering fails safe (falls
- * back to the code default, never sends raw placeholders).
- */
-export interface CleanNotificationTemplate {
-  id: string;
-  orgId: string;
-  eventKey: CleanNotificationEventKey;
-  channel: CleanNotificationChannel;
-  audience: CleanNotificationAudience;
-  /** Email only. */
-  subject?: string;
-  /** Maps to the clean-notification email template's heading slot. */
-  heading?: string;
-  body: string;
-  ctaLabel?: string;
-  footnote?: string;
-  enabled: boolean;
-  /** False once operator-edited; true rows mirror the code default. */
-  isDefault: boolean;
-  updatedBy?: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export type CleanNotificationSendStatus =
-  | 'sent'
-  | 'simulated'
-  | 'skipped_optout'
-  | 'skipped_disabled'
-  | 'skipped_duplicate'
-  | 'render_failed'
-  | 'error';
-
-/**
- * One channel attempt by the notification engine — the metering/audit record
- * (SMS usage billing derives from these; doc 07 F2 prerequisite).
- */
-export interface CleanNotificationSend {
-  id: string;
-  orgId: string;
-  eventKey: CleanNotificationEventKey;
-  channel: CleanNotificationChannel;
-  audience: CleanNotificationAudience;
-  entity?: CleanEventEntity;
-  entityId?: string;
-  /** Email address or E.164 number (org-scoped PII). */
-  to: string;
-  status: CleanNotificationSendStatus;
-  /** Provider message id (Surge/Resend), when sent. */
-  providerId?: string;
-  /** SMS segment count, for metered billing. */
-  segments?: number;
-  error?: string;
-  idempotencyKey?: string;
-  createdAt: number;
-}
 
 // ---------------------------------------------------------------------------
 // Proof-of-service visit report (Verticals V2 — TURNWRK-291)
