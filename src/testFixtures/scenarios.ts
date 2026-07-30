@@ -144,9 +144,9 @@ export const cleanBooking: Scenario = (overrides) => {
             },
           }),
         },
-        [COLLECTIONS.clean_customers]: { [TEST_DATA.customerId]: buildCustomer() },
-        [COLLECTIONS.clean_bookings]: { [TEST_DATA.bookingId]: buildBooking() },
-        [COLLECTIONS.clean_catalogs]: { [TEST_DATA.orgId]: buildCleanCatalog() },
+        [COLLECTIONS.svc_customers]: { [TEST_DATA.customerId]: buildCustomer() },
+        [COLLECTIONS.svc_bookings]: { [TEST_DATA.bookingId]: buildBooking() },
+        [COLLECTIONS.svc_catalogs]: { [TEST_DATA.orgId]: buildCleanCatalog() },
       },
     },
     overrides

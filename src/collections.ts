@@ -3,7 +3,7 @@
  *
  * Convention:
  *   - Shared collections (read/written by more than one app) use no prefix.
- *   - App-scoped collections use a prefix (`cmms_`, `restock_`, `clean_`) so
+ *   - App-scoped collections use a prefix (`cmms_`, `restock_`, `svc_`) so
  *     DB admin work can tell at a glance which app owns the data.
  */
 export const COLLECTIONS = {
@@ -58,47 +58,49 @@ export const COLLECTIONS = {
   // Admin SDK — no public Firestore read.
   cmms_ownerInvoices: 'cmms_ownerInvoices',
 
-  // Turnwrk Clean (cleaning-operations product; operator portal + public
-  // booking app both live in `clean/`, sharing this Firestore project). Types
-  // in types/clean.ts; writes are server-side except tech check-in/out.
-  clean_customers: 'clean_customers',
-  clean_leads: 'clean_leads',
-  // One embedded catalog doc per org: clean_catalogs/{orgId}.
-  clean_catalogs: 'clean_catalogs',
-  clean_bookings: 'clean_bookings',
-  clean_bookingSeries: 'clean_bookingSeries',
-  clean_assignments: 'clean_assignments',
-  clean_payments: 'clean_payments',
-  clean_invoices: 'clean_invoices',
-  clean_payoutPeriods: 'clean_payoutPeriods',
+  // Turnwrk Service (booking/recurring-service product; formerly Turnwrk Clean —
+  // renamed `clean_*` → `svc_*` under TURNWRK-327 as it went vertical-agnostic).
+  // Operator portal + public booking app both live in `clean/`, sharing this
+  // Firestore project. Types in types/clean.ts; writes are server-side except
+  // tech check-in/out.
+  svc_customers: 'svc_customers',
+  svc_leads: 'svc_leads',
+  // One embedded catalog doc per org: svc_catalogs/{orgId}.
+  svc_catalogs: 'svc_catalogs',
+  svc_bookings: 'svc_bookings',
+  svc_bookingSeries: 'svc_bookingSeries',
+  svc_assignments: 'svc_assignments',
+  svc_payments: 'svc_payments',
+  svc_invoices: 'svc_invoices',
+  svc_payoutPeriods: 'svc_payoutPeriods',
   // Customer booking reviews — distinct from cmms_reviews (property/guest store).
-  clean_reviews: 'clean_reviews',
+  svc_reviews: 'svc_reviews',
   // Append-only transition/audit stream; Stripe webhook dedupe (doc id = event id).
-  clean_events: 'clean_events',
+  svc_events: 'svc_events',
   // Per-org counters (invoice sequence, …) — doc id == orgId.
-  clean_counters: 'clean_counters',
+  svc_counters: 'svc_counters',
   // Org-edited notification template overrides (Change Order 1 R2). Defaults
   // live in code (clean/notificationDefaults.ts); docs exist only once edited.
-  clean_notificationTemplates: 'clean_notificationTemplates',
+  svc_notificationTemplates: 'svc_notificationTemplates',
   // Per-send metering/audit for the notification engine (SMS billing source).
-  clean_notificationSends: 'clean_notificationSends',
+  svc_notificationSends: 'svc_notificationSends',
   // Weekly working hours, one doc per (org, tech) — absent = always available.
-  clean_contractorAvailability: 'clean_contractorAvailability',
+  svc_contractorAvailability: 'svc_contractorAvailability',
   // PTO/sick/unavailable ranges with request→approve lifecycle (R3).
-  clean_timeOff: 'clean_timeOff',
+  svc_timeOff: 'svc_timeOff',
   // Field-safety incidents (SOS alerts) — A4.
-  clean_incidents: 'clean_incidents',
+  svc_incidents: 'svc_incidents',
   // Booking-site short links; doc id == short code (A9).
-  clean_shortLinks: 'clean_shortLinks',
+  svc_shortLinks: 'svc_shortLinks',
   // Bounty photo rewards (Change Order 2). Program config incl. the embedded
   // spot list, one doc per org (doc id == orgId, catalog pattern).
-  clean_bountyPrograms: 'clean_bountyPrograms',
+  svc_bountyPrograms: 'svc_bountyPrograms',
   // One bounty per eligible job (booking) — the drawn challenge + outcome.
-  clean_bounties: 'clean_bounties',
+  svc_bounties: 'svc_bounties',
   // Cleaner photo submissions incl. auto-rejected rows (audit trail).
-  clean_bountySubmissions: 'clean_bountySubmissions',
+  svc_bountySubmissions: 'svc_bountySubmissions',
   // Verticals V2 proof-of-service reports; doc id = assignment id (one per visit).
-  clean_visitReports: 'clean_visitReports',
+  svc_visitReports: 'svc_visitReports',
 
   // restock-scoped
   restock_products: 'restock_products',

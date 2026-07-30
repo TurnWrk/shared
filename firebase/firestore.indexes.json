@@ -274,7 +274,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bookings",
+      "collectionGroup": "svc_bookings",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -282,7 +282,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_payments",
+      "collectionGroup": "svc_payments",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
@@ -290,7 +290,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_payments",
+      "collectionGroup": "svc_payments",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "policy", "order": "ASCENDING" },
@@ -298,7 +298,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_payments",
+      "collectionGroup": "svc_payments",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -306,7 +306,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_payments",
+      "collectionGroup": "svc_payments",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -314,7 +314,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bookings",
+      "collectionGroup": "svc_bookings",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
@@ -322,7 +322,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_invoices",
+      "collectionGroup": "svc_invoices",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -330,7 +330,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_timeOff",
+      "collectionGroup": "svc_timeOff",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -339,7 +339,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_timeOff",
+      "collectionGroup": "svc_timeOff",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -347,7 +347,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_notificationTemplates",
+      "collectionGroup": "svc_notificationTemplates",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -355,7 +355,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_incidents",
+      "collectionGroup": "svc_incidents",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -363,7 +363,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_incidents",
+      "collectionGroup": "svc_incidents",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -371,7 +371,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_events",
+      "collectionGroup": "svc_events",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -379,7 +379,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_events",
+      "collectionGroup": "svc_events",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -387,7 +387,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bounties",
+      "collectionGroup": "svc_bounties",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -396,7 +396,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bounties",
+      "collectionGroup": "svc_bounties",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -404,7 +404,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bounties",
+      "collectionGroup": "svc_bounties",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "techIds", "arrayConfig": "CONTAINS" },
@@ -413,7 +413,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bounties",
+      "collectionGroup": "svc_bounties",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -421,7 +421,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bounties",
+      "collectionGroup": "svc_bounties",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
@@ -429,7 +429,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bounties",
+      "collectionGroup": "svc_bounties",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -437,7 +437,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bountySubmissions",
+      "collectionGroup": "svc_bountySubmissions",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -446,7 +446,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bountySubmissions",
+      "collectionGroup": "svc_bountySubmissions",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -454,7 +454,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bountySubmissions",
+      "collectionGroup": "svc_bountySubmissions",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -462,7 +462,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bountySubmissions",
+      "collectionGroup": "svc_bountySubmissions",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -470,7 +470,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_bountySubmissions",
+      "collectionGroup": "svc_bountySubmissions",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },
@@ -478,7 +478,7 @@
       ]
     },
     {
-      "collectionGroup": "clean_assignments",
+      "collectionGroup": "svc_assignments",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "orgId", "order": "ASCENDING" },

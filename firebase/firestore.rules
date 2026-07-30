@@ -550,71 +550,71 @@ service cloud.firestore {
     // is the org catalog (org-admin settings, like orgs/{orgId} edits).
     // ============================================================
 
-    match /clean_customers/{customerId} {
+    match /svc_customers/{customerId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
-    match /clean_leads/{leadId} {
+    match /svc_leads/{leadId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
     // Doc id == orgId (one embedded catalog per org).
-    match /clean_catalogs/{orgId} {
+    match /svc_catalogs/{orgId} {
       allow read: if canWriteOrg(orgId);
       allow create, update: if canAdminOrg(orgId)
         && request.resource.data.orgId == orgId;
       allow delete: if isPlatformAdmin();
     }
 
-    match /clean_bookings/{bookingId} {
+    match /svc_bookings/{bookingId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
-    match /clean_bookingSeries/{seriesId} {
+    match /svc_bookingSeries/{seriesId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
     // Check-in/out also goes through API routes (auth binds the caller to the
     // assignment's tech there — rules can't join to cmms_technicians cheaply).
-    match /clean_assignments/{assignmentId} {
+    match /svc_assignments/{assignmentId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
     // Payment data is org-admin only (pm/cleaner roles have no payments access).
-    match /clean_payments/{paymentId} {
+    match /svc_payments/{paymentId} {
       allow read: if canAdminOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
-    match /clean_invoices/{invoiceId} {
+    match /svc_invoices/{invoiceId} {
       allow read: if canAdminOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
-    match /clean_payoutPeriods/{periodId} {
+    match /svc_payoutPeriods/{periodId} {
       allow read: if canAdminOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
-    match /clean_reviews/{reviewId} {
+    match /svc_reviews/{reviewId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
     // Append-only audit stream (mirrors cmms_auditLogs, but server-write only).
-    match /clean_events/{eventId} {
+    match /svc_events/{eventId} {
       allow read: if canAdminOrg(resource.data.orgId);
       allow create, update, delete: if false;
     }
 
     // Per-org counters (invoice sequence, …). Doc id == orgId; the server
     // increments in a transaction (Admin SDK). Admin-read for debugging.
-    match /clean_counters/{orgId} {
+    match /svc_counters/{orgId} {
       allow read: if canAdminOrg(orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
@@ -622,38 +622,38 @@ service cloud.firestore {
     // --- Change Order 1 collections (all writes via Admin SDK API routes) ---
 
     // Org-edited notification template overrides (R2).
-    match /clean_notificationTemplates/{templateId} {
+    match /svc_notificationTemplates/{templateId} {
       allow read: if canAdminOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
-    // Per-send metering/audit (R2) — server-write only, like clean_events.
-    match /clean_notificationSends/{sendId} {
+    // Per-send metering/audit (R2) — server-write only, like svc_events.
+    match /svc_notificationSends/{sendId} {
       allow read: if canAdminOrg(resource.data.orgId);
       allow create, update, delete: if false;
     }
 
     // Weekly working hours per contractor (R3).
-    match /clean_contractorAvailability/{availabilityId} {
+    match /svc_contractorAvailability/{availabilityId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
     // PTO/time-off request→approve lifecycle (R3).
-    match /clean_timeOff/{timeOffId} {
+    match /svc_timeOff/{timeOffId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
     // Field-safety incidents / SOS (A4).
-    match /clean_incidents/{incidentId} {
+    match /svc_incidents/{incidentId} {
       allow read: if canAdminOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
     // Booking-site short links (A9). The public /s/{code} redirect resolves
     // via the Admin SDK — no public read.
-    match /clean_shortLinks/{code} {
+    match /svc_shortLinks/{code} {
       allow read: if canAdminOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
@@ -661,19 +661,19 @@ service cloud.firestore {
     // --- Change Order 2: bounty photo rewards (server-only writes) ---
 
     // Program config + embedded spot list; doc id == orgId.
-    match /clean_bountyPrograms/{orgId} {
+    match /svc_bountyPrograms/{orgId} {
       allow read: if canWriteOrg(orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
-    match /clean_bounties/{bountyId} {
+    match /svc_bounties/{bountyId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }
 
     // Submissions carry geo/phash/EXIF — admin-only direct reads; techs see
     // their own submissions through the clean API projection.
-    match /clean_bountySubmissions/{submissionId} {
+    match /svc_bountySubmissions/{submissionId} {
       allow read: if canAdminOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
     }

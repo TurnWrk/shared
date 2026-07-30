@@ -55,11 +55,11 @@ describe('testFixtures scenarios', () => {
       bookingSiteSlug: TEST_DATA.bookingSiteSlug,
       paymentPolicy: 'offline',
     });
-    expect(r.firestore[COLLECTIONS.clean_catalogs][TEST_DATA.orgId]).toMatchObject({
+    expect(r.firestore[COLLECTIONS.svc_catalogs][TEST_DATA.orgId]).toMatchObject({
       orgId: TEST_DATA.orgId,
     });
     expect(
-      (r.firestore[COLLECTIONS.clean_catalogs][TEST_DATA.orgId] as { services: unknown[] }).services
+      (r.firestore[COLLECTIONS.svc_catalogs][TEST_DATA.orgId] as { services: unknown[] }).services
         .length,
     ).toBeGreaterThan(0);
   });
