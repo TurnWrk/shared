@@ -90,6 +90,11 @@
       "require": "./dist/proof/index.js",
       "default": "./dist/proof/index.js"
     },
+    "./review": {
+      "types": "./dist/review/index.d.ts",
+      "require": "./dist/review/index.js",
+      "default": "./dist/review/index.js"
+    },
     "./onboarding": {
       "types": "./dist/onboarding/index.d.ts",
       "require": "./dist/onboarding/index.js",
