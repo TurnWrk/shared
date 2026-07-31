@@ -854,9 +854,11 @@ export interface CleanCommunicationsSettings {
   /** A1 on-my-way customer notification (default true). */
   enRouteEnabled?: boolean;
   /**
-   * Verticals V2 proof-of-service report on visit completion (default true).
-   * Org-level master switch; a per-customer opt-out can override it (see
-   * CleanCustomer.visitReportOptOut).
+   * Verticals V2 proof-of-service report on visit completion (default FALSE —
+   * owner decision 2026-07-29). Auto-reports are opt-in per org so no existing
+   * customer receives an unrequested proof-of-service text; the design-partner
+   * accounts turn it on deliberately. Org-level master switch; a per-customer
+   * opt-out can still override it on (see CleanCustomer.visitReportOptOut).
    */
   visitReportEnabled?: boolean;
 }

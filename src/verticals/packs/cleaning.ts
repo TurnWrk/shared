@@ -63,8 +63,9 @@ export const CLEANING_PACK: VerticalPack = {
    */
   repeatSources: ['bed', 'bath'],
   /**
-   * Proof-of-service reports ship on for Clean orgs
-   * (CleanOrgSettings.visitReportEnabled, "default true" — src/types/clean.ts).
+   * Clean orgs get the proof-of-service capability, but the auto-send is
+   * opt-in per org (CleanOrgSettings.visitReportEnabled, "default false" —
+   * src/types/clean.ts; owner decision 2026-07-29).
    */
   extensions: ['proof_report'],
 };
