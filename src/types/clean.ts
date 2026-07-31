@@ -17,69 +17,24 @@ import type { ChecklistItemStatus } from './checklist';
 // Customers & leads
 // ---------------------------------------------------------------------------
 
-export type CleanCustomerSource = 'widget' | 'manual' | 'import';
-
 /**
- * Org-scoped end consumer (homeowner / STR guest-payer). Customers are NEVER
- * platform users — no `Role`, no org membership; they authenticate to the
- * booking portal via magic-link/OTP tokens only.
+ * @deprecated Verticals C3 (TURNWRK-322) moved these to `@turnwrk/shared/crm`.
+ * Re-exported here for one release so vendored copies and app imports keep
+ * compiling; import from the new subpath in new code. `CleanCustomer` is now
+ * `Customer`, `CleanLead` is now `Lead`. The new `ServiceAddress` gives a trade
+ * customer many sites (one customer, many sites).
  */
-export interface CleanCustomer {
-  id: string;
-  orgId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  /** E.164 preferred. */
-  phone?: string;
-  /** Default service location (`properties` doc with kind 'residence'). */
-  defaultPropertyId?: string;
-  marketingOptIn?: boolean;
-  source: CleanCustomerSource;
-  stripeCustomerId?: string;
-  notes?: string;
-  /** Per-customer payment-policy override (negotiated commercial accounts). */
-  paymentPolicy?: CleanPaymentPolicy;
-  /** Per-customer invoice terms override (days). Falls back to org invoiceTermsDays. */
-  termsDays?: number;
-  /** Set when the customer texts STOP; cleared on START. Blocks all SMS sends. */
-  smsOptOutAt?: number;
-  /**
-   * Per-customer opt-out of the Verticals V2 proof-of-service visit report.
-   * When true, no report is sent for this customer even if the org toggle is
-   * on. Absent/false inherits the org default.
-   */
-  visitReportOptOut?: boolean;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export type CleanLeadStatus = 'open' | 'contacted' | 'converted' | 'dead';
-
-/** Captured mid-funnel at the wizard's "Get a Price" gate. */
-export interface CleanLead {
-  id: string;
-  orgId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  status: CleanLeadStatus;
-  /** Full quote at capture time — powers the resume link. */
-  quoteSnapshot: CleanQuote;
-  /** Set when the lead converts (auto-`converted`). */
-  bookingId?: string;
-  /** Random bearer token embedded in resume links. */
-  resumeToken: string;
-  followUps?: {
-    sent0hAt?: number;
-    sent48hAt?: number;
-    sent7dAt?: number;
-  };
-  unsubscribedAt?: number;
-  createdAt: number;
-  updatedAt: number;
-}
+export type {
+  CustomerSource,
+  CustomerSource as CleanCustomerSource,
+  Customer,
+  Customer as CleanCustomer,
+  ServiceAddress,
+  LeadStatus,
+  LeadStatus as CleanLeadStatus,
+  Lead,
+  Lead as CleanLead,
+} from '../crm/types';
 
 // ---------------------------------------------------------------------------
 // Catalog (one embedded doc per org: clean_catalogs/{orgId})
