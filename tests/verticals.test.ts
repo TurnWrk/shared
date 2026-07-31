@@ -10,7 +10,12 @@ import {
   resolveOrgVerticals,
   resolvePrimaryVertical,
 } from '../src/verticals';
+import type { VerticalKey } from '../src/verticals';
 import type { Org } from '../src/types/org';
+
+// Every VerticalKey now has a pack (TURNWRK-329), so the tolerant/loud lookup
+// paths are exercised with a value cast past the type rather than a real key.
+const UNAUTHORED = 'not_a_vertical' as VerticalKey;
 
 const org = (patch: Partial<Org>): Org =>
   ({ id: 'o1', name: 'Org', createdAt: 0, updatedAt: 0, ...patch }) as Org;
@@ -41,17 +46,18 @@ describe('vertical registry', () => {
   });
 
   it('packFor returns undefined for an unauthored trade', () => {
-    // pool/lawn/handyman land in phase E; a tolerant read must not throw.
-    expect(packFor('pool')).toBeUndefined();
+    // A tolerant read must not throw on a key with no pack.
+    expect(packFor(UNAUTHORED)).toBeUndefined();
   });
 
   it('requirePack throws loudly rather than falling back to cleaning', () => {
-    expect(() => requirePack('pool')).toThrow(/No vertical pack authored for 'pool'/);
+    expect(() => requirePack(UNAUTHORED)).toThrow(/No vertical pack authored for 'not_a_vertical'/);
   });
 
   it('isVerticalKey guards unknown input', () => {
     expect(isVerticalKey('cleaning')).toBe(true);
-    expect(isVerticalKey('landscaping')).toBe(false);
+    expect(isVerticalKey('landscaping')).toBe(true); // renamed from `lawn` (TURNWRK-329)
+    expect(isVerticalKey('lawn')).toBe(false); // the old spelling is no longer a key
     expect(isVerticalKey(undefined)).toBe(false);
     expect(isVerticalKey(3)).toBe(false);
   });
@@ -59,16 +65,19 @@ describe('vertical registry', () => {
 
 describe('resolveOrgVerticals', () => {
   it('prefers an explicit declaration', () => {
-    expect(resolveOrgVerticals(org({ verticals: ['pool', 'lawn'] }))).toEqual(['pool', 'lawn']);
+    expect(resolveOrgVerticals(org({ verticals: ['pool', 'landscaping'] }))).toEqual([
+      'pool',
+      'landscaping',
+    ]);
   });
 
   it('dedupes and drops unknown declared keys', () => {
-    const dirty = { verticals: ['pool', 'pool', 'landscaping'] } as unknown as Partial<Org>;
+    const dirty = { verticals: ['pool', 'pool', 'not_a_vertical'] } as unknown as Partial<Org>;
     expect(resolveOrgVerticals(org(dirty))).toEqual(['pool']);
   });
 
   it('falls back when the declaration holds nothing usable', () => {
-    const dirty = { verticals: ['landscaping'], enabledApps: { clean: true } } as unknown as Partial<Org>;
+    const dirty = { verticals: ['not_a_vertical'], enabledApps: { clean: true } } as unknown as Partial<Org>;
     expect(resolveOrgVerticals(org(dirty))).toEqual(['cleaning']);
   });
 
@@ -107,12 +116,12 @@ describe('resolveOrgVerticals', () => {
 describe('resolvePrimaryVertical', () => {
   it('prefers an explicit primary', () => {
     expect(
-      resolvePrimaryVertical(org({ primaryVertical: 'lawn', verticals: ['pool'] })),
-    ).toBe('lawn');
+      resolvePrimaryVertical(org({ primaryVertical: 'landscaping', verticals: ['pool'] })),
+    ).toBe('landscaping');
   });
 
   it('ignores an unknown primary and falls back to the first resolved', () => {
-    const dirty = { primaryVertical: 'landscaping', verticals: ['pool'] } as unknown as Partial<Org>;
+    const dirty = { primaryVertical: 'not_a_vertical', verticals: ['pool'] } as unknown as Partial<Org>;
     expect(resolvePrimaryVertical(org(dirty))).toBe('pool');
   });
 

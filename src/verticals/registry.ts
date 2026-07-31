@@ -8,17 +8,24 @@ import type { VerticalKey, VerticalPack } from './types';
 import { VERTICAL_KEYS } from './types';
 import { CLEANING_PACK } from './packs/cleaning';
 import { STR_TURNOVER_PACK } from './packs/strTurnover';
+import { POOL_PACK } from './packs/pool';
+import { LANDSCAPING_PACK } from './packs/landscaping';
+import { HANDYMAN_PACK } from './packs/handyman';
 
 /**
- * Packs land per phase (docs/projects/VERTICAL-MODULES.md § Sequencing), so
- * this is deliberately `Partial`: `cleaning` + `str_turnover` in phase A
- * (TURNWRK-316), `pool` / `lawn` / `handyman` in phase E. Callers use `packFor`
- * (tolerant) or `requirePack` (loud) rather than indexing it directly.
+ * Packs land per phase (docs/projects/VERTICAL-MODULES.md § Sequencing), so this
+ * stays typed `Partial` even though every key is now authored: `cleaning` +
+ * `str_turnover` in phase A (TURNWRK-316), `pool` / `landscaping` / `handyman`
+ * in phase E (TURNWRK-329). Callers use `packFor` (tolerant) or `requirePack`
+ * (loud) rather than indexing it directly.
  */
 export const VERTICAL_REGISTRY: Readonly<Partial<Record<VerticalKey, VerticalPack>>> =
   Object.freeze({
     cleaning: CLEANING_PACK,
     str_turnover: STR_TURNOVER_PACK,
+    pool: POOL_PACK,
+    landscaping: LANDSCAPING_PACK,
+    handyman: HANDYMAN_PACK,
   });
 
 /** The pack for a trade, or undefined while that trade is unauthored. */

@@ -20,7 +20,9 @@ export type VerticalKey =
   | 'cleaning'
   | 'str_turnover'
   | 'pool'
-  | 'lawn'
+  // `landscaping`, not `lawn`: NAMING DECISION 2026-07-29 (Alan). Canonical since
+  // TURNWRK-292 shipped it in `RouteTemplate.vertical` (dispatch/types.ts).
+  | 'landscaping'
   | 'handyman';
 
 /** Iteration order for registry completeness checks and pickers. */
@@ -28,7 +30,7 @@ export const VERTICAL_KEYS: readonly VerticalKey[] = [
   'cleaning',
   'str_turnover',
   'pool',
-  'lawn',
+  'landscaping',
   'handyman',
 ] as const;
 

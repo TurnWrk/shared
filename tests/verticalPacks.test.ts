@@ -8,18 +8,30 @@ import { describe, it, expect } from 'vitest';
 import {
   CLEANING_PACK,
   STR_TURNOVER_PACK,
+  HANDYMAN_PACK,
+  POOL_PACK,
+  LANDSCAPING_PACK,
   VERTICAL_EXTENSION_KEYS,
   VERTICAL_KEYS,
   authoredVerticalKeys,
   packFor,
+  resolveOrgVerticals,
+  resolvePrimaryVertical,
 } from '../src/verticals';
 import type { VerticalPack } from '../src/verticals';
+import type { Org } from '../src/types/org';
 import { DEFAULT_CLEAN_FREQUENCIES } from '../src/types/clean';
 import type { CleanFrequency, CleanFrequencyKey } from '../src/types/clean';
 import { DEFAULT_CLEAN_TEMPLATES } from '../src/notifications/defaults';
 import { catalogById } from '../src/onboarding/catalogs';
 
-const AUTHORED: VerticalPack[] = [CLEANING_PACK, STR_TURNOVER_PACK];
+const AUTHORED: VerticalPack[] = [
+  CLEANING_PACK,
+  STR_TURNOVER_PACK,
+  POOL_PACK,
+  LANDSCAPING_PACK,
+  HANDYMAN_PACK,
+];
 
 describe('registry completeness', () => {
   it('registers every authored pack under its own key', () => {
@@ -28,11 +40,17 @@ describe('registry completeness', () => {
     }
   });
 
-  it('authors exactly the phase-A trades', () => {
-    // Canary, not a limit: phase E adds pool / lawn / handyman and updates this
-    // list deliberately. VERTICAL_KEYS stays the full domain meanwhile.
-    expect(authoredVerticalKeys()).toEqual(['cleaning', 'str_turnover']);
-    expect(VERTICAL_KEYS).toContain('pool');
+  it('authors every trade in VERTICAL_KEYS order', () => {
+    // Phase E (TURNWRK-329) completed the set — every VerticalKey now has a pack,
+    // in registry order. If a future key is added unauthored this fails loudly.
+    expect(authoredVerticalKeys()).toEqual([
+      'cleaning',
+      'str_turnover',
+      'pool',
+      'landscaping',
+      'handyman',
+    ]);
+    expect(authoredVerticalKeys()).toEqual([...VERTICAL_KEYS]);
   });
 
   it('references only extension keys that exist', () => {
@@ -63,6 +81,94 @@ describe('registry completeness', () => {
       const keys = pack.cadences.map((c) => c.key);
       expect(new Set(keys).size).toBe(keys.length);
     }
+  });
+
+  it('keeps service-seed keys unique within a pack', () => {
+    for (const pack of AUTHORED) {
+      const keys = pack.serviceSeeds.map((s) => s.key);
+      expect(new Set(keys).size, pack.key).toBe(keys.length);
+    }
+  });
+
+  it('only attaches checklistKeys the pack actually declares', () => {
+    for (const pack of AUTHORED) {
+      const templateKeys = new Set(pack.checklistTemplates.map((t) => t.key));
+      for (const seed of pack.serviceSeeds) {
+        if (seed.checklistKey) {
+          expect(templateKeys, `${pack.key}.${seed.key}`).toContain(seed.checklistKey);
+        }
+      }
+    }
+  });
+
+  it('gives every priced seed a positive duration and non-negative price', () => {
+    for (const pack of AUTHORED) {
+      for (const seed of pack.serviceSeeds) {
+        expect(seed.baseMinutes, `${pack.key}.${seed.key}`).toBeGreaterThan(0);
+        expect(seed.basePriceMinor, `${pack.key}.${seed.key}`).toBeGreaterThanOrEqual(0);
+      }
+    }
+  });
+});
+
+describe('phase-E packs (TURNWRK-329)', () => {
+  const org = (patch: Partial<Org>): Org =>
+    ({ id: 'o1', name: 'Org', createdAt: 0, updatedAt: 0, ...patch }) as Org;
+
+  it('handyman is a one-off repair job with a starting catalog', () => {
+    expect(HANDYMAN_PACK.workOrderType).toBe('Repair');
+    expect(HANDYMAN_PACK.cadences).toEqual([
+      { key: 'once', widgetLabel: 'One-time', discountPct: 0 },
+    ]);
+    expect(HANDYMAN_PACK.extensions).toEqual([]);
+    // Unlike cleaning/str_turnover, handyman ships seeds — it has no prior
+    // behaviour to mirror, so the seeds ARE the starting catalog.
+    expect(HANDYMAN_PACK.serviceSeeds.length).toBeGreaterThan(0);
+  });
+
+  it('pool books recurring visits and opts into water chemistry', () => {
+    expect(POOL_PACK.workOrderType).toBe('Cleaning');
+    const cadenceKeys = POOL_PACK.cadences.map((c) => c.key);
+    expect(cadenceKeys).toContain('weekly');
+    expect(cadenceKeys).toContain('every_10_days'); // the 10-day cadence the card names
+    // proof-of-service is modelled by the proof_report extension (the cleaning
+    // precedent); water_chemistry flags the readings widget (TURNWRK-294).
+    expect(POOL_PACK.extensions).toContain('water_chemistry');
+    expect(POOL_PACK.extensions).toContain('proof_report');
+    // The service checklist is physical tasks only — no chemistry readings here.
+    expect(POOL_PACK.checklistTemplates.map((t) => t.key)).toContain('pool_visit');
+  });
+
+  it('landscaping carries mow cadences plus a seasonal shift', () => {
+    expect(LANDSCAPING_PACK.key).toBe('landscaping'); // renamed from `lawn`
+    expect(LANDSCAPING_PACK.workOrderType).toBe('Cleaning');
+    const cadenceKeys = LANDSCAPING_PACK.cadences.map((c) => c.key);
+    expect(cadenceKeys).toContain('weekly');
+    expect(cadenceKeys).toContain('seasonal');
+    expect(LANDSCAPING_PACK.extensions).toEqual(['seasonal_billing']);
+  });
+
+  it('the new packs inherit the shipped notification copy verbatim', () => {
+    for (const pack of [HANDYMAN_PACK, POOL_PACK, LANDSCAPING_PACK]) {
+      const merged = { ...DEFAULT_CLEAN_TEMPLATES, ...pack.notificationCopy };
+      expect(merged, pack.key).toEqual(DEFAULT_CLEAN_TEMPLATES);
+    }
+  });
+
+  it('a multi-service org resolves terminology from primaryVertical and offers both catalogs', () => {
+    // The card's acceptance: verticals: ['pool','handyman'] resolves terminology
+    // from primaryVertical and offers both packs' services in one catalog.
+    const multi = org({ verticals: ['pool', 'handyman'], primaryVertical: 'pool' });
+    expect(resolveOrgVerticals(multi)).toEqual(['pool', 'handyman']);
+    expect(resolvePrimaryVertical(multi)).toBe('pool');
+
+    const primary = packFor(resolvePrimaryVertical(multi)!)!;
+    expect(primary.terminology.job).toBe('visit'); // pool terminology wins
+
+    const offered = resolveOrgVerticals(multi).flatMap((k) => packFor(k)!.serviceSeeds);
+    const offeredKeys = offered.map((s) => s.key);
+    expect(offeredKeys).toContain('weekly_pool_service'); // a recurring pool visit
+    expect(offeredKeys).toContain('handyman_hourly'); // a one-off repair
   });
 });
 
