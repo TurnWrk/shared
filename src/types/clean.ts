@@ -12,6 +12,9 @@
  */
 
 import type { ChecklistItemStatus } from './checklist';
+// Money types live in `@turnwrk/shared/money` (Verticals C5, TURNWRK-324); the
+// settings blocks below still reference them, so import the canonical shapes.
+import type { PaymentPolicy, DunningSettings } from '../money/types';
 
 // ---------------------------------------------------------------------------
 // Customers & leads
@@ -99,61 +102,29 @@ export const DEFAULT_CLEAN_FREQUENCIES: CleanFrequency[] = [
 
 
 // ---------------------------------------------------------------------------
-// Quotes (shared FE/BE pricing result — see ../clean/pricing.ts)
+// Quotes (shared FE/BE pricing result — see ../service/pricing.ts)
 // ---------------------------------------------------------------------------
 
-export interface CleanQtySelection {
-  id: string;
-  qty: number;
-}
-
-/** What the customer picked; the input to the pure pricing function. */
-export interface CleanQuoteSelection {
-  serviceId: string;
-  frequencyKey: CleanFrequencyKey;
-  params: CleanQtySelection[];
-  extras: CleanQtySelection[];
-  discountCode?: string;
-}
-
-export interface CleanParamSnapshot {
-  paramId: string;
-  label: string;
-  qty: number;
-  unitPriceMinor: number;
-  unitMinutes: number;
-  lineTotalMinor: number;
-}
-
-export interface CleanExtraSnapshot {
-  extraId: string;
-  label: string;
-  qty: number;
-  priceMinor: number;
-  minutes: number;
-  lineTotalMinor: number;
-}
-
-export interface CleanPricing {
-  subtotalMinor: number;
-  discountMinor: number;
-  /** Whole percent applied (org tax). */
-  taxPct: number;
-  taxMinor: number;
-  totalMinor: number;
-  /** ISO 4217, e.g. 'USD'. */
-  currency: string;
-}
-
-/** Server-priced quote: selection + frozen line items + totals. */
-export interface CleanQuote {
-  selection: CleanQuoteSelection;
-  serviceLabel: string;
-  paramsSnapshot: CleanParamSnapshot[];
-  extrasSnapshot: CleanExtraSnapshot[];
-  pricing: CleanPricing;
-  estMinutes: number;
-}
+/**
+ * @deprecated Verticals C5 (TURNWRK-324) moved the quote shape to
+ * `@turnwrk/shared/money`. Re-exported here for one release so vendored copies
+ * and app imports keep compiling; import from the new subpath in new code.
+ * `CleanQuote` is now `Quote`, `CleanPricing` is now `Pricing`, etc.
+ */
+export type {
+  QtySelection,
+  QtySelection as CleanQtySelection,
+  QuoteSelection,
+  QuoteSelection as CleanQuoteSelection,
+  ParamSnapshot,
+  ParamSnapshot as CleanParamSnapshot,
+  ExtraSnapshot,
+  ExtraSnapshot as CleanExtraSnapshot,
+  Pricing,
+  Pricing as CleanPricing,
+  Quote,
+  Quote as CleanQuote,
+} from '../money/types';
 
 // ---------------------------------------------------------------------------
 // Bookings & series
@@ -196,178 +167,37 @@ export type {
 // ---------------------------------------------------------------------------
 
 /**
- * How money is collected for a booking (Change Order 1 R1). Resolved
- * customer → service → org → 'card_required_preauth' via
- * clean/paymentPolicy.ts and snapshotted onto the booking + payment.
- *
- *  - card_required_preauth:     vault → T-48h pre-auth → capture on completion
- *  - card_on_file_charge_after: vault → charge on completion (no pre-auth)
- *  - invoice_terms:             no card required; invoice on completion, A/R lifecycle
- *  - offline:                   tracked only; operator uses Mark-as-Paid
+ * @deprecated Verticals C5 (TURNWRK-324) moved the money model —
+ * payment, invoice, payment policy and payout — to `@turnwrk/shared/money`.
+ * Re-exported here for one release so vendored copies and app imports keep
+ * compiling; import from the new subpath in new code. The `Clean*` prefix is
+ * dropped: `CleanInvoice` is now `Invoice`, `CleanPayment` is now `Payment`,
+ * `CleanPaymentPolicy` is now `PaymentPolicy`, and so on.
  */
-export type CleanPaymentPolicy =
-  | 'card_required_preauth'
-  | 'card_on_file_charge_after'
-  | 'invoice_terms'
-  | 'offline';
-
-export type CleanPaymentStatus =
-  | 'pending'
-  | 'vaulted'
-  | 'preauthorized'
-  | 'preauth_failed'
-  | 'retrying'
-  | 'risk'
-  | 'captured'
-  | 'paid_manual'
-  | 'refunded'
-  | 'partially_refunded'
-  // A/R lifecycle (invoice_terms policy only):
-  | 'invoiced_unpaid'
-  | 'partially_paid'
-  | 'paid'
-  | 'overdue';
-
-export type CleanManualPaymentMethod = 'cash' | 'bank_transfer' | 'check';
-
-/**
- * Customer-side payment lifecycle for one booking. "On hold" is the `hold`
- * flag, not a status — it freezes automation (pre-auth/capture workers skip
- * held payments) without losing lifecycle position.
- */
-export interface CleanPayment {
-  id: string;
-  orgId: string;
-  bookingId: string;
-  customerId: string;
-  stripeCustomerId?: string;
-  /** Vaulted payment method (Stripe pm_…). */
-  paymentMethodId?: string;
-  setupIntentId?: string;
-  /** Manual-capture PaymentIntent once pre-authorized. */
-  paymentIntentId?: string;
-  status: CleanPaymentStatus;
-  amountMinor: number;
-  preauthAmountMinor?: number;
-  /** Epoch ms when the T-48h pre-auth is due — the worker's query key. */
-  preauthDueAt?: number;
-  preauthAt?: number;
-  /** When the "upcoming hold" customer notice was sent (sweep lookahead, R2). */
-  preauthNoticeAt?: number;
-  capturedAt?: number;
-  refundedMinor?: number;
-  retryCount?: number;
-  /** Next retry instant after a pre-auth failure. */
-  retryAt?: number;
-  /** In-flight idempotency marker written before each Stripe call. */
-  processingAt?: number;
-  lastError?: string;
-  hold?: boolean;
-  manualMethod?: CleanManualPaymentMethod;
-  manualPaidAt?: number;
-  invoiceId?: string;
-  /** Policy snapshot from the booking. Absent (legacy) = 'card_required_preauth'. */
-  policy?: CleanPaymentPolicy;
-  /** Admin push when status entered `risk` (hostfix sendCleanOpsPushes). */
-  paymentRiskPushAt?: number;
-  createdAt: number;
-  updatedAt: number;
-}
-
-/** Receipt = record of a settled card/manual payment. Invoice = A/R billable. */
-export type CleanInvoiceKind = 'receipt' | 'invoice';
-
-export type CleanInvoiceStatus = 'open' | 'partially_paid' | 'paid' | 'overdue' | 'void';
-
-/** One payment applied against an A/R invoice (partial payments supported). */
-export interface CleanInvoicePaymentApplied {
-  id: string;
-  amountMinor: number;
-  /** 'card' = hosted pay-link payment; others recorded by the operator. */
-  method: 'card' | CleanManualPaymentMethod;
-  /** Gateway PaymentIntent id when method === 'card'. */
-  intentId?: string;
-  receivedAt: number;
-  /** uid, 'system' (webhook backstop), or 'customer:{customerId}'. */
-  actorId: string;
-  note?: string;
-}
-
-export interface CleanInvoice {
-  id: string;
-  orgId: string;
-  bookingId: string;
-  paymentId: string;
-  /** Per-org sequential number ("INV-000042"). */
-  number: string;
-  /** Firebase Storage path of the rendered PDF. */
-  pdfPath?: string;
-  emailedAt?: number;
-  totalsSnapshot: CleanPricing;
-  // --- A/R lifecycle (Change Order 1 R1/A2). Absent kind (legacy docs) = a
-  // --- settled 'receipt'; the fields below only apply to kind 'invoice'.
-  kind?: CleanInvoiceKind;
-  status?: CleanInvoiceStatus;
-  issuedAt?: number;
-  /** Due date, org-local calendar date. */
-  dueDate?: string;
-  /**
-   * Epoch ms of end-of-day dueDate, computed ONCE in the org timezone at issue
-   * time — the dunning worker's query key (scheduledStartUtc discipline).
-   */
-  dueAtUtc?: number;
-  /** Terms applied at issue (customer override → org invoiceTermsDays → 14). */
-  termsDays?: number;
-  totalMinor?: number;
-  paidMinor?: number;
-  balanceMinor?: number;
-  paymentsApplied?: CleanInvoicePaymentApplied[];
-  /** Bearer token for the hosted /pay/{token} page. */
-  payToken?: string;
-  /** Number of dunning stages already sent (index into org dunning offsets). */
-  dunningStage?: number;
-  lastDunningAt?: number;
-  updatedAt?: number;
-  createdAt: number;
-}
-
-export type CleanPayoutLineStatus = 'pending' | 'approved' | 'paid';
-
-export interface CleanPayoutLine {
-  techId: string;
-  vendorId?: string;
-  /**
-   * Line kind. Absent = 'time' (back-compat with the original typed-only
-   * shape). 'bounty' lines are itemized bonuses (CO2) — never merged into
-   * hourly math, clearly typed for downstream payroll/overtime handling
-   * (doc 09 §5 compliance flag F3).
-   */
-  type?: 'time' | 'bounty';
-  /** Σ minutes across the period's assignments (override wins). 0 for bounty lines. */
-  minutes: number;
-  /** 0 for bounty lines. */
-  rateMinorPerHour: number;
-  amountMinor: number;
-  status: CleanPayoutLineStatus;
-  paidAt?: number;
-  /** Bounty lines only — idempotency + revocation lookup. */
-  bountyId?: string;
-  bookingId?: string;
-  /** Time lines only — idempotency key for check-out / override upserts. */
-  assignmentId?: string;
-}
-
-export interface CleanPayoutPeriod {
-  id: string;
-  orgId: string;
-  /** Org-local dates, inclusive. */
-  periodStart: string;
-  periodEnd: string;
-  status: 'open' | 'closed';
-  lines: CleanPayoutLine[];
-  createdAt: number;
-  updatedAt: number;
-}
+export type {
+  PaymentPolicy,
+  PaymentPolicy as CleanPaymentPolicy,
+  PaymentStatus,
+  PaymentStatus as CleanPaymentStatus,
+  ManualPaymentMethod,
+  ManualPaymentMethod as CleanManualPaymentMethod,
+  Payment,
+  Payment as CleanPayment,
+  InvoiceKind,
+  InvoiceKind as CleanInvoiceKind,
+  InvoiceStatus,
+  InvoiceStatus as CleanInvoiceStatus,
+  InvoicePaymentApplied,
+  InvoicePaymentApplied as CleanInvoicePaymentApplied,
+  Invoice,
+  Invoice as CleanInvoice,
+  PayoutLineStatus,
+  PayoutLineStatus as CleanPayoutLineStatus,
+  PayoutLine,
+  PayoutLine as CleanPayoutLine,
+  PayoutPeriod,
+  PayoutPeriod as CleanPayoutPeriod,
+} from '../money/types';
 
 // ---------------------------------------------------------------------------
 // Reviews
@@ -818,17 +648,12 @@ export interface CleanCommunicationsSettings {
   visitReportEnabled?: boolean;
 }
 
-/** A/R dunning schedule (Change Order 1 A2). */
-export interface CleanDunningSettings {
-  /** Default true for orgs using invoice_terms. */
-  enabled?: boolean;
-  /**
-   * Day offsets relative to the due date, ascending (e.g. [-2, 0, 3, 10]).
-   * Each offset is one dunning stage; the sweep sends at most one stage per
-   * run per invoice and stops structurally once the invoice is paid.
-   */
-  offsets?: number[];
-}
+/**
+ * @deprecated Verticals C5 (TURNWRK-324) moved the A/R dunning schedule to
+ * `@turnwrk/shared/money` (`CleanDunningSettings` is now `DunningSettings`).
+ * Re-exported here for one release.
+ */
+export type { DunningSettings, DunningSettings as CleanDunningSettings } from '../money/types';
 
 export interface CleanOrgSettings {
   /** Path slug on the public booking site (book.turnwrk.com/{slug}). */
@@ -838,11 +663,11 @@ export interface CleanOrgSettings {
   /** Max concurrent bookings per window (availability rule v1). */
   maxConcurrentPerWindow?: number;
   /** Org-default payment policy. Absent = 'card_required_preauth'. */
-  paymentPolicy?: CleanPaymentPolicy;
+  paymentPolicy?: PaymentPolicy;
   /** Org-default invoice terms in days (invoice_terms policy). Absent = 14. */
   invoiceTermsDays?: number;
   communications?: CleanCommunicationsSettings;
-  dunning?: CleanDunningSettings;
+  dunning?: DunningSettings;
   /** When true, assignments require contractor accept before confirmed. */
   requireAcceptance?: boolean;
   /** Ratings >= threshold get the public-review prompt (default 4). */

@@ -4,8 +4,8 @@ import {
   computeAssignmentAllocations,
   formatInvoiceNumber,
   DEFAULT_PREAUTH_SWEEP_CONFIG,
-} from '../../src/clean/payments';
-import type { CleanPayment } from '../../src/types/clean';
+} from '../../src/money/payments';
+import type { Payment as CleanPayment } from '../../src/money/types';
 
 function pay(overrides: Partial<CleanPayment>): CleanPayment {
   return {

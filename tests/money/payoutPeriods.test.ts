@@ -4,7 +4,7 @@ import {
   payoutPeriodDocId,
   billableMinutes,
   timePayoutAmountMinor,
-} from '../../src/clean/payoutPeriods';
+} from '../../src/money/payoutPeriods';
 
 describe('weekBoundsFor / payoutPeriodDocId (TURNWRK-100)', () => {
   it('returns Monday–Sunday bounds for a mid-week date', () => {

@@ -21,3 +21,4 @@ export * from './crm';
 export * from './notifications';
 export * from './routing';
 export * from './booking';
+export * from './money';

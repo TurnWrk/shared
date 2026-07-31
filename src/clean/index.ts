@@ -9,9 +9,12 @@ export * from '../service';
  */
 export * from '../booking';
 export * from './orgTime';
-export * from './payments';
-export * from './invoiceKind';
-export * from './paymentPolicy';
+/**
+ * @deprecated Verticals C5 (TURNWRK-324) — quote/invoice/payment/payout moved to
+ * `@turnwrk/shared/money`. Re-exported for one release so vendored copies and
+ * app imports keep compiling.
+ */
+export * from '../money';
 export * from './assignmentVendor';
 /**
  * @deprecated Verticals C6 (TURNWRK-325) — notifications moved to
@@ -29,4 +32,3 @@ export * from './bountySubmission';
 export * from './bountyDefaults';
 export * from './geo';
 export * from './imageHash';
-export * from './payoutPeriods';

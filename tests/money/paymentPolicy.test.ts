@@ -7,7 +7,7 @@ import {
   resolveTermsDays,
   policyRequiresCard,
   policyUsesPreauth,
-} from '../../src/clean/paymentPolicy';
+} from '../../src/money/paymentPolicy';
 
 describe('resolvePaymentPolicy cascade (TURNWRK-100)', () => {
   it('most-specific wins: customer → service → org → default', () => {

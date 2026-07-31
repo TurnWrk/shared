@@ -1,12 +1,12 @@
 /**
- * Pure decision helpers for the Clean payments engine — no I/O, unit-tested.
- * The Admin-SDK server layer (clean/src/lib/clean/paymentsServer.ts) executes
+ * Pure decision helpers for the payments engine — no I/O, unit-tested.
+ * The Admin-SDK server layer (the booking app's paymentsServer) executes
  * the actions these return; keeping the logic here makes it deterministic and
  * shared by the operator UI (allocation preview) and the pre-auth worker.
  *
  * Spec: docs/projects/clean/02-ENGINEERING-SPEC.md §M4 (payments lifecycle).
  */
-import type { CleanDunningSettings, CleanInvoice, CleanPayment } from '../types/clean';
+import type { DunningSettings, Invoice, Payment } from './types';
 import { splitAllocatedMinutes } from '../service/pricing';
 import { isArInvoice } from './invoiceKind';
 
@@ -53,7 +53,7 @@ export interface PreauthSweepAction {
  *   - anything else                         → skip
  */
 export function planPreauthSweep(
-  payments: CleanPayment[],
+  payments: Payment[],
   now: number,
   config: PreauthSweepConfig = DEFAULT_PREAUTH_SWEEP_CONFIG,
 ): PreauthSweepAction[] {
@@ -161,8 +161,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * Auto-stop on payment is structural: paid invoices leave the query set.
  */
 export function planDunning(
-  invoices: CleanInvoice[],
-  settings: CleanDunningSettings | undefined,
+  invoices: Invoice[],
+  settings: DunningSettings | undefined,
   now: number,
 ): DunningAction[] {
   const offsets = settings?.offsets ?? DEFAULT_DUNNING_OFFSETS;

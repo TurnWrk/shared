@@ -1,9 +1,9 @@
-import type { CleanInvoice, CleanInvoiceKind } from '../types/clean';
+import type { Invoice, InvoiceKind } from './types';
 
 const AR_STATUSES = new Set(['open', 'partially_paid', 'overdue']);
 
 /**
- * Dual-read `CleanInvoice.kind` (TURNWRK-82).
+ * Dual-read `Invoice.kind` (TURNWRK-82).
  *
  * New docs set `kind` explicitly. Legacy docs omit it — the type comment says
  * absent = settled `'receipt'`, but early A/R invoices were written without
@@ -12,10 +12,10 @@ const AR_STATUSES = new Set(['open', 'partially_paid', 'overdue']);
  */
 export function resolveInvoiceKind(
   inv: Pick<
-    CleanInvoice,
+    Invoice,
     'kind' | 'dueAtUtc' | 'payToken' | 'status' | 'termsDays' | 'balanceMinor'
   >,
-): CleanInvoiceKind {
+): InvoiceKind {
   if (inv.kind === 'invoice' || inv.kind === 'receipt') return inv.kind;
 
   const hasArMarkers =
@@ -31,7 +31,7 @@ export function resolveInvoiceKind(
 /** True when readers should treat this doc as an A/R invoice. */
 export function isArInvoice(
   inv: Pick<
-    CleanInvoice,
+    Invoice,
     'kind' | 'dueAtUtc' | 'payToken' | 'status' | 'termsDays' | 'balanceMinor'
   >,
 ): boolean {
@@ -44,11 +44,11 @@ export function isArInvoice(
  */
 export function legacyInvoiceKindPatch(
   inv: Pick<
-    CleanInvoice,
+    Invoice,
     'kind' | 'dueAtUtc' | 'payToken' | 'status' | 'termsDays' | 'balanceMinor'
   >,
   opts?: { force?: boolean },
-): { kind: CleanInvoiceKind } | null {
+): { kind: InvoiceKind } | null {
   if (inv.kind === 'invoice' || inv.kind === 'receipt') {
     if (!opts?.force) return null;
   }

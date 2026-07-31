@@ -70,6 +70,11 @@
       "require": "./dist/booking/index.js",
       "default": "./dist/booking/index.js"
     },
+    "./money": {
+      "types": "./dist/money/index.d.ts",
+      "require": "./dist/money/index.js",
+      "default": "./dist/money/index.js"
+    },
     "./routing": {
       "types": "./dist/routing/index.d.ts",
       "require": "./dist/routing/index.js",

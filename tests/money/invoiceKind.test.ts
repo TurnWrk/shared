@@ -3,7 +3,7 @@ import {
   resolveInvoiceKind,
   isArInvoice,
   legacyInvoiceKindPatch,
-} from '../../src/clean/invoiceKind';
+} from '../../src/money/invoiceKind';
 
 describe('resolveInvoiceKind dual-read (TURNWRK-100)', () => {
   it('honors explicit kind on new docs', () => {

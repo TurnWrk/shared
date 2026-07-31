@@ -1,47 +1,47 @@
 /**
  * Payment-policy resolution (Change Order 1 R1) — pure, no I/O.
  *
- * The resolved policy is snapshotted onto CleanBooking.paymentPolicy and
- * CleanPayment.policy at creation time; settings edits never mutate in-flight
- * money. Readers dual-read booking → payment → default (TURNWRK-82) so legacy
- * docs missing the booking stamp still behave correctly; optional backfill
- * stamps booking.paymentPolicy for clarity.
+ * The resolved policy is snapshotted onto the booking's `paymentPolicy` and
+ * the payment's `policy` at creation time; settings edits never mutate
+ * in-flight money. Readers dual-read booking → payment → default (TURNWRK-82)
+ * so legacy docs missing the booking stamp still behave correctly; optional
+ * backfill stamps booking.paymentPolicy for clarity.
  */
-import type { CleanPaymentPolicy } from '../types/clean';
+import type { PaymentPolicy } from './types';
 
-export const DEFAULT_PAYMENT_POLICY: CleanPaymentPolicy = 'card_required_preauth';
+export const DEFAULT_PAYMENT_POLICY: PaymentPolicy = 'card_required_preauth';
 
 export const DEFAULT_INVOICE_TERMS_DAYS = 14;
 
-const KNOWN_POLICIES = new Set<CleanPaymentPolicy>([
+const KNOWN_POLICIES = new Set<PaymentPolicy>([
   'card_required_preauth',
   'card_on_file_charge_after',
   'invoice_terms',
   'offline',
 ]);
 
-function asPolicy(value: unknown): CleanPaymentPolicy | undefined {
+function asPolicy(value: unknown): PaymentPolicy | undefined {
   if (typeof value !== 'string') return undefined;
-  return KNOWN_POLICIES.has(value as CleanPaymentPolicy)
-    ? (value as CleanPaymentPolicy)
+  return KNOWN_POLICIES.has(value as PaymentPolicy)
+    ? (value as PaymentPolicy)
     : undefined;
 }
 
 export interface ResolvePaymentPolicyInput {
   /** Org default (Org.cleanSettings.paymentPolicy). */
-  org?: { paymentPolicy?: CleanPaymentPolicy } | null;
-  /** Per-service override (CleanService.paymentPolicy). */
-  service?: { paymentPolicy?: CleanPaymentPolicy } | null;
+  org?: { paymentPolicy?: PaymentPolicy } | null;
+  /** Per-service override (ServiceOffering.paymentPolicy). */
+  service?: { paymentPolicy?: PaymentPolicy } | null;
   /**
    * Per-customer override — only pass for authenticated/operator paths. The
    * anonymous widget resolves org + service only (a visitor can't claim
    * someone else's negotiated terms).
    */
-  customer?: { paymentPolicy?: CleanPaymentPolicy } | null;
+  customer?: { paymentPolicy?: PaymentPolicy } | null;
 }
 
 /** Most-specific wins: customer → service → org → default. */
-export function resolvePaymentPolicy(input: ResolvePaymentPolicyInput): CleanPaymentPolicy {
+export function resolvePaymentPolicy(input: ResolvePaymentPolicyInput): PaymentPolicy {
   return (
     input.customer?.paymentPolicy ??
     input.service?.paymentPolicy ??
@@ -56,9 +56,9 @@ export function resolvePaymentPolicy(input: ResolvePaymentPolicyInput): CleanPay
  * payment.policy, then the shipped default.
  */
 export function resolveSnapshottedPaymentPolicy(input: {
-  booking?: { paymentPolicy?: CleanPaymentPolicy | null } | null;
-  payment?: { policy?: CleanPaymentPolicy | null } | null;
-}): CleanPaymentPolicy {
+  booking?: { paymentPolicy?: PaymentPolicy | null } | null;
+  payment?: { policy?: PaymentPolicy | null } | null;
+}): PaymentPolicy {
   return (
     asPolicy(input.booking?.paymentPolicy) ??
     asPolicy(input.payment?.policy) ??
@@ -71,10 +71,10 @@ export function resolveSnapshottedPaymentPolicy(input: {
  * payment.policy when present; otherwise stamp the default.
  */
 export function legacyPaymentPolicyPatch(
-  booking: { paymentPolicy?: CleanPaymentPolicy | null },
-  payment?: { policy?: CleanPaymentPolicy | null } | null,
+  booking: { paymentPolicy?: PaymentPolicy | null },
+  payment?: { policy?: PaymentPolicy | null } | null,
   opts?: { force?: boolean },
-): { paymentPolicy: CleanPaymentPolicy } | null {
+): { paymentPolicy: PaymentPolicy } | null {
   const existing = asPolicy(booking.paymentPolicy);
   if (existing && !opts?.force) return null;
   return {
@@ -91,17 +91,17 @@ export function resolveTermsDays(
 }
 
 /** Whether the booking wizard must collect a card under this policy. */
-export function policyRequiresCard(policy: CleanPaymentPolicy): boolean {
+export function policyRequiresCard(policy: PaymentPolicy): boolean {
   return policy === 'card_required_preauth' || policy === 'card_on_file_charge_after';
 }
 
 /** Whether the T-48h pre-auth pipeline applies (preauthDueAt is only written here). */
-export function policyUsesPreauth(policy: CleanPaymentPolicy): boolean {
+export function policyUsesPreauth(policy: PaymentPolicy): boolean {
   return policy === 'card_required_preauth';
 }
 
 /** Plain-words policy statement for the wizard summary sidebar (doc 07 R1). */
-export function paymentPolicySummary(policy: CleanPaymentPolicy): string {
+export function paymentPolicySummary(policy: PaymentPolicy): string {
   switch (policy) {
     case 'card_required_preauth':
       return "A hold may be placed on your card 48 hours before your service — you won't be charged until the service is completed.";
