@@ -1,0 +1,10 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/TurnWrk/shared/security/advisories/new
+    about: >-
+      Report a leaked credential or an over-permissive rule privately — never as a
+      public issue. See SECURITY.md.
+  - name: Turnwrk
+    url: https://practical.works
+    about: General questions about the turnwrk suite.

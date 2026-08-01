@@ -1,0 +1,46 @@
+name: Bug report
+description: Something in @turnwrk/shared, @turnwrk/email or the firebase rules is wrong.
+title: "[bug] <short summary>"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **If this is a security issue — a leaked
+        credential, or a Firestore rule that over-permits — do not file it here.**
+        Follow [SECURITY.md](../blob/main/SECURITY.md) for a private disclosure path.
+  - type: input
+    id: export
+    attributes:
+      label: Affected export / file
+      description: e.g. `@turnwrk/shared/roles`, `src/money/`, `firebase/firestore.rules`.
+      placeholder: "@turnwrk/shared/..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: The smallest snippet, test, or steps that shows the problem.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: consumers
+    attributes:
+      label: Which consumer(s) are affected?
+      description: dispatch / restock / clean / turnwrk-cortex — or "unsure".
+    validations:
+      required: false

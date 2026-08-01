@@ -45,3 +45,26 @@ jobs:
       # Suite-local only: skips when sibling apps are absent (this repo CI).
       # Full shared + email + testFixtures parity (TURNWRK-134).
       - run: npm run check:vendored
+
+  secret-scan:
+    name: secret scan
+    runs-on: ubuntu-latest
+    # A public repo that asks people to trust it with commit access cannot leak a
+    # credential into a merge. gitleaks runs on the checked-out working tree only
+    # (`--no-git`): a fresh checkout carries just the tracked files — dist/ and
+    # node_modules/ are gitignored and absent — so this scans exactly what a PR would
+    # merge, without walking git history (which would re-flag anything ever committed
+    # and can't be un-committed from a PR). Pinned to the gitleaks CLI, which is MIT and
+    # free for org use; the paid gitleaks-action licence is deliberately not used.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install gitleaks
+        run: |
+          version=8.18.4
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+      - name: Scan working tree
+        run: gitleaks detect --no-git --redact --verbose --no-banner

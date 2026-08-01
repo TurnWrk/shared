@@ -1,0 +1,55 @@
+name: Adapter request
+description: Request a new adapter/integration or a new consumer of @turnwrk/shared.
+title: "[adapter] <the thing to integrate>"
+labels: ["adapter-request", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this to ask for a new adapter (a CRM, an SMS/payment provider, another
+        external system) or to add a new consumer app to the shared suite. It helps
+        to know the shape before writing types, so please fill in what you can.
+  - type: input
+    id: system
+    attributes:
+      label: What system should we adapt to?
+      description: e.g. "Twenty CRM", "Surge SMS", "a new field-service app".
+    validations:
+      required: true
+  - type: textarea
+    id: usecase
+    attributes:
+      label: What is the use case?
+      description: Who needs this and what does it let them do?
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: Data shape / contract
+      description: >
+        Which entities does it touch (Property, User, Org, Membership, money…)?
+        Is this a new type, a new collection path, or a mapping onto existing ones?
+    validations:
+      required: false
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Direction of truth
+      description: For an integration, which side owns the data?
+      options:
+        - External system is source of truth (we sync in)
+        - Turnwrk is source of truth (we sync out)
+        - Bidirectional
+        - Not applicable / unsure
+    validations:
+      required: false
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety considerations
+      description: >
+        Does this touch credentials, permissions/roles, money, or Firestore rules?
+        Anything a reviewer should watch for?
+    validations:
+      required: false

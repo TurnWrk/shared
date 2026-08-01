@@ -1,5 +1,8 @@
 # @turnwrk/shared
 
+[![CI](https://github.com/TurnWrk/shared/actions/workflows/ci.yml/badge.svg)](https://github.com/TurnWrk/shared/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Canonical types and constants shared across the turnwrk app suite
 (`dispatch`, `restock`, `clean`, `turnwrk-cortex`, browser extensions).
 This repo also carries `email/` (`@turnwrk/email` templates, TURNWRK-221) and
