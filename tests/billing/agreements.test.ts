@@ -246,7 +246,7 @@ describe('end-to-end: a landscaper runs two customers a full cycle', () => {
 
   it('seasonal prepay draws each visit down to an exact zero balance', () => {
     const terms = { mode: 'seasonal_prepay', prepaidTotalMinor: 25000, drawPerVisitMinor: 5000 } as const;
-    let remaining = terms.prepaidTotalMinor;
+    let remaining: number = terms.prepaidTotalMinor;
     const drawn: number[] = [];
     for (let visit = 0; visit < 5; visit += 1) {
       const r = applyPrepayDrawdown(remaining, visitBilling(terms).drawFromBalanceMinor);
