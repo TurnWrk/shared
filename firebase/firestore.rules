@@ -530,6 +530,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Owner portal rate-limit counters (TURNWRK-418). Admin SDK only — a client
+    // that could write these could clear its own throttle.
+    match /cmms_ownerPortalRateLimits/{bucketId} {
+      allow read, write: if false;
+    }
+
     match /cmms_auditLogs/{logId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create: if canWriteOrg(request.resource.data.orgId);
