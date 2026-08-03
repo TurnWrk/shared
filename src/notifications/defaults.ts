@@ -18,7 +18,9 @@ import type {
   CleanNotificationAudience,
   CleanNotificationChannel,
   CleanNotificationEventKey,
+  CanonicalCleanNotificationEventKey,
 } from '../types/clean';
+import { canonicalNotificationEventKey } from './eventKeys';
 
 /** Renderable slots for one channel. `body` maps to the email intro / whole SMS. */
 export interface CleanTemplateBody {
@@ -43,14 +45,17 @@ export interface CleanTemplateDefault {
   channels: Partial<Record<CleanNotificationChannel, CleanTemplateBody>>;
 }
 
-export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTemplateDefault> = {
+export const DEFAULT_CLEAN_TEMPLATES: Record<
+  CanonicalCleanNotificationEventKey,
+  CleanTemplateDefault
+> = {
   booking_confirmed: {
     audience: 'customer',
     channels: {
       email: {
         subject: 'Your {{org.name}} booking is confirmed',
         heading: "You're booked!",
-        body: 'Thanks {{customer.first_name}}! {{org.name}} has your cleaning scheduled. Here are the details:',
+        body: 'Thanks {{customer.first_name}}! {{org.name}} has your {{booking.service}} scheduled. Here are the details:',
         // Policy-dependent (R1): the summary line for the booking's payment policy.
         footnote: '{{payment.policy_summary}}',
       },
@@ -61,7 +66,7 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
     channels: {
       email: {
         subject: 'Your {{org.name}} appointment is scheduled',
-        heading: 'Your cleaner is assigned',
+        heading: 'Your team member is assigned',
         body: 'Good news — your {{booking.service}} on {{booking.date}} is assigned and on the schedule.',
       },
     },
@@ -90,7 +95,7 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
     audience: 'customer',
     channels: {
       email: {
-        subject: 'Reminder: your {{org.name}} cleaning is tomorrow',
+        subject: 'Reminder: your {{org.name}} service is tomorrow',
         heading: 'See you tomorrow!',
         body: 'A friendly reminder — your {{booking.service}} is tomorrow, {{booking.date}}, arriving {{booking.window}}.',
       },
@@ -103,7 +108,7 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
     audience: 'customer',
     channels: {
       email: {
-        subject: 'Your {{org.name}} cleaning is coming up today',
+        subject: 'Your {{org.name}} service is coming up today',
         heading: 'Almost time!',
         body: 'Your {{booking.service}} is today — arrival window {{booking.window}}.',
       },
@@ -149,7 +154,7 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
     channels: {
       email: {
         subject: 'How was your {{org.name}} service?',
-        heading: 'We hope you loved your clean!',
+        heading: 'We hope you loved your service!',
         body: 'Hi {{customer.first_name}}, thanks for choosing {{org.name}}. How did we do? Tap below to rate your recent {{booking.service}} — it only takes a moment.',
         ctaLabel: 'Rate your service',
         footnote: 'Your feedback helps us improve and lets others know what to expect.',
@@ -163,22 +168,22 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
       email: {
         subject: 'Your {{org.name}} quote is waiting',
         heading: 'Pick up where you left off',
-        body: 'Hi {{customer.first_name}}, your cleaning quote from {{org.name}} is saved and ready. Tap below to finish booking in under a minute.',
+        body: 'Hi {{customer.first_name}}, your service quote from {{org.name}} is saved and ready. Tap below to finish booking in under a minute.',
         ctaLabel: 'Finish my booking',
       },
     },
   },
   // --- Change Order 1 additions ---
-  cleaner_en_route: {
+  worker_en_route: {
     audience: 'customer',
     channels: {
       sms: {
-        body: '{{cleaner.first_name}} from {{org.name}} is on the way for your {{booking.service}} (arrival window {{booking.window}}).',
+        body: '{{worker.first_name}} from {{org.name}} is on the way for your {{booking.service}} (arrival window {{booking.window}}).',
       },
       email: {
-        subject: '{{org.name}}: your cleaner is on the way',
+        subject: '{{org.name}}: your team member is on the way',
         heading: 'On the way!',
-        body: '{{cleaner.first_name}} is en route for your {{booking.service}} — arrival window {{booking.window}}.',
+        body: '{{worker.first_name}} is en route for your {{booking.service}} — arrival window {{booking.window}}.',
       },
     },
   },
@@ -232,7 +237,7 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
       email: {
         subject: 'Bounty photo awaiting review',
         heading: 'A bounty photo needs your review',
-        body: '{{cleaner.first_name}} submitted a bounty photo ("{{bounty.spot}}") for the {{booking.service}} on {{booking.date}}.',
+        body: '{{worker.first_name}} submitted a bounty photo ("{{bounty.spot}}") for the {{booking.service}} on {{booking.date}}.',
         ctaLabel: 'Review submission',
       },
     },
@@ -261,16 +266,16 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
     ctaUrlVar: 'incident.url',
     channels: {
       sms: {
-        body: 'SOS from {{cleaner.first_name}} at {{incident.time}} — {{booking.service}} {{booking.date}}. Location: {{incident.location}}. Open: {{incident.url}}',
+        body: 'SOS from {{worker.first_name}} at {{incident.time}} — {{booking.service}} {{booking.date}}. Location: {{incident.location}}. Open: {{incident.url}}',
       },
       email: {
-        subject: 'SOS alert: {{cleaner.first_name}} needs help',
+        subject: 'SOS alert: {{worker.first_name}} needs help',
         heading: 'SOS alert',
-        body: '{{cleaner.first_name}} triggered an SOS at {{incident.time}} during {{booking.service}} on {{booking.date}}. Location: {{incident.location}}.',
+        body: '{{worker.first_name}} triggered an SOS at {{incident.time}} during {{booking.service}} on {{booking.date}}. Location: {{incident.location}}.',
         ctaLabel: 'View incident',
       },
       push: {
-        body: 'SOS: {{cleaner.first_name}} triggered an emergency alert.',
+        body: 'SOS: {{worker.first_name}} triggered an emergency alert.',
       },
     },
   },
@@ -278,7 +283,7 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<CleanNotificationEventKey, CleanTem
 
 export const CLEAN_NOTIFICATION_EVENT_KEYS = Object.keys(
   DEFAULT_CLEAN_TEMPLATES,
-) as CleanNotificationEventKey[];
+) as CanonicalCleanNotificationEventKey[];
 
 /**
  * Canonical sample variable set — one entry for EVERY variable any default
@@ -297,6 +302,7 @@ export const SAMPLE_TEMPLATE_VARS: Record<string, string | number> = {
   'payment.policy_summary':
     "A hold may be placed 48 hours before your service — but you won't be charged until the service is completed.",
   'cleaner.first_name': 'Maria',
+  'worker.first_name': 'Maria',
   'review.url': 'https://example.com/review/sample',
   'lead.resume_url': 'https://example.com/resume/sample',
   'invoice.number': 'INV-000042',
@@ -321,7 +327,8 @@ export function defaultTemplateFor(
   eventKey: CleanNotificationEventKey,
   channel: CleanNotificationChannel,
 ): CleanTemplateBody | undefined {
-  return DEFAULT_CLEAN_TEMPLATES[eventKey]?.channels[channel];
+  const canonical = canonicalNotificationEventKey(eventKey);
+  return DEFAULT_CLEAN_TEMPLATES[canonical]?.channels[channel];
 }
 
 /**
@@ -339,8 +346,8 @@ export function defaultTemplateFor(
  * leave a channel rendering someone else's trade.
  */
 export function resolveNotificationDefaults(
-  packCopy?: Partial<Record<CleanNotificationEventKey, CleanTemplateDefault>>,
-): Record<CleanNotificationEventKey, CleanTemplateDefault> {
+  packCopy?: Partial<Record<CanonicalCleanNotificationEventKey, CleanTemplateDefault>>,
+): Record<CanonicalCleanNotificationEventKey, CleanTemplateDefault> {
   if (!packCopy) return DEFAULT_CLEAN_TEMPLATES;
   return { ...DEFAULT_CLEAN_TEMPLATES, ...packCopy };
 }

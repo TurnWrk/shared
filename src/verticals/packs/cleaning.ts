@@ -10,6 +10,7 @@
  * behaviour, which an invented default would hide.
  */
 import type { VerticalPack } from '../types';
+import { CLEANING_NOTIFICATION_COPY } from './cleaningNotificationCopy';
 
 export const CLEANING_PACK: VerticalPack = {
   key: 'cleaning',
@@ -54,8 +55,8 @@ export const CLEANING_PACK: VerticalPack = {
    * mirror; `workOrderType` above is the key that lookup already uses.
    */
   checklistTemplates: [],
-  /** No overrides — cleaning IS the copy in DEFAULT_CLEAN_TEMPLATES. */
-  notificationCopy: {},
+  /** Restores pre-neutralisation cleaning wording (TURNWRK-325). */
+  notificationCopy: CLEANING_NOTIFICATION_COPY,
   onboarding: { catalogId: 'clean-operator' },
   /**
    * The substrings resolveRepeatCount matches against `repeatPerParamLabel`

@@ -278,6 +278,7 @@ export type {
   CleanNotificationChannel,
   CleanNotificationAudience,
   CleanNotificationEventKey,
+  CanonicalCleanNotificationEventKey,
   CleanNotificationTemplate,
   CleanNotificationSendStatus,
   CleanNotificationSend,

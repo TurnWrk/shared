@@ -92,10 +92,10 @@ const CLEANING_BASELINE: Record<string, Partial<Record<Slot, string>>> = {
     "body": "Hi Sally, your cleaning quote from Your Company is saved and ready. Tap below to finish booking in under a minute.",
     "ctaLabel": "Finish my booking"
   },
-  "cleaner_en_route.sms": {
+  "worker_en_route.sms": {
     "body": "Maria from Your Company is on the way for your Deep Clean (arrival window 09:00–10:00)."
   },
-  "cleaner_en_route.email": {
+  "worker_en_route.email": {
     "subject": "Your Company: your cleaner is on the way",
     "heading": "On the way!",
     "body": "Maria is en route for your Deep Clean — arrival window 09:00–10:00."

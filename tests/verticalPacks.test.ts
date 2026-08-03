@@ -148,11 +148,21 @@ describe('phase-E packs (TURNWRK-329)', () => {
     expect(LANDSCAPING_PACK.extensions).toEqual(['seasonal_billing']);
   });
 
-  it('the new packs inherit the shipped notification copy verbatim', () => {
-    for (const pack of [HANDYMAN_PACK, POOL_PACK, LANDSCAPING_PACK]) {
+  it('phase-E packs without notification overrides inherit neutral defaults', () => {
+    for (const pack of [HANDYMAN_PACK, LANDSCAPING_PACK]) {
       const merged = { ...DEFAULT_CLEAN_TEMPLATES, ...pack.notificationCopy };
       expect(merged, pack.key).toEqual(DEFAULT_CLEAN_TEMPLATES);
     }
+  });
+
+  it('pool pack supplies trade-appropriate notification copy', () => {
+    const merged = { ...DEFAULT_CLEAN_TEMPLATES, ...POOL_PACK.notificationCopy };
+    expect(merged.worker_en_route.channels.email?.subject).toBe(
+      '{{org.name}}: your technician is on the way',
+    );
+    expect(merged.review_request.channels.email?.subject).toBe(
+      'How was your {{org.name}} pool service?',
+    );
   });
 
   it('a multi-service org resolves terminology from primaryVertical and offers both catalogs', () => {
@@ -190,11 +200,11 @@ describe('cleaning pack reproduces today’s cleaning behaviour', () => {
     ]);
   });
 
-  it('inherits the shipped notification copy verbatim', () => {
-    // Packs carry overrides; a pack with none renders the code defaults. This
-    // is what makes the phase-B golden test (TURNWRK-317) reachable.
+  it('restores cleaning-specific notification copy over neutral defaults', () => {
     const merged = { ...DEFAULT_CLEAN_TEMPLATES, ...CLEANING_PACK.notificationCopy };
-    expect(merged).toEqual(DEFAULT_CLEAN_TEMPLATES);
+    expect(merged.booking_assigned.channels.email?.heading).toBe('Your cleaner is assigned');
+    expect(merged).not.toEqual(DEFAULT_CLEAN_TEMPLATES);
+    expect(merged.receipt).toEqual(DEFAULT_CLEAN_TEMPLATES.receipt);
   });
 
   it('drives checklist repeats off the labels seed.ts already matches', () => {

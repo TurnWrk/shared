@@ -15,6 +15,7 @@
  *   only; no chemistry readings live here.
  */
 import type { VerticalPack } from '../types';
+import { POOL_NOTIFICATION_COPY } from './poolNotificationCopy';
 
 export const POOL_PACK: VerticalPack = {
   key: 'pool',
@@ -117,8 +118,8 @@ export const POOL_PACK: VerticalPack = {
       ],
     },
   ],
-  /** Inherits the shared default copy; no pool-specific overrides yet. */
-  notificationCopy: {},
+  /** Trade-appropriate en-route and review copy (TURNWRK-325). */
+  notificationCopy: POOL_NOTIFICATION_COPY,
   /** No pool-specific onboarding catalog ships yet. */
   onboarding: {},
   /** Visits carry no repeatable booking params, so section repeats resolve to 1. */

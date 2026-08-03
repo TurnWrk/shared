@@ -4,11 +4,10 @@
  * Extracted from src/types/clean.ts. The registry was already structurally
  * generic; this move is structural only.
  *
- * NOT done here (split to the card's remainder): neutralising the default copy,
- * renaming `cleaner_en_route` / `cleaner.first_name` with dual-read, and pack
- * `notificationCopy` resolution. Names still say Clean* so this PR is a pure
- * move — renaming and rewording in the same commit would hide which change
- * broke a render.
+ * Default copy is trade-neutral; vertical packs supply trade wording via
+ * `notificationCopy`. `worker_en_route` is canonical; `cleaner_en_route` dual-reads
+ * for saved override docs. Template vars use `worker.first_name` with
+ * `cleaner.first_name` aliased in render.ts.
  */
 import type { CleanEventEntity } from '../types/clean';
 
@@ -34,13 +33,20 @@ export type CleanNotificationEventKey =
   | 'review_request'
   | 'lead_recovery'
   // Change Order 1:
-  | 'cleaner_en_route' // A1
+  | 'worker_en_route' // A1 — canonical en-route key
+  | 'cleaner_en_route' // legacy alias; dual-read until override docs migrate
   | 'invoice_issued' // R1/A2
   | 'invoice_reminder' // A2 (dunning stage is a template variable, not N keys)
   | 'invoice_overdue' // A2
   | 'sos_triggered' // A4 — exempt from plan gating (safety is not a tier)
   | 'bounty_submitted' // CO2 — operator review-queue nudge (manual approval mode)
   | 'visit_report'; // Verticals V2 — proof-of-service auto-report after a visit
+
+/** Registry keys with a shipped default template (excludes legacy aliases). */
+export type CanonicalCleanNotificationEventKey = Exclude<
+  CleanNotificationEventKey,
+  'cleaner_en_route'
+>;
 
 /**
  * Org-edited template override for one (eventKey, channel, audience). Only

@@ -9,19 +9,23 @@ import {
   resolveNotificationDefaults,
 } from '../../src/notifications/defaults';
 import { TEMPLATE_VAR_ALIASES, renderTemplate } from '../../src/notifications/render';
-import { CLEANING_PACK, STR_TURNOVER_PACK } from '../../src/verticals';
+import { CLEANING_PACK, POOL_PACK, STR_TURNOVER_PACK } from '../../src/verticals';
 
 describe('resolveNotificationDefaults', () => {
-  it('returns the code defaults untouched when a pack overrides nothing', () => {
-    // Both phase-A packs ship empty notificationCopy, so today's orgs must be
-    // byte-identical to before this card.
-    expect(resolveNotificationDefaults(CLEANING_PACK.notificationCopy)).toEqual(
-      DEFAULT_CLEAN_TEMPLATES,
-    );
+  it('returns neutral code defaults when a pack overrides nothing', () => {
     expect(resolveNotificationDefaults(STR_TURNOVER_PACK.notificationCopy)).toEqual(
       DEFAULT_CLEAN_TEMPLATES,
     );
     expect(resolveNotificationDefaults(undefined)).toEqual(DEFAULT_CLEAN_TEMPLATES);
+  });
+
+  it('restores cleaning-specific wording via the cleaning pack', () => {
+    const resolved = resolveNotificationDefaults(CLEANING_PACK.notificationCopy);
+    expect(resolved.booking_assigned.channels.email?.heading).toBe('Your cleaner is assigned');
+    expect(resolved.worker_en_route.channels.email?.subject).toBe(
+      '{{org.name}}: your cleaner is on the way',
+    );
+    expect(resolved.booking_confirmed).not.toEqual(DEFAULT_CLEAN_TEMPLATES.booking_confirmed);
   });
 
   it('lets a pack replace one event without disturbing the rest', () => {
