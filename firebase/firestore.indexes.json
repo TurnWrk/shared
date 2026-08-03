@@ -10,6 +10,14 @@
       ]
     },
     {
+      "collectionGroup": "cmms_pmSchedules",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "nextDueDate", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "cmms_workOrders",
       "queryScope": "COLLECTION",
       "fields": [
