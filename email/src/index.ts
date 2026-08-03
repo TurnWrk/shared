@@ -6,6 +6,7 @@ export type {
   CleanNotificationDetail,
   InvoiceData,
   InvoiceLineItem,
+  OwnerPortalLinkData,
   SendEmailParams,
   SendEmailResult,
   TemplateName,

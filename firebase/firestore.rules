@@ -522,6 +522,14 @@ service cloud.firestore {
       allow update, delete: if (resource.data.userId == request.auth.uid) || isPlatformAdmin();
     }
 
+    // Owner portal magic-link + session tokens (TURNWRK-418). Admin SDK only:
+    // the holder of an owner link has no Firebase Auth user, so there is no
+    // client identity that could ever legitimately read a token doc. Explicit
+    // rather than left to the deny-all fallthrough — the guarantee is the point.
+    match /cmms_ownerPortalTokens/{tokenId} {
+      allow read, write: if false;
+    }
+
     match /cmms_auditLogs/{logId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create: if canWriteOrg(request.resource.data.orgId);

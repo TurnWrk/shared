@@ -41,6 +41,18 @@ export type EstimateData = {
   isUpdate?: boolean;
 };
 
+/**
+ * Owner portal magic link (TURNWRK-418). Single-use and short-lived: the raw
+ * token lives only in `portalUrl` and in this email, never in Firestore.
+ */
+export type OwnerPortalLinkData = {
+  orgName: string;
+  ownerName?: string;
+  /** Single-use /owner/auth/{token} link that mints the session cookie. */
+  portalUrl: string;
+  expiresInMinutes: number;
+};
+
 export type CleanNotificationDetail = { label: string; value: string };
 
 /**
@@ -83,6 +95,7 @@ export type Templates = {
   estimate: EstimateData;
   'clean-notification': CleanNotificationData;
   invoice: InvoiceData;
+  'owner-portal-link': OwnerPortalLinkData;
 };
 
 export type TemplateName = keyof Templates;

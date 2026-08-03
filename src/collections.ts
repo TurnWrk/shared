@@ -57,6 +57,10 @@ export const COLLECTIONS = {
   // Owner-facing direct/email invoices. Public /invoice/{token} resolves via
   // Admin SDK — no public Firestore read.
   cmms_ownerInvoices: 'cmms_ownerInvoices',
+  // Owner portal magic-link + session tokens (TURNWRK-418). Doc id is the
+  // sha256 of the raw token, which is never stored; Admin SDK only, so the
+  // owner needs no Firebase Auth user and no `owner` RBAC role.
+  cmms_ownerPortalTokens: 'cmms_ownerPortalTokens',
 
   // Turnwrk Service (booking/recurring-service product; formerly Turnwrk Clean —
   // renamed `clean_*` → `svc_*` under TURNWRK-327 as it went vertical-agnostic).
