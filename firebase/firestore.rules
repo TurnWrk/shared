@@ -390,6 +390,16 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // AI Estimator rate-override training data (TURNWRK-274, Dispatch for Trades
+    // P0.1b). turnwrk-cortex appends one event per applied rate override via the
+    // Admin SDK — the bridge to the internal cost DB (Alan's DECISION 2026-08-01
+    // #3). No client ever reads or writes it: the read path is a future
+    // DbRateSource, not v1. Explicit deny so this intent is documented at the
+    // collection rather than left implicit under the catch-all.
+    match /tradeRateOverrides/{eventId} {
+      allow read, write: if false;
+    }
+
     // Direct/email owner invoices. Public /invoice/{token} uses Admin SDK — no
     // public read. Client writes go through Admin-SDK API routes.
     match /cmms_ownerInvoices/{invoiceId} {
