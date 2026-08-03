@@ -1,15 +1,13 @@
 /**
- * Suite SaaS commercial catalog — single source of truth for product SKUs,
- * list prices, multi-product bundle %, volume tiers, and trial length.
+ * **RETIRED v1** per-unit suite catalog (TURNWRK-303).
  *
- * Money is integer USD cents. Stripe Product/Price IDs are env-wired in
- * hostfix (`lib/billing/`); this module never talks to Stripe.
+ * The public commercial model is v2 "money-moved" in `./usageModel.ts` — free
+ * unlimited software, take-rate on processed payments, flat Pro per business.
+ * This file keeps the old Dispatch $6 / Restock $3 / Clean $4 list prices,
+ * 18% bundle coupon, and `suite_vol_*` tiers for tests and historical reference.
+ * Do not wire new Checkout, quotes, or env keys against it.
  *
- * Commercial terms (Alan 2026-07-22 / TURNWRK-217):
- * - Three peer products: Dispatch $6, Restock $3, Clean $4 (per unit / mo)
- * - Any two or more → flat 18% off the combined list (not a fixed $7.40 SKU)
- * - Volume % by unit count on the post-bundle subtotal
- * - No account monthly minimum
+ * Money is integer USD cents. This module never talks to Stripe.
  */
 
 /** Canonical suite product SKUs (Stripe Price metadata `turnwrk_plan_sku`). */

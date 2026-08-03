@@ -1,7 +1,11 @@
 /**
- * Stripe Billing shape for Turnwrk suite SaaS (not Clean job payments).
+ * Stripe Billing metadata + **retired v1** provisioning specs (TURNWRK-303).
  *
- * Model (Alan 2026-07-22 / TURNWRK-217 — matches website calculator):
+ * Live suite Checkout uses v2 flat Pro (`suitePro` in dispatch). The per-unit
+ * Price/Coupon specs below are legacy reference — do not provision or route
+ * Checkout against them.
+ *
+ * Retired v1 model (Alan 2026-07-22 / TURNWRK-217):
  *
  * 1. **Products / Prices** — one Product per peer product (Dispatch, Restock,
  *    Clean); recurring Price `unit_amount` = catalog cents, `billing_scheme:
@@ -68,7 +72,7 @@ export interface SuiteStripeCouponSpec {
   duration: 'forever';
 }
 
-/** Specs to create once in Stripe (Dashboard or setup script). */
+/** @deprecated Retired v1 provisioning — do not create for new Checkout. */
 export function suiteVolumeCouponSpecs(): SuiteStripeCouponSpec[] {
   return SUITE_VOLUME_TIERS.filter((t) => t.discountPct > 0).map((t) => ({
     id: suiteVolumeCouponId(t.discountPct),
@@ -78,6 +82,7 @@ export function suiteVolumeCouponSpecs(): SuiteStripeCouponSpec[] {
   }));
 }
 
+/** @deprecated Retired v1 provisioning — do not create for new Checkout. */
 export function suiteBundleCouponSpec(): SuiteStripeCouponSpec {
   return {
     id: SUITE_BUNDLE_COUPON_ID,
@@ -87,7 +92,7 @@ export function suiteBundleCouponSpec(): SuiteStripeCouponSpec {
   };
 }
 
-/** Bundle + volume coupon specs for one-shot Stripe provisioning. */
+/** @deprecated Retired v1 provisioning — do not create for new Checkout. */
 export function suiteCouponSpecs(): SuiteStripeCouponSpec[] {
   return [suiteBundleCouponSpec(), ...suiteVolumeCouponSpecs()];
 }
@@ -101,6 +106,7 @@ export interface SuiteStripePriceSpec {
   nickname: string;
 }
 
+/** @deprecated Retired v1 provisioning — do not create for new Checkout. */
 export function suiteStripePriceSpecs(): SuiteStripePriceSpec[] {
   return (Object.keys(SUITE_PRODUCTS) as SuiteProductSku[]).map((sku) => {
     const product = SUITE_PRODUCTS[sku];
@@ -115,7 +121,7 @@ export function suiteStripePriceSpecs(): SuiteStripePriceSpec[] {
   });
 }
 
-/** Checkout subscription_data defaults for suite SaaS. */
+/** @deprecated Retired v1 Checkout defaults — v2 Pro uses suitePro builders. */
 export function suiteCheckoutSubscriptionDefaults(): {
   trial_period_days: number;
   metadata: { turnwrk_billing_surface: typeof SUITE_BILLING_SURFACE };

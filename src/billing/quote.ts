@@ -1,8 +1,9 @@
 /**
- * Pure suite quote engine — product multi-select × 18% bundle × volume %.
- * Callers (Checkout builders, Portal previews, website calculators) use this;
- * Stripe Coupons (bundle + volume) mirror the same math at invoice time.
- * No account monthly minimum (TURNWRK-217).
+ * **RETIRED v1** per-unit quote engine (TURNWRK-303).
+ *
+ * Public pricing uses v2 in `./usageModel.ts` (`quoteSuiteUsage`, etc.). This
+ * module mirrors the retired catalog math for tests only — do not build Checkout
+ * or billing routes against it.
  */
 
 import {
@@ -96,6 +97,7 @@ export function resolveVolumeDiscountPct(unitCount: number): number {
  * Quote a suite subscription for selected products × `unitCount` properties.
  * Throws if unitCount < 1 or products is empty / contains unknown SKUs.
  */
+/** @deprecated Retired v1 quote — use `quoteSuiteUsage` in usageModel.ts. */
 export function quoteSuiteSubscription(selection: SuiteQuoteSelection): SuiteQuote {
   const unitCount = Math.trunc(selection.unitCount);
   if (!Number.isFinite(unitCount) || unitCount < 1) {

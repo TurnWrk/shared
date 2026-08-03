@@ -11,12 +11,10 @@
  * - Restock affiliate margin on supplies bought through carts (informational
  *   here; it is never a line on the customer's bill).
  *
- * Relationship to v1 (`./catalog` + `./quote`): v1 is the per-unit
- * subscription model (Dispatch $6 / Restock $3 / Clean $4, 18% bundle, volume
- * tiers). It is NOT deprecated by this file — `dispatch/lib/billing/*` still
- * runs live Stripe Checkout / webhooks / Portal against it. v2 is additive:
- * the public pricing page quotes it, and the billing backend migration to it
- * is a separate build.
+ * Relationship to v1 (`./catalog` + `./quote`): retired per-unit subscription
+ * scaffolding (TURNWRK-303). Those modules remain for tests and history only.
+ * Suite Checkout in dispatch is v2 flat Pro (`/api/billing/checkout` →
+ * `lib/billing/suitePro.ts`); no code path may charge per unit or per property.
  *
  * Money is integer USD cents; rates are basis points (100 bps = 1.00%).
  * Pure module — never talks to Stripe.
