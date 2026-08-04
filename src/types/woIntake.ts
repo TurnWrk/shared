@@ -47,6 +47,8 @@ export interface WoIntakeRequest {
   scheduledDate?: string;
   /** Batch-level checklist choice, applied when the work order is approved. */
   checklistTemplateId?: string;
+  /** Stay-specific items composed with the template at approval or create. */
+  checklistCustomItems?: import('../checklist').ChecklistCustomItemInput[];
 
   // --- lifecycle (mirrors dispatch_smsInbox) ---
   status: WoIntakeStatus;
