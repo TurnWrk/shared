@@ -29,6 +29,10 @@ export function isChecklistItemComplete(item: ChecklistItem): boolean {
     case 'yes-no-photo':
       // Answered either way counts — a Fail is an addressed item that flags an issue.
       return item.status === 'Pass' || item.status === 'Fail' || item.done === true;
+    case 'number': {
+      const raw = typeof item.value === 'string' ? item.value.trim() : '';
+      return raw !== '' && !Number.isNaN(Number(raw));
+    }
     default: {
       const answered = item.done === true || item.status === 'Pass' || item.status === 'Fail';
       return item.photoRequired === true ? answered && hasPhoto : answered;

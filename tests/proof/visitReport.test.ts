@@ -133,6 +133,27 @@ describe('assembleVisitReport — checklist', () => {
     const report = assembleVisitReport(base);
     expect(report.checklist).toEqual({ sections: [], done: 0, total: 0, summaryLine: '' });
   });
+
+  it('extracts numeric readings into report.readings', () => {
+    const report = assembleVisitReport({
+      ...base,
+      checklist: checklist([
+        {
+          id: 'chem',
+          title: 'Water Chemistry',
+          items: [
+            item({ id: 'chem.ph', label: 'pH', inputType: 'number', value: '7.4' }),
+            item({ id: 'chem.cl', label: 'Free chlorine', inputType: 'number', value: '3', suffix: 'ppm' }),
+            item({ id: 'chem.pending', label: 'CYA', inputType: 'number' }),
+          ],
+        },
+      ]),
+    });
+    expect(report.readings).toEqual([
+      { label: 'pH', value: '7.4' },
+      { label: 'Free chlorine', value: '3', unit: 'ppm' },
+    ]);
+  });
 });
 
 describe('visitReportNotification', () => {

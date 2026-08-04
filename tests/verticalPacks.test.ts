@@ -137,6 +137,7 @@ describe('phase-E packs (TURNWRK-329)', () => {
     expect(POOL_PACK.extensions).toContain('proof_report');
     // The service checklist is physical tasks only — no chemistry readings here.
     expect(POOL_PACK.checklistTemplates.map((t) => t.key)).toContain('pool_visit');
+    expect(POOL_PACK.checklistTemplates.map((t) => t.key)).toContain('pool_water_chemistry');
   });
 
   it('landscaping carries mow cadences plus a seasonal shift', () => {

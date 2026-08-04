@@ -22,7 +22,8 @@ export type ChecklistInputType =
   | 'checkbox-date'
   | 'textarea-photo'
   | 'photo-required'
-  | 'photo-location';
+  | 'photo-location'
+  | 'number';
 
 export type ChecklistItemStatus = 'Pass' | 'Fail' | 'NA' | 'Flagged';
 
@@ -60,6 +61,9 @@ export interface ChecklistItem extends ChecklistItemState {
   instructions?: string;
   placeholder?: string;
   suffix?: string;
+  /** Inclusive hint for numeric inputs — out-of-range warns only, never blocks. */
+  minValue?: number;
+  maxValue?: number;
 }
 
 export interface ChecklistSection {
@@ -86,6 +90,8 @@ export interface ChecklistTemplateItem {
   instructions?: string;
   placeholder?: string;
   suffix?: string;
+  minValue?: number;
+  maxValue?: number;
 }
 
 /**

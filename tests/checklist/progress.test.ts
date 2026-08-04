@@ -53,6 +53,13 @@ describe('isChecklistItemComplete', () => {
     expect(isChecklistItemComplete(item({ inputType: 'yes-no-photo', status: 'Pass' }))).toBe(true);
     expect(isChecklistItemComplete(item({ inputType: 'yes-no-photo' }))).toBe(false);
   });
+
+  it('number completes when a numeric value is entered', () => {
+    expect(isChecklistItemComplete(item({ inputType: 'number', value: '7.4' }))).toBe(true);
+    expect(isChecklistItemComplete(item({ inputType: 'number', value: ' 80 ' }))).toBe(true);
+    expect(isChecklistItemComplete(item({ inputType: 'number' }))).toBe(false);
+    expect(isChecklistItemComplete(item({ inputType: 'number', value: 'abc' }))).toBe(false);
+  });
 });
 
 const checklist: WorkOrderChecklist = {

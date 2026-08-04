@@ -114,6 +114,11 @@ export interface VerticalChecklistSeed {
   title: string;
   /** WO types this template is the default for when the org has set none. */
   defaultForTypes?: readonly WOType[];
+  /**
+   * When set, this template's sections merge onto a primary service checklist
+   * only if the pack lists the extension — generic gate, not trade branching.
+   */
+  requiresExtension?: VerticalExtensionKey;
   sections: readonly ChecklistTemplateSection[];
 }
 

@@ -44,6 +44,14 @@ export interface VisitReportPhotoCounts {
   total: number;
 }
 
+/** One numeric checklist reading flattened for the customer report. */
+export interface VisitReportReading {
+  label: string;
+  /** Display value as entered by the tech (e.g. "7.4", "80"). */
+  value: string;
+  unit?: string;
+}
+
 /**
  * The assembled proof-of-service report — a self-contained snapshot composed
  * from a work order's before/after photos and completed checklist at the
@@ -71,6 +79,8 @@ export interface VisitReport {
     /** One-line summary, e.g. "Checklist 12/14 complete". */
     summaryLine: string;
   };
+  /** Numeric checklist readings (water chemistry etc.), when captured. */
+  readings?: VisitReportReading[];
 }
 
 /**

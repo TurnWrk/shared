@@ -113,6 +113,8 @@ function seedItem(sectionInstanceId: string, item: ChecklistTemplateItem): Check
     ...(item.instructions !== undefined ? { instructions: item.instructions } : {}),
     ...(item.placeholder !== undefined ? { placeholder: item.placeholder } : {}),
     ...(item.suffix !== undefined ? { suffix: item.suffix } : {}),
+    ...(item.minValue !== undefined ? { minValue: item.minValue } : {}),
+    ...(item.maxValue !== undefined ? { maxValue: item.maxValue } : {}),
   };
 }
 

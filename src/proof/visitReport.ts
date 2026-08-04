@@ -19,6 +19,7 @@ import type {
   VisitReportChecklistSection,
   VisitReportPhoto,
   VisitReportPhotoCounts,
+  VisitReportReading,
 } from './types';
 import {
   checklistProgress,
@@ -49,6 +50,23 @@ function byTimestamp(a: VisitReportPhoto, b: VisitReportPhoto): number {
   if (a.timestamp === undefined) return 1;
   if (b.timestamp === undefined) return -1;
   return a.timestamp - b.timestamp;
+}
+
+function extractReadings(checklist: WorkOrderChecklist | undefined): VisitReportReading[] {
+  const readings: VisitReportReading[] = [];
+  for (const section of checklist?.sections ?? []) {
+    for (const item of section.items) {
+      if (item.inputType !== 'number' || !isChecklistItemComplete(item)) continue;
+      const raw = typeof item.value === 'string' ? item.value.trim() : '';
+      if (!raw) continue;
+      readings.push({
+        label: item.label,
+        value: raw,
+        ...(item.suffix !== undefined ? { unit: item.suffix } : {}),
+      });
+    }
+  }
+  return readings;
 }
 
 /**
@@ -84,6 +102,7 @@ export function assembleVisitReport(input: AssembleVisitReportInput): VisitRepor
   }
 
   const progress = checklistProgress(input.checklist);
+  const readings = extractReadings(input.checklist);
 
   return {
     service: input.service,
@@ -96,6 +115,7 @@ export function assembleVisitReport(input: AssembleVisitReportInput): VisitRepor
       total: progress.total,
       summaryLine: checklistSummaryLine(input.checklist),
     },
+    ...(readings.length > 0 ? { readings } : {}),
   };
 }
 
@@ -142,6 +162,14 @@ export function visitReportNotification(report: VisitReport): VisitReportNotific
         value: section.items.map((i) => i.label).join(', '),
       });
     }
+  }
+  if (report.readings && report.readings.length > 0) {
+    details.push({
+      label: 'Readings',
+      value: report.readings
+        .map((r) => (r.unit ? `${r.label}: ${r.value} ${r.unit}` : `${r.label}: ${r.value}`))
+        .join('; '),
+    });
   }
 
   return {
