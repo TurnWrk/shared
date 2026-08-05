@@ -72,6 +72,11 @@ export interface Customer {
   referredFromReviewId?: string;
   stripeCustomerId?: string;
   notes?: string;
+  /**
+   * Org-local calendar date (YYYY-MM-DD) when this customer is due for their
+   * next service visit — trades use this for proactive outreach / scheduling.
+   */
+  dueForServiceDate?: string;
   /** Per-customer payment-policy override (negotiated commercial accounts). */
   paymentPolicy?: CleanPaymentPolicy;
   /** Per-customer invoice terms override (days). Falls back to org invoiceTermsDays. */
