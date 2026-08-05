@@ -1,0 +1,9 @@
+{
+  "name": "turnwrk-shared-rules-test-deps",
+  "private": true,
+  "description": "Isolated deps for npm run test:rules (TURNWRK-471).",
+  "dependencies": {
+    "@firebase/rules-unit-testing": "5.0.1",
+    "firebase": "^12.8.0"
+  }
+}
