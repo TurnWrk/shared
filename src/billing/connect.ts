@@ -2,8 +2,8 @@
  * Stripe Connect contract for the suite — **direct charges**.
  *
  * Business shape: each org connects its own Stripe account and is the merchant
- * of record for its customers' payments. Turnwrk is the platform and earns only
- * an `application_fee_amount` on each charge (rates in `./usageModel`).
+ * of record for its customers' payments. Turnwrk is the platform and earns an
+ * `application_fee_amount` on each charge (rates in `./usageModel`).
  *
  * **Charge pattern: DIRECT.** The charge is created *on* the connected account
  * (`{ stripeAccount }` request option / `Stripe-Account` header). Consequences,
@@ -11,55 +11,55 @@
  *
  * - **Funds never enter the platform balance.** They land in the operator's
  *   balance and pay out on their schedule, to their bank.
- * - **Dispute and refund liability sits with the connected account**, not with
- *   Turnwrk. This is the reason for the pattern: a 60–100 bps take-rate cannot
- *   carry unbounded chargeback exposure across cleaning, trades and route work.
- * - **Stripe's processing fee bills the operator's account**, which is what the
- *   public pricing page already tells them ("the processor's own fee passes
- *   straight through and is never ours").
- * - **Customers and PaymentMethods are per-connected-account.** A Customer
- *   vaulted on the platform CANNOT be charged on a connected account without
- *   cloning the payment method. Create them on the connected account from the
- *   start — card-on-file, pre-auth and hold→capture all work there.
+ * - **Customers and PaymentMethods are per-connected-account.** Create them on
+ *   the connected account from the start.
  * - **Client-side Elements must be initialised with the account**:
- *   `loadStripe(pk, { stripeAccount })`. A direct-charge client secret does not
- *   resolve against the platform.
- * - **Webhook events are delivered to the connected account** and carry an
- *   `account` field. They do NOT arrive on the platform-account endpoint, so a
- *   Connect endpoint is required — do not extend Clean's job-payment webhook
- *   (`POST /api/webhooks/stripe`), and keep `STRIPE_CONNECT_WEBHOOK_SECRET`
- *   distinct from it and from the suite subscription webhook.
+ *   `loadStripe(pk, { stripeAccount })`.
+ * - **Webhook events for connected-account activity** carry an `account` field
+ *   and require a separate Connect endpoint (`STRIPE_CONNECT_WEBHOOK_SECRET`).
  * - **Refunds must set `refund_application_fee` deliberately.** Default: refund
- *   the fee. Keeping a take-rate on money the customer got back is indefensible.
+ *   the fee.
  *
- * Rejected alternative: destination charges (`transfer_data.destination`). Funds
- * pass through the platform balance and the PLATFORM carries dispute liability
- * by default. Decided against 2026-07-28 — see docs/projects/PRICING-AND-PAYMENTS.md.
+ * ## Controller (ratified 2026-08-05, interim)
+ *
+ * Express dashboard requires `fees_collector=application` AND
+ * `losses_collector=application` (Stripe API error
+ * `account_controller_express_dash_without_application_losses_or_fees`). So for
+ * now Practical Works **owns negative-balance liability** and fee pricing.
+ *
+ * Because the platform pays Stripe's card processing fees under
+ * `fees_collector=application`, every charge MUST recover them inside
+ * `application_fee_amount` (= take-rate + estimated processing). Otherwise a
+ * 60–100 bps take-rate is wiped by ~2.9% + $0.30. See
+ * {@link applicationFeeForDirectCharge}.
+ *
+ * Long-term exit (chargeback-safe SaaS path): Full Dashboard +
+ * `fees_collector=stripe` + `losses_collector=stripe` + direct. Dashboard type
+ * is immutable per account — new accounts only.
  *
  * Naming note: the `CLEAN_CONNECT_*` prefix predates the suite-wide migration.
- * This contract governs Clean, Dispatch/Trades and the route verticals alike;
- * the rename rides with the shared foundation build (TURNWRK-300).
+ * This contract governs Clean, Dispatch/Trades and the route verticals alike.
  *
- * Constants only — this module never talks to Stripe.
+ * Constants + pure fee math — this module never talks to Stripe.
  */
+
+import { SUITE_USAGE_MODEL } from './usageModel';
 
 export const CLEAN_CONNECT_SURFACE = 'clean_connect' as const;
 
 /**
- * Accounts v2 controller defaults — document intent for implementers.
- *
- * `losses.payments = 'stripe'` is the whole point: losses settle against the
- * connected account. Pairing it with an Express dashboard is the intended
- * configuration, but Stripe constrains which controller combinations are legal
- * and those constraints move with the API version — **verify against the pinned
- * version before relying on this**, do not assume it from these constants.
+ * Accounts v2 controller defaults — Express + platform fees/losses (interim).
+ * Locked by `tests/billing/connect.test.ts`.
  */
 export const CLEAN_CONNECT_ACCOUNT_DEFAULTS = {
   dashboard: 'express',
-  /** Operator's account pays Stripe's processing fee (direct charges). */
-  feesCollector: 'account',
-  /** Operator's account carries chargebacks and refund losses. */
-  lossesCollector: 'stripe',
+  /**
+   * Platform owns pricing / Stripe bills the platform for processing.
+   * Recover processing inside `application_fee_amount` — see fee helpers.
+   */
+  feesCollector: 'application',
+  /** Platform owns negative-balance liability (Express requirement). */
+  lossesCollector: 'application',
   /** Charge created ON the connected account; funds never touch the platform. */
   chargePattern: 'direct',
   /** Embedded components to ship with Express. */
@@ -70,6 +70,16 @@ export const CLEAN_CONNECT_ACCOUNT_DEFAULTS = {
     'payments',
     'payouts',
   ] as const,
+} as const;
+
+/**
+ * US card processing estimate used to recover Stripe fees when the platform is
+ * the fee payer. Not a quote of Stripe's exact invoice line — close enough that
+ * the take-rate survives. Revisit per-region when we expand.
+ */
+export const STRIPE_US_CARD_PROCESSING = {
+  rateBps: 290,
+  fixedCents: 30,
 } as const;
 
 /** Env keys for Connect. Suite Pro subscription uses STRIPE_SUITE_* in dispatch. */
@@ -93,6 +103,64 @@ export const CLEAN_CONNECT_ORG_FIELDS = {
 
 /** A Stripe connected-account id (`acct_…`). */
 export type ConnectedAccountRef = string;
+
+/**
+ * Take-rate bps for an org's suite plan. Only `pro` gets the Pro rate; trial /
+ * comp / free / unknown all use the Free take-rate (never invent a discount).
+ */
+export function suitePaymentRateBpsForPlan(planId: string | null | undefined): number {
+  return planId === 'pro'
+    ? SUITE_USAGE_MODEL.proPaymentRateBps
+    : SUITE_USAGE_MODEL.freePaymentRateBps;
+}
+
+/** Estimated Stripe card processing fee for a charge amount (integer cents). */
+export function estimateStripeCardProcessingFeeCents(amountCents: number): number {
+  if (!Number.isFinite(amountCents) || amountCents <= 0) return 0;
+  const amount = Math.floor(amountCents);
+  return (
+    Math.round((amount * STRIPE_US_CARD_PROCESSING.rateBps) / 10_000) +
+    STRIPE_US_CARD_PROCESSING.fixedCents
+  );
+}
+
+export interface ApplicationFeeBreakdown {
+  /** Turnwrk take-rate (bps × amount). */
+  takeRateCents: number;
+  /** Estimated Stripe processing recovered because platform is fee payer. */
+  processingFeeCents: number;
+  /** Sum, capped at the charge amount (Stripe rejects a fee ≥ charge). */
+  applicationFeeCents: number;
+  paymentRateBps: number;
+}
+
+/**
+ * `application_fee_amount` for a direct charge under the interim Express
+ * controller: take-rate + estimated card processing.
+ *
+ * When `fees_collector=application`, Stripe bills Practical Works for
+ * processing. Without recovering that inside the application fee, a 60–100 bps
+ * take-rate is negative on every card charge.
+ */
+export function applicationFeeForDirectCharge(input: {
+  amountCents: number;
+  planId?: string | null;
+}): ApplicationFeeBreakdown {
+  const amountCents =
+    Number.isFinite(input.amountCents) && input.amountCents > 0
+      ? Math.floor(input.amountCents)
+      : 0;
+  const paymentRateBps = suitePaymentRateBpsForPlan(input.planId);
+  const takeRateCents = Math.round((amountCents * paymentRateBps) / 10_000);
+  const processingFeeCents = estimateStripeCardProcessingFeeCents(amountCents);
+  const applicationFeeCents = Math.min(amountCents, takeRateCents + processingFeeCents);
+  return {
+    takeRateCents,
+    processingFeeCents,
+    applicationFeeCents,
+    paymentRateBps,
+  };
+}
 
 /**
  * Guard every operator-money Stripe call. Throws rather than returning a
