@@ -135,6 +135,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:rules": "npm --prefix rules-test-deps install && npx --yes firebase-tools@14 emulators:exec --only firestore \"vitest run --config vitest.rules.config.ts\"",
     "check:vendored-fixtures": "bash scripts/check-vendored-testFixtures.sh",
     "check:vendored-shared": "bash scripts/check-vendored-shared.sh",
     "check:vendored-email": "bash scripts/check-vendored-email.sh",
