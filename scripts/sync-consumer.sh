@@ -46,7 +46,8 @@ EXCLUDES=(
   --exclude .vendor-manifest.json
 )
 if [[ "$VARIANT" == "apphosting" ]]; then
-  EXCLUDES+=(--exclude package.json --exclude package-lock.json)
+  # Root-only: unanchored package.json also matched rules-test-deps/ (TURNWRK-488).
+  EXCLUDES+=(--exclude=/package.json --exclude=/package-lock.json)
 fi
 
 rsync -a --delete "${EXCLUDES[@]}" "$SRC/" "$DEST/"
