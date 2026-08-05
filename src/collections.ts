@@ -102,6 +102,8 @@ export const COLLECTIONS = {
   svc_incidents: 'svc_incidents',
   // Booking-site short links; doc id == short code (A9).
   svc_shortLinks: 'svc_shortLinks',
+  // Referral share links (TURNWRK-288); doc id == bearer token.
+  svc_referralLinks: 'svc_referralLinks',
   // Bounty photo rewards (Change Order 2). Program config incl. the embedded
   // spot list, one doc per org (doc id == orgId, catalog pattern).
   svc_bountyPrograms: 'svc_bountyPrograms',

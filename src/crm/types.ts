@@ -14,7 +14,7 @@
 import type { CleanPaymentPolicy, CleanQuote } from '../types/clean';
 import type { PropertyAddressParts } from '../types/property';
 
-export type CustomerSource = 'widget' | 'manual' | 'import';
+export type CustomerSource = 'widget' | 'manual' | 'import' | 'referral';
 
 /**
  * One service location for a customer. A homeowner has one; a trade customer
@@ -63,6 +63,13 @@ export interface Customer {
   serviceAddresses?: ServiceAddress[];
   marketingOptIn?: boolean;
   source: CustomerSource;
+  /**
+   * When `source === 'referral'`, the referring customer's id in this org
+   * (TURNWRK-288). Absent for non-referral sources.
+   */
+  referredByCustomerId?: string;
+  /** Review that minted the referral link, when known. */
+  referredFromReviewId?: string;
   stripeCustomerId?: string;
   notes?: string;
   /** Per-customer payment-policy override (negotiated commercial accounts). */
