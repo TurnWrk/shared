@@ -40,6 +40,11 @@
       "require": "./dist/whisper/index.js",
       "default": "./dist/whisper/index.js"
     },
+    "./twenty": {
+      "types": "./dist/twenty/index.d.ts",
+      "require": "./dist/twenty/index.js",
+      "default": "./dist/twenty/index.js"
+    },
     "./clean": {
       "types": "./dist/clean/index.d.ts",
       "require": "./dist/clean/index.js",
