@@ -3,8 +3,10 @@ import {
   CLEAN_CONNECT_ACCOUNT_DEFAULTS,
   STRIPE_US_CARD_PROCESSING,
   applicationFeeForDirectCharge,
+  applicationFeeReversalForRefund,
   assertConnectedAccount,
   estimateStripeCardProcessingFeeCents,
+  requireApplicationFeeMinor,
   suitePaymentRateBpsForPlan,
 } from '../../src/billing';
 import { SUITE_USAGE_MODEL } from '../../src/billing/usageModel';
@@ -60,6 +62,49 @@ describe('applicationFeeForDirectCharge', () => {
   it('returns zeros for non-positive amounts', () => {
     expect(applicationFeeForDirectCharge({ amountCents: 0 }).applicationFeeCents).toBe(0);
     expect(estimateStripeCardProcessingFeeCents(-1)).toBe(0);
+  });
+
+  it('floors the take-rate in the operator favour', () => {
+    // 155¢ × 100 bps = 1.55¢ → floor 1, not round 2
+    const fee = applicationFeeForDirectCharge({ amountCents: 155, planId: 'free' });
+    expect(fee.takeRateCents).toBe(1);
+  });
+});
+
+describe('applicationFeeReversalForRefund', () => {
+  it('reverses pro-rata with CEIL rounding on partial refunds', () => {
+    const original = applicationFeeForDirectCharge({ amountCents: 10_000, planId: 'free' });
+    const reversal = applicationFeeReversalForRefund({
+      originalChargeCents: 10_000,
+      refundedCents: 1,
+      originalApplicationFeeCents: original.applicationFeeCents,
+      originalTakeRateCents: original.takeRateCents,
+      originalPaymentRateBps: original.paymentRateBps,
+    });
+    expect(reversal.takeRateReversalCents).toBe(1);
+    expect(reversal.reversalCents).toBeGreaterThanOrEqual(1);
+  });
+
+  it('fully reverses at 100% refund', () => {
+    const original = applicationFeeForDirectCharge({ amountCents: 10_000, planId: 'pro' });
+    const reversal = applicationFeeReversalForRefund({
+      originalChargeCents: 10_000,
+      refundedCents: 10_000,
+      originalApplicationFeeCents: original.applicationFeeCents,
+      originalTakeRateCents: original.takeRateCents,
+      originalPaymentRateBps: original.paymentRateBps,
+    });
+    expect(reversal.reversalCents).toBe(original.applicationFeeCents);
+  });
+});
+
+describe('requireApplicationFeeMinor', () => {
+  it('returns the fee when present', () => {
+    expect(requireApplicationFeeMinor(42, 'capture')).toBe(42);
+  });
+
+  it('throws when omitted', () => {
+    expect(() => requireApplicationFeeMinor(undefined, 'capture')).toThrow(/required on every direct charge/);
   });
 });
 

@@ -8,6 +8,8 @@
  */
 export const COLLECTIONS = {
   // shared (no prefix)
+  /** Turnwrk application-fee ledger — collections + pro-rata reversals (TURNWRK-301). */
+  suite_applicationFees: 'suite_applicationFees',
   orgs: 'orgs',
   users: 'users',
   properties: 'properties',

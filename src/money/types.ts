@@ -145,6 +145,13 @@ export interface Payment {
   preauthNoticeAt?: number;
   capturedAt?: number;
   refundedMinor?: number;
+  /** Application fee collected at capture (TURNWRK-301). */
+  collectedApplicationFeeMinor?: number;
+  collectedTakeRateMinor?: number;
+  collectedProcessingFeeMinor?: number;
+  collectedPaymentRateBps?: number;
+  stripeApplicationFeeId?: string;
+  stripeChargeId?: string;
   retryCount?: number;
   /** Next retry instant after a pre-auth failure. */
   retryAt?: number;

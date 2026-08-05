@@ -151,7 +151,8 @@ export function applicationFeeForDirectCharge(input: {
       ? Math.floor(input.amountCents)
       : 0;
   const paymentRateBps = suitePaymentRateBpsForPlan(input.planId);
-  const takeRateCents = Math.round((amountCents * paymentRateBps) / 10_000);
+  // Charge-time take-rate rounds DOWN (operator-favouring). Never over-collect.
+  const takeRateCents = Math.floor((amountCents * paymentRateBps) / 10_000);
   const processingFeeCents = estimateStripeCardProcessingFeeCents(amountCents);
   const applicationFeeCents = Math.min(amountCents, takeRateCents + processingFeeCents);
   return {
@@ -160,6 +161,81 @@ export function applicationFeeForDirectCharge(input: {
     applicationFeeCents,
     paymentRateBps,
   };
+}
+
+export interface ApplicationFeeReversalBreakdown {
+  /** Pro-rata application-fee reversal in minor units (CEIL — operator-favouring). */
+  reversalCents: number;
+  takeRateReversalCents: number;
+  processingReversalCents: number;
+}
+
+/**
+ * Pro-rata application-fee reversal for a partial or full refund.
+ *
+ * Uses the bps and fee breakdown frozen at charge time — never re-reads the org's
+ * current plan. Reversal rounding is CEIL (operator-favouring), the deliberate
+ * asymmetry opposite charge-time FLOOR on the take-rate.
+ *
+ * Full refunds are the pro-rata formula at 100% — not a separate code path.
+ */
+export function applicationFeeReversalForRefund(input: {
+  originalChargeCents: number;
+  refundedCents: number;
+  originalApplicationFeeCents: number;
+  originalTakeRateCents: number;
+  originalPaymentRateBps: number;
+}): ApplicationFeeReversalBreakdown {
+  const originalChargeCents =
+    Number.isFinite(input.originalChargeCents) && input.originalChargeCents > 0
+      ? Math.floor(input.originalChargeCents)
+      : 0;
+  const refundedCents =
+    Number.isFinite(input.refundedCents) && input.refundedCents > 0
+      ? Math.floor(input.refundedCents)
+      : 0;
+  if (originalChargeCents === 0 || refundedCents === 0) {
+    return { reversalCents: 0, takeRateReversalCents: 0, processingReversalCents: 0 };
+  }
+
+  const originalTakeRateCents = Math.max(0, Math.floor(input.originalTakeRateCents));
+  const originalApplicationFeeCents = Math.max(0, Math.floor(input.originalApplicationFeeCents));
+  const originalProcessingCents = Math.max(0, originalApplicationFeeCents - originalTakeRateCents);
+
+  // Take-rate slice: CEIL on the bps that was in force at charge time.
+  const takeRateReversalCents = Math.min(
+    originalTakeRateCents,
+    Math.ceil((refundedCents * input.originalPaymentRateBps) / 10_000),
+  );
+  // Processing slice: pro-rata of what was collected, CEIL.
+  const processingReversalCents = Math.min(
+    originalProcessingCents,
+    originalProcessingCents === 0
+      ? 0
+      : Math.ceil((refundedCents * originalProcessingCents) / originalChargeCents),
+  );
+  const reversalCents = Math.min(
+    originalApplicationFeeCents,
+    takeRateReversalCents + processingReversalCents,
+  );
+  return { reversalCents, takeRateReversalCents, processingReversalCents };
+}
+
+/**
+ * Every direct charge must carry an application fee. Throws rather than silently
+ * earning nothing when a call site forgets to populate `applicationFeeMinor`.
+ */
+export function requireApplicationFeeMinor(
+  feeMinor: number | undefined,
+  context: string,
+): number {
+  if (feeMinor === undefined || !Number.isFinite(feeMinor) || feeMinor < 0) {
+    throw new Error(
+      `[connect] ${context}: applicationFeeMinor is required on every direct charge. ` +
+        `Refusing to create a charge that earns Turnwrk nothing.`,
+    );
+  }
+  return Math.floor(feeMinor);
 }
 
 /**

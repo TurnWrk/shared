@@ -182,6 +182,13 @@ service cloud.firestore {
         .hasAny(['enabledApps', 'features', 'billing', 'status']);
     }
 
+    // Turnwrk application-fee ledger (TURNWRK-301). Admin SDK writes on capture
+    // and refund; platform admins may read for reconciliation.
+    match /suite_applicationFees/{entryId} {
+      allow read: if isPlatformAdmin();
+      allow create, update, delete: if false;
+    }
+
     match /orgs/{orgId} {
       allow read: if isMemberOf(orgId) || isPlatformAdmin();
       // Any real user may create an org; a server-side hook must then
