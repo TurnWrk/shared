@@ -146,7 +146,7 @@ describe('phase-E packs (TURNWRK-329)', () => {
     const cadenceKeys = LANDSCAPING_PACK.cadences.map((c) => c.key);
     expect(cadenceKeys).toContain('weekly');
     expect(cadenceKeys).toContain('seasonal');
-    expect(LANDSCAPING_PACK.extensions).toEqual(['seasonal_billing']);
+    expect(LANDSCAPING_PACK.extensions).toEqual(['seasonal_billing', 'rain_reschedule']);
   });
 
   it('phase-E packs without notification overrides inherit neutral defaults', () => {

@@ -9,6 +9,7 @@ import {
   authoredVerticalKeys,
   resolveOrgVerticals,
   resolvePrimaryVertical,
+  orgHasVerticalExtension,
 } from '../src/verticals';
 import type { VerticalKey } from '../src/verticals';
 import type { Org } from '../src/types/org';
@@ -131,6 +132,30 @@ describe('resolvePrimaryVertical', () => {
 
   it('is undefined for an org running neither app', () => {
     expect(resolvePrimaryVertical(org({ enabledApps: { restock: true } }))).toBeUndefined();
+  });
+});
+
+describe('orgHasVerticalExtension', () => {
+  it('is true when any resolved pack lists the extension (rain_reschedule → landscaping)', () => {
+    expect(
+      orgHasVerticalExtension(org({ verticals: ['landscaping'] }), 'rain_reschedule'),
+    ).toBe(true);
+  });
+
+  it('is false for packs that do not opt in (pool must not inherit rain)', () => {
+    expect(orgHasVerticalExtension(org({ verticals: ['pool'] }), 'rain_reschedule')).toBe(false);
+    expect(
+      orgHasVerticalExtension(org({ verticals: ['str_turnover'] }), 'rain_reschedule'),
+    ).toBe(false);
+  });
+
+  it('is true for a multi-service org when one pack opts in', () => {
+    expect(
+      orgHasVerticalExtension(
+        org({ verticals: ['pool', 'landscaping'], primaryVertical: 'pool' }),
+        'rain_reschedule',
+      ),
+    ).toBe(true);
   });
 });
 

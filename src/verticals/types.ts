@@ -47,13 +47,20 @@ export type VerticalExtensionKey =
   /** Seasonal (dormant-month) billing schedules. */
   | 'seasonal_billing'
   /** Proof-of-service report sent after a visit (TURNWRK-291). */
-  | 'proof_report';
+  | 'proof_report'
+  /**
+   * Operator-declared rain-out bulk reschedule (TURNWRK-296). Landscaping-pack
+   * behaviour — pool / STR must not inherit it. No weather provider; the
+   * operator taps "rained out" for a day or route.
+   */
+  | 'rain_reschedule';
 
 export const VERTICAL_EXTENSION_KEYS: readonly VerticalExtensionKey[] = [
   'occupancy',
   'water_chemistry',
   'seasonal_billing',
   'proof_report',
+  'rain_reschedule',
 ] as const;
 
 /**

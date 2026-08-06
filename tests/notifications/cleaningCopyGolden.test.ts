@@ -140,6 +140,15 @@ const CLEANING_BASELINE: Record<string, Partial<Record<Slot, string>>> = {
     "ctaLabel": "View full report",
     "footnote": "Kept on file so you can look back any time."
   },
+  "visit_weather_rescheduled.sms": {
+    "body": "Your Company: your Deep Clean moved from 2026-08-01 to 2026-08-03 due to weather."
+  },
+  "visit_weather_rescheduled.email": {
+    "subject": "Your Your Company visit moved to 2026-08-03",
+    "heading": "Visit rescheduled",
+    "body": "Hi Sally, weather interrupted your Deep Clean on 2026-08-01. We have moved it to 2026-08-03. Your regular schedule is unchanged.",
+    "footnote": "This is a one-time move — your recurring cadence stays the same."
+  },
   "sos_triggered.sms": {
     "body": "SOS from Maria at Aug 1, 9:15 AM — Deep Clean 2026-08-01. Location: https://maps.google.com/?q=30.2672,-97.7431. Open: https://example.com/app/bookings"
   },

@@ -260,6 +260,22 @@ export const DEFAULT_CLEAN_TEMPLATES: Record<
       },
     },
   },
+  visit_weather_rescheduled: {
+    // Verticals V7 — operator-declared rain-out bulk move (no weather provider).
+    // Trade-neutral nouns; landscaping pack gates the action via rain_reschedule.
+    audience: 'customer',
+    channels: {
+      sms: {
+        body: '{{org.name}}: your {{booking.service}} moved from {{booking.date}} to {{booking.new_date}} due to weather.',
+      },
+      email: {
+        subject: 'Your {{org.name}} visit moved to {{booking.new_date}}',
+        heading: 'Visit rescheduled',
+        body: 'Hi {{customer.first_name}}, weather interrupted your {{booking.service}} on {{booking.date}}. We have moved it to {{booking.new_date}}. Your regular schedule is unchanged.',
+        footnote: 'This is a one-time move — your recurring cadence stays the same.',
+      },
+    },
+  },
   sos_triggered: {
     // Operator-audience safety alert — exempt from plan gating (A4).
     audience: 'operator',
@@ -297,6 +313,7 @@ export const SAMPLE_TEMPLATE_VARS: Record<string, string | number> = {
   'customer.last_name': 'Example',
   'booking.service': 'Deep Clean',
   'booking.date': '2026-08-01',
+  'booking.new_date': '2026-08-03',
   'booking.window': '09:00–10:00',
   'booking.total': '$180.00',
   'payment.policy_summary':

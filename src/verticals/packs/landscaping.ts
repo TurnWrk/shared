@@ -109,6 +109,9 @@ export const LANDSCAPING_PACK: VerticalPack = {
   onboarding: {},
   /** Visits carry no repeatable booking params, so section repeats resolve to 1. */
   repeatSources: [],
-  /** Seasonal (dormant-month) billing; a shared extension key, not a lawn-only branch. */
-  extensions: ['seasonal_billing'],
+  /**
+   * Seasonal (dormant-month) billing plus operator-declared rain-out bulk
+   * reschedule (TURNWRK-296) — both shared extension keys, not lawn-only branches.
+   */
+  extensions: ['seasonal_billing', 'rain_reschedule'],
 };

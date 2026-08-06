@@ -9,8 +9,8 @@
  * forbids.
  */
 import type { Org } from '../types/org';
-import type { VerticalKey } from './types';
-import { isVerticalKey } from './registry';
+import type { VerticalExtensionKey, VerticalKey } from './types';
+import { isVerticalKey, packFor } from './registry';
 
 type OrgVerticalSource = Pick<Org, 'verticals' | 'primaryVertical' | 'enabledApps'>;
 
@@ -55,4 +55,20 @@ export function resolvePrimaryVertical(
   const declared = org?.primaryVertical;
   if (isVerticalKey(declared)) return declared;
   return resolveOrgVerticals(org)[0];
+}
+
+/**
+ * True when any of the org's resolved packs lists `extension`. Callers gate
+ * vertical-only behaviours on this (e.g. rain reschedule) rather than branching
+ * on `pack.key`, so a second vertical can opt in later without a code change.
+ */
+export function orgHasVerticalExtension(
+  org: OrgVerticalSource | null | undefined,
+  extension: VerticalExtensionKey,
+): boolean {
+  for (const key of resolveOrgVerticals(org)) {
+    const pack = packFor(key);
+    if (pack?.extensions.includes(extension)) return true;
+  }
+  return false;
 }

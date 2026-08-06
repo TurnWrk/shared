@@ -40,7 +40,12 @@ export type CleanNotificationEventKey =
   | 'invoice_overdue' // A2
   | 'sos_triggered' // A4 — exempt from plan gating (safety is not a tier)
   | 'bounty_submitted' // CO2 — operator review-queue nudge (manual approval mode)
-  | 'visit_report'; // Verticals V2 — proof-of-service auto-report after a visit
+  | 'visit_report' // Verticals V2 — proof-of-service auto-report after a visit
+  /**
+   * Verticals V7 (TURNWRK-296) — operator-declared weather/rain bulk reschedule.
+   * Vertical-neutral wording; landscaping pack gates the *action*, not the copy.
+   */
+  | 'visit_weather_rescheduled';
 
 /** Registry keys with a shipped default template (excludes legacy aliases). */
 export type CanonicalCleanNotificationEventKey = Exclude<
