@@ -220,6 +220,25 @@ export interface Invoice {
   paymentsApplied?: InvoicePaymentApplied[];
   /** Bearer token for the hosted /pay/{token} page. */
   payToken?: string;
+  // --- Trades path (TURNWRK-279) — customer-keyed invoice on the same A/R doc.
+  customerId?: string;
+  estimateId?: string;
+  workOrderId?: string;
+  workOrderIds?: string[];
+  /** Deposit collected on estimate approval, credited on the invoice. */
+  depositAppliedMinor?: number;
+  /**
+   * Customer-visible line items (markup rolled in per TURNWRK-273). Internal
+   * pricing may still carry markup rows on the linked estimate.
+   */
+  customerLineItems?: Array<{
+    id: string;
+    kind: 'labor' | 'material';
+    label: string;
+    quantity: number;
+    unitMinor: number;
+    totalMinor: number;
+  }>;
   /** Number of dunning stages already sent (index into org dunning offsets). */
   dunningStage?: number;
   lastDunningAt?: number;
