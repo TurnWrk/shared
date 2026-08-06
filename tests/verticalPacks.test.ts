@@ -159,11 +159,39 @@ describe('phase-E packs (TURNWRK-329)', () => {
   it('pool pack supplies trade-appropriate notification copy', () => {
     const merged = { ...DEFAULT_CLEAN_TEMPLATES, ...POOL_PACK.notificationCopy };
     expect(merged.worker_en_route.channels.email?.subject).toBe(
-      '{{org.name}}: your technician is on the way',
+      '{{org.name}}: your tech is on the way',
     );
     expect(merged.review_request.channels.email?.subject).toBe(
       'How was your {{org.name}} pool service?',
     );
+  });
+
+  it('pool starter catalog matches TURNWRK-339 (weekly + bi-weekly, no equipment SKU)', () => {
+    const keys = POOL_PACK.serviceSeeds.map((s) => s.key);
+    expect(keys).toEqual([
+      'weekly_pool_service',
+      'biweekly_pool_service',
+      'pool_opening',
+      'pool_closing',
+      'filter_clean',
+      'green_to_clean',
+    ]);
+    expect(keys).not.toContain('equipment_check');
+    expect(POOL_PACK.terminology.worker).toBe('tech');
+    expect(POOL_PACK.terminology.workerPlural).toBe('techs');
+    expect(POOL_PACK.cadences.map((c) => c.key)).toContain('fortnightly');
+
+    const chemistry = POOL_PACK.checklistTemplates.find((t) => t.key === 'pool_water_chemistry');
+    const readings = chemistry?.sections[0]?.items ?? [];
+    const byId = Object.fromEntries(readings.map((i) => [i.id, i]));
+    expect(byId.chlorine?.minValue).toBe(1);
+    expect(byId.chlorine?.maxValue).toBe(10);
+    expect(byId.ph?.minValue).toBe(7.0);
+    expect(byId.ph?.maxValue).toBe(7.8);
+    expect(byId.cya?.maxValue).toBe(90);
+
+    const visit = POOL_PACK.checklistTemplates.find((t) => t.key === 'pool_visit');
+    expect(visit?.sections[0]?.items.some((i) => i.id === 'equipment' && i.required)).toBe(true);
   });
 
   it('a multi-service org resolves terminology from primaryVertical and offers both catalogs', () => {
@@ -179,6 +207,7 @@ describe('phase-E packs (TURNWRK-329)', () => {
     const offered = resolveOrgVerticals(multi).flatMap((k) => packFor(k)!.serviceSeeds);
     const offeredKeys = offered.map((s) => s.key);
     expect(offeredKeys).toContain('weekly_pool_service'); // a recurring pool visit
+    expect(offeredKeys).toContain('biweekly_pool_service');
     expect(offeredKeys).toContain('handyman_hourly'); // a one-off repair
   });
 });
@@ -212,11 +241,22 @@ describe('cleaning pack reproduces today’s cleaning behaviour', () => {
     expect(CLEANING_PACK.repeatSources).toEqual(['bed', 'bath']);
   });
 
-  it('carries no seeds, because none ship today', () => {
-    // Deliberate: orgs author their own catalog and checklist templates. An
-    // invented default would make the phase-B golden test pass dishonestly.
-    expect(CLEANING_PACK.serviceSeeds).toEqual([]);
-    expect(CLEANING_PACK.checklistTemplates).toEqual([]);
+  it('ships TURNWRK-339 starter seeds (net-new; opt-in for F3 seeding)', () => {
+    // DECISION 2026-08-06: empty seeds were deliberate in TURNWRK-316 so phase-B
+    // goldens could not pass against invented catalog data. Alan approved
+    // Standard / Deep / Move-Out as starter SKUs — opt-in for new vertical
+    // choice (TURNWRK-332), not a rewrite of existing org catalogs. This
+    // assertion flip is intentional and called out in the ship note / PR body.
+    expect(CLEANING_PACK.serviceSeeds.map((s) => s.key)).toEqual([
+      'standard_clean',
+      'deep_clean',
+      'move_out_clean',
+    ]);
+    expect(CLEANING_PACK.checklistTemplates.map((t) => t.key)).toEqual([
+      'standard_clean_visit',
+      'deep_clean_visit',
+      'move_out_clean_visit',
+    ]);
   });
 });
 

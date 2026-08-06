@@ -1,18 +1,15 @@
 /**
- * The `pool` pack (TURNWRK-329) — one of the two design-partner trades the
- * module system exists for. A recurring, booked service that produces a visit
- * with a service checklist and a proof-of-service report, structurally the same
- * path as cleaning; the differences are all data.
+ * The `pool` pack (TURNWRK-329, content blessed TURNWRK-339) — one of the two
+ * design-partner trades the module system exists for. A recurring, booked
+ * service that produces a visit with a service checklist and a proof-of-service
+ * report, structurally the same path as cleaning; the differences are all data.
  *
- * Scope boundaries the card draws explicitly:
- * - The `water_chemistry` extension only *flags* that the chemistry widget
- *   attaches. The widget itself — the generic number checklist input and the
- *   pool template that logs chlorine / pH / alkalinity / CYA / calcium as raw
- *   readings — is TURNWRK-294. Computed LSI (Langelier saturation index) is now
- *   owned by this extension key but stays UNBUILT: it needs two domain answers
- *   the card says not to guess (which formula, and where water temperature and
- *   TDS come from). So this pack's checklist is the *physical* service tasks
- *   only; no chemistry readings live here.
+ * Scope boundaries:
+ * - `water_chemistry` flags the readings widget (TURNWRK-294). Ranges are
+ *   CDC/MAHC-tightened warn-only hints (TURNWRK-339). No LSI.
+ * - `equipment_check` is NOT a separate SKU — equipment inspection lives on the
+ *   weekly visit checklist (Alan red-line 2026-08-06).
+ * - Worker noun is `tech` / `techs` (Alan red-line 2026-08-06), not technician.
  */
 import type { VerticalPack } from '../types';
 import { POOL_NOTIFICATION_COPY } from './poolNotificationCopy';
@@ -25,8 +22,8 @@ export const POOL_PACK: VerticalPack = {
     /** Recurring, so a unit of work is a "visit". */
     job: 'visit',
     jobPlural: 'visits',
-    worker: 'technician',
-    workerPlural: 'technicians',
+    worker: 'tech',
+    workerPlural: 'techs',
     customer: 'customer',
     customerPlural: 'customers',
     site: 'property',
@@ -44,16 +41,18 @@ export const POOL_PACK: VerticalPack = {
    * Weekly and 10-day are the pool cadences the card names; `every_10_days` is a
    * key the closed four-value `CleanFrequencyKey` could not express, which is
    * why phase B opened it (TURNWRK-318). Discounts are org-overridable defaults.
+   * Bi-weekly is also a starter *service* seed (TURNWRK-339), not only a cadence.
    */
   cadences: [
     { key: 'once', widgetLabel: 'One-time', discountPct: 0 },
     { key: 'weekly', widgetLabel: 'Weekly', discountPct: 15 },
+    { key: 'fortnightly', widgetLabel: 'Bi-weekly', discountPct: 10 },
     { key: 'every_10_days', widgetLabel: 'Every 10 days', discountPct: 10 },
     { key: 'monthly', widgetLabel: 'Monthly', discountPct: 5 },
   ],
   /**
-   * A starting catalog. The recurring `weekly_pool_service` attaches the
-   * `pool_visit` service checklist below; the one-off restorations do not.
+   * Starter catalog (TURNWRK-339). Weekly + bi-weekly maintenance, opening,
+   * closing, filter clean, green-to-clean. No separate equipment SKU.
    * Prices are minor units and org-overridable.
    */
   serviceSeeds: [
@@ -66,11 +65,29 @@ export const POOL_PACK: VerticalPack = {
       checklistKey: 'pool_visit',
     },
     {
-      key: 'green_to_clean',
-      name: 'Green-to-Clean Restoration',
-      description: 'One-time recovery of a neglected or algae-green pool.',
-      basePriceMinor: 35000,
-      baseMinutes: 180,
+      key: 'biweekly_pool_service',
+      name: 'Bi-weekly Pool Service',
+      description:
+        'Recurring maintenance every other week: skim, brush, vacuum, baskets, equipment check.',
+      basePriceMinor: 16000,
+      baseMinutes: 60,
+      checklistKey: 'pool_visit',
+    },
+    {
+      key: 'pool_opening',
+      name: 'Pool Opening',
+      description: 'Seasonal opening: uncover, inspect, start equipment, balance water.',
+      basePriceMinor: 25000,
+      baseMinutes: 120,
+      checklistKey: 'pool_visit',
+    },
+    {
+      key: 'pool_closing',
+      name: 'Pool Closing / Winterizing',
+      description: 'Seasonal closing: lower water, winterize equipment, cover.',
+      basePriceMinor: 27500,
+      baseMinutes: 120,
+      checklistKey: 'pool_visit',
     },
     {
       key: 'filter_clean',
@@ -80,17 +97,16 @@ export const POOL_PACK: VerticalPack = {
       baseMinutes: 60,
     },
     {
-      key: 'equipment_check',
-      name: 'Equipment Inspection',
-      description: 'Inspect pump, heater, timer and plumbing for faults.',
-      basePriceMinor: 9000,
-      baseMinutes: 45,
+      key: 'green_to_clean',
+      name: 'Green-to-Clean Restoration',
+      description: 'One-time recovery of a neglected or algae-green pool.',
+      basePriceMinor: 35000,
+      baseMinutes: 180,
     },
   ],
   /**
-   * The service checklist proving the visit happened — physical tasks only.
-   * Water-chemistry readings are deliberately absent: they belong to the
-   * `water_chemistry` extension (TURNWRK-294), not to this proof-of-service set.
+   * Physical proof-of-service plus extension-gated chemistry readings.
+   * Equipment inspection is on the visit checklist (not a separate SKU).
    */
   checklistTemplates: [
     {
@@ -106,7 +122,12 @@ export const POOL_PACK: VerticalPack = {
             { id: 'vacuum', label: 'Vacuum pool floor', inputType: 'checkbox', required: true },
             { id: 'baskets', label: 'Empty skimmer and pump baskets', inputType: 'checkbox', required: true },
             { id: 'filter', label: 'Check filter pressure, backwash if needed', inputType: 'checkbox' },
-            { id: 'equipment', label: 'Inspect pump, heater and timer', inputType: 'checkbox' },
+            {
+              id: 'equipment',
+              label: 'Inspect pump, heater and timer',
+              inputType: 'checkbox',
+              required: true,
+            },
             {
               id: 'finished_photo',
               label: 'Photo of the finished pool',
@@ -131,7 +152,8 @@ export const POOL_PACK: VerticalPack = {
               label: 'Free chlorine',
               inputType: 'number',
               suffix: 'ppm',
-              minValue: 0,
+              // CDC Healthy Swimming: min FAC 1 ppm; MAHC: shall not exceed 10.0.
+              minValue: 1,
               maxValue: 10,
               placeholder: 'e.g. 3',
             },
@@ -139,8 +161,9 @@ export const POOL_PACK: VerticalPack = {
               id: 'ph',
               label: 'pH',
               inputType: 'number',
-              minValue: 6.8,
-              maxValue: 8.2,
+              // CDC: maintain pH 7.0–7.8.
+              minValue: 7.0,
+              maxValue: 7.8,
               placeholder: 'e.g. 7.4',
             },
             {
@@ -156,8 +179,9 @@ export const POOL_PACK: VerticalPack = {
               label: 'Cyanuric acid (CYA)',
               inputType: 'number',
               suffix: 'ppm',
+              // CDC MAHC cheat sheet: CYA operating ≤ 90 ppm.
               minValue: 0,
-              maxValue: 100,
+              maxValue: 90,
             },
             {
               id: 'calcium',

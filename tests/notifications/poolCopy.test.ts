@@ -12,11 +12,11 @@ import { POOL_PACK } from '../../src/verticals';
 describe('pool pack notification copy', () => {
   const resolved = resolveNotificationDefaults(POOL_PACK.notificationCopy);
 
-  it('renders technician wording for en-route events', () => {
+  it('renders tech wording for en-route events', () => {
     const email = resolved.worker_en_route.channels.email!;
     const subject = renderTemplate(email.subject!, SAMPLE_TEMPLATE_VARS);
     const body = renderTemplate(email.body, SAMPLE_TEMPLATE_VARS);
-    expect(subject.ok === true && subject.text).toBe('Your Company: your technician is on the way');
+    expect(subject.ok === true && subject.text).toBe('Your Company: your tech is on the way');
     expect(body.ok === true && body.text).toContain('Maria is en route');
     expect(body.ok === true && body.text).not.toContain('cleaner');
   });

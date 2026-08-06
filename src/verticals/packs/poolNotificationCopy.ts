@@ -17,7 +17,7 @@ export const POOL_NOTIFICATION_COPY: Partial<
         body: '{{worker.first_name}} from {{org.name}} is on the way for your {{booking.service}} (arrival window {{booking.window}}).',
       },
       email: {
-        subject: '{{org.name}}: your technician is on the way',
+        subject: '{{org.name}}: your tech is on the way',
         heading: 'On the way!',
         body: '{{worker.first_name}} is en route for your {{booking.service}} — arrival window {{booking.window}}.',
       },

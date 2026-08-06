@@ -73,7 +73,7 @@ export interface VerticalTerminology {
   /** One unit of work as the customer sees it: "clean", "visit". */
   job: string;
   jobPlural: string;
-  /** Who performs it: "cleaner", "technician". */
+  /** Who performs it: "cleaner", "tech", "crew". */
   worker: string;
   workerPlural: string;
   /** Who pays: "customer", "owner". */
