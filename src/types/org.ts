@@ -385,6 +385,14 @@ export interface Org {
      * offer re-assign). Absent = false: orgs opt in via the dispatch toggle.
      */
     autoAssignEnabled?: boolean;
+    /**
+     * Trade A/R billing defaults (TURNWRK-287): invoice terms, dunning schedule,
+     * and optional late-fee disclosure. Org-admin writable like `quickWorkOrder`.
+     */
+    tradeBilling?: {
+      invoiceTermsDays?: number;
+      dunning?: import('../money/types').DunningSettings;
+    };
   };
   /**
    * CMMS work-order settings. Same NON-privileged class as `dispatch` /

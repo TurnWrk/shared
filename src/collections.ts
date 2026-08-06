@@ -61,6 +61,8 @@ export const COLLECTIONS = {
   // Owner-facing direct/email invoices. Public /invoice/{token} resolves via
   // Admin SDK — no public Firestore read.
   cmms_ownerInvoices: 'cmms_ownerInvoices',
+  /** Trade saved line items / labour rates (TURNWRK-287). Feeds estimates + RateSource. */
+  cmms_priceBookItems: 'cmms_priceBookItems',
   // Owner portal magic-link + session tokens (TURNWRK-418). Doc id is the
   // sha256 of the raw token, which is never stored; Admin SDK only, so the
   // owner needs no Firebase Auth user and no `owner` RBAC role.

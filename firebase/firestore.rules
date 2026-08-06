@@ -415,6 +415,17 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Trade price book — saved labour rates and common materials (TURNWRK-287).
+    // Org members read; writes go through Admin-SDK API routes (defense-in-depth).
+    match /cmms_priceBookItems/{itemId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.orgId is string
+        && request.resource.data.label is string
+        && request.resource.data.unitMinor is number;
+      allow update, delete: if canWriteOrg(resource.data.orgId);
+    }
+
     // Direct/email owner invoices. Public /invoice/{token} uses Admin SDK — no
     // public read. Client writes go through Admin-SDK API routes.
     match /cmms_ownerInvoices/{invoiceId} {

@@ -288,6 +288,8 @@ export interface PayoutPeriod {
 // A/R dunning schedule (Change Order 1 A2) — drives ./payments planDunning
 // ---------------------------------------------------------------------------
 
+import type { LateFeePolicy } from './lateFee';
+
 /** A/R dunning schedule (Change Order 1 A2). */
 export interface DunningSettings {
   /** Default true for orgs using invoice_terms. */
@@ -298,4 +300,6 @@ export interface DunningSettings {
    * run per invoice and stops structurally once the invoice is paid.
    */
   offsets?: number[];
+  /** Optional late fee applied when an invoice first flips overdue (TURNWRK-287). */
+  lateFee?: LateFeePolicy;
 }
