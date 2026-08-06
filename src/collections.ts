@@ -10,6 +10,8 @@ export const COLLECTIONS = {
   // shared (no prefix)
   /** Turnwrk application-fee ledger — collections + pro-rata reversals (TURNWRK-301). */
   suite_applicationFees: 'suite_applicationFees',
+  /** Affirmative Connect disclosure acceptances before Stripe onboarding (TURNWRK-311). */
+  suite_connectTermsAcceptances: 'suite_connectTermsAcceptances',
   orgs: 'orgs',
   users: 'users',
   properties: 'properties',

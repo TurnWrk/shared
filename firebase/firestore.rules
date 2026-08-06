@@ -189,6 +189,14 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Connect operator disclosure acceptances (TURNWRK-311). Admin SDK writes on
+    // checkbox submit; org admins may read their own org's record.
+    match /suite_connectTermsAcceptances/{acceptanceId} {
+      allow read: if isPlatformAdmin()
+        || (isOrgAdmin(resource.data.orgId));
+      allow create, update, delete: if false;
+    }
+
     match /orgs/{orgId} {
       allow read: if isMemberOf(orgId) || isPlatformAdmin();
       // Any real user may create an org; a server-side hook must then
