@@ -29,6 +29,10 @@ export const COLLECTIONS = {
   // Vendor calendar share links (created by cmms + restock UIs; public page
   // served by cmms resolves them via the Admin SDK — no public read).
   propertyShareTokens: 'propertyShareTokens',
+  /** Share-link guests (TURNWRK-416) — Admin SDK only; cookie identity. */
+  propertyShareGuests: 'propertyShareGuests',
+  /** Fixed-window rate limits for share-guest chat (TURNWRK-416) — Admin SDK only. */
+  propertyShareGuestRateLimits: 'propertyShareGuestRateLimits',
 
   // dispatch-scoped
   cmms_workOrders: 'cmms_workOrders',

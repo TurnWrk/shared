@@ -406,6 +406,11 @@ export interface Org {
      * entry = no checklist for that type.
      */
     checklistDefaults?: Partial<Record<WOType, string>>;
+    /**
+     * Org-level kill switch for share-guest chat (TURNWRK-416/417).
+     * When true, all guest R/W on `/share/[token]/chat` fails closed (generic 404).
+     */
+    shareGuestChatDisabled?: boolean;
   };
   /** SOP-05 after-hours on-call rotation. */
   onCallRotation?: OnCallRotationEntry[];

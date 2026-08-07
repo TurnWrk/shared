@@ -21,4 +21,26 @@ export interface PropertyShareToken {
   isActive: boolean;
   /** Epoch ms; unset in v1 (evergreen) but validated when present. */
   expiresAt?: number;
+  /**
+   * Token-level kill switch for share-guest chat (TURNWRK-416/417).
+   * Absent or true = chat allowed; explicit false cuts guest R/W.
+   */
+  chatEnabled?: boolean;
+}
+
+/**
+ * Guest identity for the public `/share/[token]/chat` surface (TURNWRK-416).
+ * Admin-SDK-only collection — the signed httpOnly cookie is the client credential.
+ */
+export interface PropertyShareGuest {
+  id: string;
+  tokenId: string;
+  propertyId: string;
+  orgId: string;
+  /** Display name the guest typed once. */
+  displayName: string;
+  /** Epoch ms. */
+  createdAt: number;
+  /** Soft-kill when the share token is regenerated. */
+  revokedAt?: number;
 }

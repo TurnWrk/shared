@@ -556,6 +556,16 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Share-link guests + rate limits (TURNWRK-416). Admin SDK only — the
+    // public surface authenticates via a signed httpOnly cookie, never client
+    // Firestore reads/writes on these collections.
+    match /propertyShareGuests/{guestId} {
+      allow read, write: if false;
+    }
+    match /propertyShareGuestRateLimits/{bucketId} {
+      allow read, write: if false;
+    }
+
     // Owner portal rate-limit counters (TURNWRK-418). Admin SDK only — a client
     // that could write these could clear its own throttle.
     match /cmms_ownerPortalRateLimits/{bucketId} {
