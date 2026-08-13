@@ -392,7 +392,12 @@ service cloud.firestore {
         && request.resource.data.orgId is string
         && request.resource.data.workOrderId is string
         && request.resource.data.amountCents is number;
-      allow update, delete: if canWriteOrg(resource.data.orgId);
+      // orgId is immutable, same guard properties / owners / cmms_workOrders
+      // carry (TURNWRK-271): without it a member could move their own estimate
+      // into another tenant — a cross-tenant WRITE where reads were already shut.
+      allow update: if canWriteOrg(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if canWriteOrg(resource.data.orgId);
     }
 
     // Async AI work-order generation queue. dispatch enqueues via an Admin-SDK
@@ -435,7 +440,10 @@ service cloud.firestore {
         && request.resource.data.propertyId is string
         && request.resource.data.amountCents is number
         && request.resource.data.publicToken is string;
-      allow update, delete: if canWriteOrg(resource.data.orgId);
+      // orgId is immutable — see cmms_estimates above (TURNWRK-271).
+      allow update: if canWriteOrg(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId;
+      allow delete: if canWriteOrg(resource.data.orgId);
     }
 
     function isOwnTechnicianProfile(techId) {

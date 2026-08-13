@@ -46,6 +46,34 @@ jobs:
       # Full shared + email + testFixtures parity (TURNWRK-134).
       - run: npm run check:vendored
 
+  rules:
+    name: firestore rules behavior tests
+    # tests/rules/*.rules.test.ts are the ONLY behavior tests the canonical
+    # firestore.rules has, and until TURNWRK-271 they ran nowhere: the unit job
+    # excludes them (they need a live emulator, so they sit behind `test:rules`
+    # + vitest.rules.config.ts) and no workflow called that script. Consumers
+    # vendor these rules, so a regression here reaches four apps.
+    # Deliberately NOT gated on `pull_request` the way dispatch's twin job is:
+    # this repo lands straight on main for the sync bot to fan out, so a
+    # PR-only gate would sit out most of the changes it exists to catch.
+    needs: unit
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Installs rules-test-deps' own firebase copy, then boots the firestore
+      # emulator (firebase.json points it at firebase/firestore.rules) and runs
+      # the suite. ubuntu-latest ships the JRE the emulator needs.
+      - run: npm run test:rules
+        env:
+          CI: 'true'
+
   secret-scan:
     name: secret scan
     runs-on: ubuntu-latest

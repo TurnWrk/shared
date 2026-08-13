@@ -278,6 +278,54 @@ export function normalizeEnabledApps(
   };
 }
 
+/**
+ * Self-declared trade credentials (TURNWRK-271, Dispatch for Trades F3).
+ *
+ * A self-serve trade types these in; the platform verifies them against no
+ * registry and no carrier. They exist so later trust surfaces (estimate and
+ * invoice footers, a public trade profile) have somewhere to read from — they
+ * are display copy, never an entitlement and never a permission.
+ *
+ * Non-privileged, same class as `verticals` / `quickWorkOrder`: an org admin
+ * edits their own. Do NOT add to firestore.rules changesPrivilegedOrgFields.
+ */
+export interface OrgBusinessProfile {
+  /** Contractor / trade license number exactly as issued. */
+  licenseNumber?: string;
+  /** Liability insurance carrier name. */
+  insuranceCarrier?: string;
+  /** Policy number with that carrier. */
+  insurancePolicyNumber?: string;
+}
+
+const ORG_BUSINESS_PROFILE_KEYS = [
+  'licenseNumber',
+  'insuranceCarrier',
+  'insurancePolicyNumber',
+] as const;
+
+/**
+ * Trim a submitted business profile to the fields that actually carry a value.
+ *
+ * Blanks are dropped rather than stored, so clearing a field removes it instead
+ * of leaving `''` behind, and a wholly blank submission returns `undefined` —
+ * the caller's cue to delete the field rather than write an empty object (no
+ * undefined keys ever reach a Firestore payload).
+ */
+export function normalizeOrgBusinessProfile(
+  input: OrgBusinessProfile | null | undefined,
+): OrgBusinessProfile | undefined {
+  if (!input) return undefined;
+  const out: OrgBusinessProfile = {};
+  for (const key of ORG_BUSINESS_PROFILE_KEYS) {
+    const value = input[key];
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (trimmed.length > 0) out[key] = trimmed;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 export function orgIsSuspended(
   org: Pick<Org, 'status'> | null | undefined,
 ): boolean {
@@ -354,6 +402,11 @@ export interface Org {
   verticals?: VerticalKey[];
   /** Trade driving terminology defaults. Absent = first of `verticals`. */
   primaryVertical?: VerticalKey;
+  /**
+   * Self-declared license / insurance for an independent trade (TURNWRK-271).
+   * Optional, unverified, and non-privileged — see OrgBusinessProfile above.
+   */
+  businessProfile?: OrgBusinessProfile;
   /**
    * Default inspect mode applied to newly created properties for this org.
    * Individual properties can still override via `PropertySupply.inspectMode`.
