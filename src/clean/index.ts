@@ -32,3 +32,4 @@ export * from './bountySubmission';
 export * from './bountyDefaults';
 export * from './geo';
 export * from './imageHash';
+export * from './imageHashCorpus';

@@ -139,7 +139,8 @@
     "check:vendored-fixtures": "bash scripts/check-vendored-testFixtures.sh",
     "check:vendored-shared": "bash scripts/check-vendored-shared.sh",
     "check:vendored-email": "bash scripts/check-vendored-email.sh",
-    "check:vendored": "npm run check:vendored-shared && npm run check:vendored-fixtures && npm run check:vendored-email"
+    "check:vendored": "npm run check:vendored-shared && npm run check:vendored-fixtures && npm run check:vendored-email",
+    "phash:sweep": "npm run build --silent && node scripts/phash-threshold-sweep.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
