@@ -86,6 +86,25 @@ service cloud.firestore {
           || isPlatformAdmin();
     }
 
+    // --- vendorReceipts approval split (TURNWRK-36) ---------------------------
+    // Fields that *decide* a receipt rather than describe it. Only a reviewer
+    // writes these; `expenseBearer` and `purchaseDate` are in the set because
+    // dispatch assigns both at the moment of approval.
+    function vendorReceiptDecisionKeys() {
+      return ['approvalStatus', 'approvedAt', 'approvedBy', 'rejectedAt',
+              'rejectedBy', 'rejectionReason', 'expenseBearer',
+              'purchaseDate'].toSet();
+    }
+
+    // What a reviewer may touch: the decision, plus the write timestamp.
+    function vendorReceiptReviewerKeys() {
+      return vendorReceiptDecisionKeys().union(['updatedAt'].toSet());
+    }
+
+    function vendorReceiptChangedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
     function isActivePropertyToken(tokenId, propertyId) {
       return exists(/databases/$(database)/documents/restock_propertyTokens/$(tokenId)) &&
              get(/databases/$(database)/documents/restock_propertyTokens/$(tokenId)).data.propertyId == propertyId &&
@@ -350,10 +369,25 @@ service cloud.firestore {
         && request.resource.data.orgId is string
         && canWriteOrg(request.resource.data.orgId)
         && (!('propertyId' in request.resource.data) || request.resource.data.propertyId is string);
-      allow update: if ((isRealUser() && resource.data.vendorId == request.auth.uid)
-          || isPlatformAdmin())
-        && request.resource.data.vendorId == resource.data.vendorId
-        && request.resource.data.orgId == resource.data.orgId;
+      // TURNWRK-36: the claimant may correct their own receipt but never decide
+      // it. Before this split, `vendorId == auth.uid` admitted any update, so a
+      // submitter could write `approvalStatus: 'approved'` straight to Firestore
+      // and reimburse themselves — bypassing the server route that owns the
+      // $50 auto-approve threshold and the approver-role check entirely. The
+      // reverse hole was open too: an ordinary org manager could not approve at
+      // all, because the rule only ever admitted the vendor or a platform admin.
+      allow update: if request.resource.data.vendorId == resource.data.vendorId
+        && request.resource.data.orgId == resource.data.orgId
+        && (isPlatformAdmin()
+          // The claimant: everything except the decision.
+          || (isRealUser()
+              && resource.data.vendorId == request.auth.uid
+              && !vendorReceiptChangedKeys().hasAny(vendorReceiptDecisionKeys()))
+          // A colleague in the same org who is not being paid: the decision and
+          // nothing else — an approver has no business editing the amount.
+          || (canWriteOrg(resource.data.orgId)
+              && request.auth.uid != resource.data.vendorId
+              && vendorReceiptChangedKeys().hasOnly(vendorReceiptReviewerKeys())));
       allow delete: if (isRealUser() && resource.data.vendorId == request.auth.uid)
         || isPlatformAdmin();
     }
