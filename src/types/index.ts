@@ -2,6 +2,7 @@ export * from './org';
 export * from './owner';
 export * from './user';
 export * from './property';
+export * from './survivalKit';
 export * from './integration';
 export * from './resupply';
 export * from './invite';

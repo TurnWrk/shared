@@ -256,6 +256,12 @@ export interface PropertySupply {
   linenInventory?: LinenInventory;
   /** Unit has no secure on-site closet — route to direct-shipped survival kit. */
   noOwnerCloset?: boolean;
+  /**
+   * FK → restock_survivalKits. The kit a cleaner carries or receives for this
+   * unit (TURNWRK-33). Only meaningful with `noOwnerCloset`; a property with a
+   * closet is stocked, not kitted.
+   */
+  survivalKitId?: string;
   /** Primary cleaning vendor id for linen lock (SOP-02). */
   primaryCleanerId?: string;
 }

@@ -827,6 +827,22 @@ service cloud.firestore {
       allow create, update, delete: if isPlatformAdmin();
     }
 
+    match /restock_survivalKits/{kitId} {
+      // Cleaner survival kits (TURNWRK-33): an operator's own short supply list
+      // for units with no owner closet. Org-scoped, unlike restock_curatedLists
+      // which are platform-authored global presets — two operators' kits must
+      // never mix, so every path here goes through the doc's own orgId.
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create: if canWriteOrg(request.resource.data.orgId)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.lines is list;
+      allow update: if canWriteOrg(resource.data.orgId)
+        && request.resource.data.orgId == resource.data.orgId
+        && request.resource.data.lines is list;
+      allow delete: if canAdminOrg(resource.data.orgId);
+    }
+
     match /restock_propertyTokens/{tokenId} {
       // Public read enables guest QR-scan flows.
       allow read: if true;

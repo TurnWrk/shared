@@ -136,6 +136,8 @@ export const COLLECTIONS = {
   restock_shortlists: 'restock_shortlists',
   restock_shortUrls: 'restock_shortUrls',
   restock_curatedLists: 'restock_curatedLists',
+  // Org-authored cleaner kits for units with no owner closet (TURNWRK-33).
+  restock_survivalKits: 'restock_survivalKits',
   restock_affiliateEvents: 'restock_affiliateEvents',
   restock_warehouses: 'restock_warehouses',
   restock_warehouseStock: 'restock_warehouseStock',
