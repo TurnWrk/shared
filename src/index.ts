@@ -15,6 +15,7 @@ export * from './propertyAddress';
 export * from './propertyStorage';
 export * from './occupancy';
 export * from './verticals';
+export * from './maintenance';
 export * from './proof';
 export * from './service';
 export * from './crm';

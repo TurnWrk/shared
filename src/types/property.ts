@@ -218,14 +218,68 @@ export interface PropertyMaintenance {
   mercuryRecipientEmail?: string | null;
 }
 
+/**
+ * Amenity classes a property can carry (`PropertySupply.amenities`).
+ *
+ * Widened 2026-09-04 (TURNWRK-630) from the original seven so the maintenance
+ * plan catalog (`src/maintenance`) can read them: each class below is one the
+ * catalog knows how to inspect per turn, maintain preventively, or route to a
+ * trade. The original seven keep their exact spelling. Map free-text labels
+ * (an Airbnb amenity list, an operator's notes) through `normalizeAmenity`
+ * rather than widening this union ad hoc: an unknown class is data the plan
+ * cannot price.
+ */
 export type PropertyAmenity =
+  // the original seven
   | 'kitchen'
   | 'laundry'
   | 'pool'
   | 'hot-tub'
   | 'outdoor-grill'
   | 'fireplace'
-  | 'gym';
+  | 'gym'
+  // water
+  | 'heated-pool'
+  | 'screened-lanai'
+  | 'sauna'
+  | 'cold-plunge'
+  | 'boat-dock'
+  | 'watercraft'
+  // play
+  | 'pickleball-court'
+  | 'sport-court'
+  | 'basketball-hoop'
+  | 'putting-green'
+  | 'game-room'
+  | 'arcade'
+  | 'yard-games'
+  | 'playground'
+  | 'trampoline'
+  | 'bikes'
+  | 'golf-cart'
+  // outdoor living
+  | 'outdoor-bar'
+  | 'fire-pit'
+  | 'outdoor-furniture'
+  | 'beach-gear'
+  | 'yard'
+  // systems
+  | 'hvac'
+  | 'ceiling-fan'
+  | 'water-heater'
+  | 'ev-charger'
+  | 'generator'
+  | 'elevator'
+  | 'access-hardware'
+  | 'security-camera'
+  | 'noise-monitor'
+  | 'safety-equipment'
+  // interior
+  | 'bathtub'
+  | 'tv'
+  | 'wifi'
+  | 'dedicated-workspace'
+  | 'family-kit';
 
 export type SupplyTier = 'basics' | 'comfort' | 'luxe';
 
