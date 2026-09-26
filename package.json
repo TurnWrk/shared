@@ -70,6 +70,11 @@
       "require": "./dist/verticals/index.js",
       "default": "./dist/verticals/index.js"
     },
+    "./maintenance": {
+      "types": "./dist/maintenance/index.d.ts",
+      "require": "./dist/maintenance/index.js",
+      "default": "./dist/maintenance/index.js"
+    },
     "./booking": {
       "types": "./dist/booking/index.d.ts",
       "require": "./dist/booking/index.js",
