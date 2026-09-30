@@ -154,6 +154,21 @@ jobs:
             fi
             exit 0
           fi
+          # Identical-tree guard (TURNWRK-644): the bot commit's SHA changes every
+          # cycle (new commit timestamp) even when the tree does not, and every
+          # force-push fires a full pull_request:synchronize CI on the consumer.
+          # If bot/sync-shared already carries exactly this tree and its PR is
+          # open, ship nothing. A missing branch (first run) fails the fetch and
+          # falls through to the normal path.
+          existing="$(gh pr list --repo "${{ matrix.repo }}" --head bot/sync-shared --base "${{ matrix.base }}" --state open --json number --jq '.[0].number // empty')"
+          staged_tree="$(git write-tree)"
+          if [[ -n "$existing" ]] && git fetch --quiet origin bot/sync-shared 2>/dev/null; then
+            remote_tree="$(git rev-parse 'FETCH_HEAD^{tree}')"
+            if [[ "$staged_tree" == "$remote_tree" ]]; then
+              echo "bot branch already carries this tree ($staged_tree) — PR #$existing on ${{ matrix.repo }} left untouched."
+              exit 0
+            fi
+          fi
           sha="$(git -C ../shared rev-parse HEAD)"
           sha_short="$(git -C ../shared rev-parse --short HEAD)"
           version="$(node -p "require('../shared/package.json').version")"
@@ -179,7 +194,6 @@ jobs:
             echo "prod rules/indexes deploy separately via the Deploy Firebase rules workflow in TurnWrk/shared."
           } > "$RUNNER_TEMP/pr-body.md"
 
-          existing="$(gh pr list --repo "${{ matrix.repo }}" --head bot/sync-shared --base "${{ matrix.base }}" --state open --json number --jq '.[0].number // empty')"
           if [[ -n "$existing" ]]; then
             gh pr edit "$existing" --repo "${{ matrix.repo }}" \
               --title "Sync @turnwrk/shared ${sha_short}" \
