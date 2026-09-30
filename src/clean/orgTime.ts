@@ -4,7 +4,7 @@
  * plain epoch ms and never repeat timezone logic (clock-skew/DST safe).
  */
 
-const DEFAULT_TIMEZONE = 'America/Chicago';
+const DEFAULT_TIMEZONE = 'America/New_York';
 
 function tzOffsetMs(utcMs: number, timeZone: string): number {
   const dtf = new Intl.DateTimeFormat('en-US', {
