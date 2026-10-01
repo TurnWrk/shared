@@ -537,6 +537,15 @@
         { "fieldPath": "orgId", "order": "ASCENDING" },
         { "fieldPath": "bountyId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "cmms_bookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "source", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "checkIn", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
