@@ -62,6 +62,12 @@ export const COLLECTIONS = {
   // Owner-facing work-order estimates. Public /estimate/{token} page + the
   // approve/decline writeback resolve these via the Admin SDK — no public read.
   cmms_estimates: 'cmms_estimates',
+  // Website/inbound inquiries waiting on operator review (TURNWRK-701). No
+  // Customer or work order exists until an admin/pm converts the lead. NOT
+  // `svc_leads`: that collection already holds the booking wizard's abandoned-
+  // quote leads (a different shape and status set, listed by orgId in clean).
+  // Server-write only (Admin SDK); org members read.
+  cmms_leads: 'cmms_leads',
   // Owner-facing direct/email invoices. Public /invoice/{token} resolves via
   // Admin SDK — no public Firestore read.
   cmms_ownerInvoices: 'cmms_ownerInvoices',

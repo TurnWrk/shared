@@ -12,6 +12,7 @@ export * from './shareToken';
 export * from './clean';
 export * from './workOrder';
 export * from './woIntake';
+export * from './dispatchLead';
 export * from './checklist';
 // Re-export Role here so consumers can import it from '@turnwrk/shared/types'
 // alongside User, Property, etc., without a second import line.
