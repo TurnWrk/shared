@@ -6,7 +6,9 @@ import {
   DEFAULT_OVERHEAD_PROFIT_BPS,
   assembleQuoteLines,
   defineQuotePack,
+  lineTotalCents,
   percentOfCents,
+  roundCents,
   type EstimateLineItem,
   type Quote,
   type PriceResult,
@@ -15,6 +17,42 @@ import {
   type ResolvedRate,
   type ScopedLine,
 } from '../../src/quotes';
+
+// Fixed seed + run count: property runs are reproducible, and a failure
+// reported by one seat replays identically on another.
+fc.configureGlobal({ seed: 685, numRuns: 200 });
+
+// --- Whole-cent rounding, pinned by example ---------------------------------
+// Deterministic: each of these fails if roundCents stops rounding.
+
+describe('whole-cent rounding — fixed cases', () => {
+  it('roundCents rounds half up and folds -0 into 0', () => {
+    expect(roundCents(116.55)).toBe(117);
+    expect(roundCents(166.5)).toBe(167);
+    expect(roundCents(0.49)).toBe(0);
+    expect(Object.is(roundCents(-0.4), 0)).toBe(true);
+    expect(Object.is(roundCents(-0), 0)).toBe(true);
+  });
+
+  it('percentOfCents(333, 3500) is 117 (116.55 rounded)', () => {
+    expect(percentOfCents(333, 3500)).toBe(117);
+  });
+
+  it('lineTotalCents(0.5, 333) is 167 (166.5 rounded half up)', () => {
+    expect(lineTotalCents(0.5, 333)).toBe(167);
+  });
+
+  it('a 0.01 × 1¢ line rounds to a 0¢ line and adds nothing to the total', () => {
+    const q = assembleQuoteLines(
+      [{ kind: 'material', lineType: 'material:washer', label: 'Washer', quantity: 0.01, unit: 'each' }],
+      new Map([['material:washer', { unitCents: 1, provenance: { source: 'rate-card', region: 'r', ratedAt: 0 } }]]),
+      { region: 'r', generatedAt: 0, overheadProfitBps: DEFAULT_OVERHEAD_PROFIT_BPS, contingencyBps: DEFAULT_CONTINGENCY_BPS },
+    );
+    expect(q.lineItems).toHaveLength(1);
+    expect(q.lineItems[0].totalCents).toBe(0);
+    expect(q.amountCents).toBe(0);
+  });
+});
 
 // --- A tiny example pack (tests only) ----------------------------------------
 
