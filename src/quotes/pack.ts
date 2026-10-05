@@ -78,6 +78,12 @@ export type PriceResult =
   /** Scope is outside the pack's sanity bounds, or the card cannot price a line. */
   | { status: 'rejected'; reasons: string[] };
 
+/** Work-order fields a pack sets by default when its quote converts. */
+export interface QuotePackWorkOrderDefaults {
+  /** The job is weather-dependent (outdoor surface or weather-sensitive cure). */
+  outdoor?: boolean;
+}
+
 export interface QuotePack<Scope> {
   id: string;
   scopeSchema: z.ZodType<Scope>;
@@ -86,6 +92,12 @@ export interface QuotePack<Scope> {
   needsInfo(scope: Scope): MissingInfo[];
   /** Sanity checks; each returned string is a reason the scope cannot be quoted. */
   bounds?(scope: Scope): string[];
+  /**
+   * Defaults copied onto the work orders a converted lead creates from this
+   * pack's quote (TURNWRK-701; `WorkOrder.outdoor` from TURNWRK-706).
+   * Pass-through only: pricing never reads it.
+   */
+  workOrderDefaults?: QuotePackWorkOrderDefaults;
   /**
    * Pure and deterministic. `scope` is untrusted (LLM output) and is parsed
    * with `scopeSchema` first; pricing refuses a scope with missing info.

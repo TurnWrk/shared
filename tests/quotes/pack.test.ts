@@ -299,3 +299,18 @@ describe('ProposalLineItem compatibility', () => {
     expect(lines.length).toBeGreaterThan(0);
   });
 });
+
+describe('workOrderDefaults', () => {
+  it('passes through defineQuotePack untouched and is absent when not set', () => {
+    const withDefaults = defineQuotePack<FloorScope>({
+      id: 'with-defaults',
+      scopeSchema: floorScope,
+      rateCard: floorCard,
+      workOrderDefaults: { outdoor: true },
+      needsInfo: () => [],
+      takeoff: () => [],
+    });
+    expect(withDefaults.workOrderDefaults).toEqual({ outdoor: true });
+    expect(floorPack.workOrderDefaults).toBeUndefined();
+  });
+});
