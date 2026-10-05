@@ -9,7 +9,7 @@ import {
   percentOfCents,
   type EstimateLineItem,
   type Quote,
-  type QuoteResult,
+  type PriceResult,
   type QuoteTotals,
   type RateCard,
   type ResolvedRate,
@@ -67,10 +67,10 @@ const floorPack = defineQuotePack<FloorScope>({
   },
 });
 
-const price = (scope: unknown, opts: Partial<Parameters<typeof floorPack.price>[2]> = {}): QuoteResult =>
+const price = (scope: unknown, opts: Partial<Parameters<typeof floorPack.price>[2]> = {}): PriceResult =>
   floorPack.price(scope, floorPack.rateCard, { generatedAt: GENERATED_AT, ...opts });
 
-function priced(result: QuoteResult): Quote {
+function priced(result: PriceResult): Quote {
   if (result.status !== 'priced') throw new Error(`expected priced, got ${JSON.stringify(result)}`);
   return result.quote;
 }

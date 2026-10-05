@@ -65,7 +65,11 @@ export interface Quote extends QuoteTotals {
   generatedAt: number;
 }
 
-export type QuoteResult =
+/**
+ * The PRICER result. Not the agent output contract (cortex `QuoteResult`:
+ * draft | needs-info | needs-review | unsupported); cortex maps this onto it.
+ */
+export type PriceResult =
   | { status: 'priced'; quote: Quote }
   /** Scope failed the pack's schema. */
   | { status: 'invalid-scope'; issues: string[] }
@@ -86,7 +90,7 @@ export interface QuotePack<Scope> {
    * Pure and deterministic. `scope` is untrusted (LLM output) and is parsed
    * with `scopeSchema` first; pricing refuses a scope with missing info.
    */
-  price(scope: unknown, rateCard: RateCard, opts: QuotePriceOptions): QuoteResult;
+  price(scope: unknown, rateCard: RateCard, opts: QuotePriceOptions): PriceResult;
 }
 
 /** What a pack author writes; `price` is supplied by the framework. */
@@ -132,7 +136,7 @@ export function priceScope<Scope>(
   rawScope: unknown,
   rateCard: RateCard,
   opts: QuotePriceOptions,
-): QuoteResult {
+): PriceResult {
   const parsed = def.scopeSchema.safeParse(rawScope);
   if (!parsed.success) {
     return {
