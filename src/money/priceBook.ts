@@ -3,15 +3,10 @@
  * (TURNWRK-287 / P2.3). Same `lineType` keys as the AI Estimator RateSource
  * (TURNWRK-274) so the price book is not a second rate store.
  */
-export const PRICE_BOOK_UNITS = [
-  'hour',
-  'each',
-  'linear-foot',
-  'square-foot',
-  'cubic-yard',
-  'gallon',
-  'day',
-] as const;
+import { ALLOWED_UNITS } from '../quotes/types';
+
+/** The price book prices in the same units as quotes; one list, defined in quotes. */
+export const PRICE_BOOK_UNITS = ALLOWED_UNITS;
 
 export type PriceBookUnit = (typeof PRICE_BOOK_UNITS)[number];
 

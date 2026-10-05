@@ -85,6 +85,11 @@
       "require": "./dist/money/index.js",
       "default": "./dist/money/index.js"
     },
+    "./quotes": {
+      "types": "./dist/quotes/index.d.ts",
+      "require": "./dist/quotes/index.js",
+      "default": "./dist/quotes/index.js"
+    },
     "./routing": {
       "types": "./dist/routing/index.d.ts",
       "require": "./dist/routing/index.js",
@@ -149,7 +154,12 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
+    "fast-check": "^4.10.2",
     "typescript": "^5",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "zod": "^4.6.5"
+  },
+  "peerDependencies": {
+    "zod": "^4.4.3"
   }
 }
