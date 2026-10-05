@@ -15,6 +15,7 @@ import {
   assembleQuoteLines,
   isAllowedUnit,
   sanitizeBps,
+  type MarkupBps,
   type ResolvedRate,
 } from './pricing';
 import type { LineUnit, QuoteTotals, RateOverride, ScopedLine } from './types';
@@ -36,6 +37,11 @@ export interface RateCard {
   /** ms epoch the card's rates were set; stamped on every line priced from it. */
   ratedAt: number;
   rates: Readonly<Record<string, RateCardEntry>>;
+  /**
+   * Markup this card prices with when the caller passes no bps. A published
+   * consumer rate card is already all-in, so it sets both to 0.
+   */
+  defaultMarkup?: MarkupBps;
 }
 
 /** A required field the scope does not answer yet. */
@@ -48,9 +54,9 @@ export interface MissingInfo {
 export interface QuotePriceOptions {
   /** ms epoch stamped on the quote and its derived rows. Passed in, never read from a clock. */
   generatedAt: number;
-  /** Default DEFAULT_OVERHEAD_PROFIT_BPS. */
+  /** Default rateCard.defaultMarkup, then DEFAULT_OVERHEAD_PROFIT_BPS. */
   overheadProfitBps?: number;
-  /** Default DEFAULT_CONTINGENCY_BPS. */
+  /** Default rateCard.defaultMarkup, then DEFAULT_CONTINGENCY_BPS. */
   contingencyBps?: number;
   /** Trade-supplied rates; win over the card for their lineType. */
   overrides?: readonly RateOverride[];
@@ -190,8 +196,12 @@ export function priceScope<Scope>(
   const totals = assembleQuoteLines(lines, rates, {
     region: rateCard.region,
     generatedAt: opts.generatedAt,
-    overheadProfitBps: sanitizeBps(opts.overheadProfitBps, DEFAULT_OVERHEAD_PROFIT_BPS),
-    contingencyBps: sanitizeBps(opts.contingencyBps, DEFAULT_CONTINGENCY_BPS),
+    // explicit opts → the card's defaultMarkup → the global default
+    overheadProfitBps: sanitizeBps(
+      opts.overheadProfitBps ?? rateCard.defaultMarkup?.overheadProfitBps,
+      DEFAULT_OVERHEAD_PROFIT_BPS,
+    ),
+    contingencyBps: sanitizeBps(opts.contingencyBps ?? rateCard.defaultMarkup?.contingencyBps, DEFAULT_CONTINGENCY_BPS),
   });
   return {
     status: 'priced',

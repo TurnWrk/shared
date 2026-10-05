@@ -6,8 +6,8 @@
  * `apps/sites/tampa-concrete-coatings/niche.config.json`): $7-9/sqft all-in
  * (diamond grind, routine crack repair, polyurea base, flake, polyaspartic top)
  * by prep, logo inlay a flat $300-700 by size. The quoted total must equal what
- * the site promises, so this pack prices with ZERO overhead/contingency markup
- * by default; a caller can still pass bps explicitly.
+ * the site promises, so the card's defaultMarkup is ZERO overhead/contingency;
+ * a caller can still pass bps explicitly.
  *
  * Steps, stem walls and heavy slab repair are "priced line by line" on the site
  * with no published amount, and commercial is "priced lower per sqft", also
@@ -68,6 +68,8 @@ export const FLOOR_COATINGS_RATE_CARD: RateCard = {
   currency: 'usd',
   region: 'US-FL-Tampa',
   ratedAt: Date.UTC(2026, 9, 5),
+  // Published consumer prices are all-in: no overhead/contingency on top.
+  defaultMarkup: { overheadProfitBps: 0, contingencyBps: 0 },
   rates: {
     [coatingLineType('light')]: { kind: 'labor', unit: 'square-foot', unitCents: 700 },
     [coatingLineType('standard')]: { kind: 'labor', unit: 'square-foot', unitCents: 800 },
@@ -187,7 +189,7 @@ function takeoff(scope: FloorCoatingsScope): ScopedLine[] {
   return lines;
 }
 
-const basePack = defineQuotePack<FloorCoatingsScope>({
+export const floorCoatingsPack: QuotePack<FloorCoatingsScope> = defineQuotePack<FloorCoatingsScope>({
   id: 'floor-coatings',
   scopeSchema: floorCoatingsScopeSchema,
   rateCard: FLOOR_COATINGS_RATE_CARD,
@@ -199,17 +201,3 @@ const basePack = defineQuotePack<FloorCoatingsScope>({
   bounds,
   takeoff,
 });
-
-/**
- * The pack, priced by the shared pricer with zero markup unless the caller
- * passes bps: published consumer prices are already all-in.
- */
-export const floorCoatingsPack: QuotePack<FloorCoatingsScope> = {
-  ...basePack,
-  price: (scope, rateCard, opts) =>
-    basePack.price(scope, rateCard, {
-      ...opts,
-      overheadProfitBps: opts.overheadProfitBps ?? 0,
-      contingencyBps: opts.contingencyBps ?? 0,
-    }),
-};

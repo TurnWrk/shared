@@ -117,12 +117,17 @@ describe('floor coatings pack — refusals', () => {
 
 describe('floor coatings pack — rate card and markup', () => {
   it('is the published card: floor-coatings-tampa@2026-10-05, US-FL-Tampa, $7/$8/$9 by prep', () => {
-    expect(FLOOR_COATINGS_RATE_CARD).toMatchObject({ id: 'floor-coatings-tampa', version: '2026-10-05', region: 'US-FL-Tampa' });
+    expect(FLOOR_COATINGS_RATE_CARD).toMatchObject({
+      id: 'floor-coatings-tampa',
+      version: '2026-10-05',
+      region: 'US-FL-Tampa',
+      defaultMarkup: { overheadProfitBps: 0, contingencyBps: 0 },
+    });
     expect(FLOOR_PREP_TIERS.map((p) => FLOOR_COATINGS_RATE_CARD.rates[`labor:coating-${p}`].unitCents)).toEqual([700, 800, 900]);
     for (const lineType of Object.keys(FLOOR_COATINGS_RATE_CARD.rates)) expect(FLOOR_COATINGS_RATE_NOTES[lineType]).toBeTruthy();
   });
 
-  it('defaults to zero markup, but an explicit bps still applies', () => {
+  it("prices with the card's zero markup by default, but an explicit bps still applies", () => {
     expect(priced(price({ surfaces: [garage(500, 'standard')] }, { overheadProfitBps: undefined })).markupCents).toBe(0);
     expect(priced(price({ surfaces: [garage(500, 'standard')] }, { overheadProfitBps: 1_000 })).amountCents).toBe(440_000);
   });
