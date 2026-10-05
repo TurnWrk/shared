@@ -120,7 +120,8 @@ describe('phase-E packs (TURNWRK-329)', () => {
     expect(HANDYMAN_PACK.cadences).toEqual([
       { key: 'once', widgetLabel: 'One-time', discountPct: 0 },
     ]);
-    expect(HANDYMAN_PACK.extensions).toEqual([]);
+    // TURNWRK-706: outdoor jobs rain out; the extension is shared with landscaping.
+    expect(HANDYMAN_PACK.extensions).toEqual(['rain_reschedule']);
     // Unlike cleaning/str_turnover, handyman ships seeds — it has no prior
     // behaviour to mirror, so the seeds ARE the starting catalog.
     expect(HANDYMAN_PACK.serviceSeeds.length).toBeGreaterThan(0);
