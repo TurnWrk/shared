@@ -31,7 +31,7 @@ const surfaceSchema = z.object({
   type: z.enum(FLOOR_SURFACE_TYPES),
   /** Measured square feet. Absent means ask; a car count is never converted silently. */
   sqft: z.number().positive().finite().optional(),
-  /** Slab condition tier. Absent means ask; there is no default. */
+  /** Slab condition tier. Absent prices as `standard`, stated as an assumption (decided 2026-10-05, TURNWRK-697). */
   prep: z.enum(FLOOR_PREP_TIERS).optional(),
 });
 
@@ -58,6 +58,14 @@ export const RESIDENTIAL_SQFT_MIN = 50;
 export const RESIDENTIAL_SQFT_MAX = 3_000;
 /** Whole-job residential sanity bound: beyond this it is a site visit, not a phone quote. */
 export const RESIDENTIAL_TOTAL_SQFT_MAX = 6_000;
+
+/** Prep assumed when the inquiry does not describe the slab (Julissa, 2026-10-05, TURNWRK-697). */
+export const DEFAULT_PREP: FloorPrepTier = 'standard';
+export const ASSUMED_PREP_TEXT = 'Assumes standard prep; final price $7-9/sqft after we see the slab.';
+
+function assumptions(scope: FloorCoatingsScope): string[] {
+  return scope.surfaces.some((s) => s.prep === undefined) ? [ASSUMED_PREP_TEXT] : [];
+}
 
 const coatingLineType = (prep: FloorPrepTier): string => `labor:coating-${prep}`;
 const logoLineType = (size: LogoSize): string => `material:logo-inlay-${size}`;
@@ -88,7 +96,9 @@ export const FLOOR_COATINGS_RATE_CARD: RateCard = {
  */
 export const FLOOR_COATINGS_RATE_NOTES: Readonly<Record<string, string>> = {
   [coatingLineType('light')]: 'Published: $7/sqft, low end of the $7-9 all-in band (clean or new slab).',
-  [coatingLineType('standard')]: 'Assumption pending TURNWRK-697: $8/sqft midpoint of the published $7-9 band for typical prep.',
+  [coatingLineType('standard')]:
+    'Assumption pending TURNWRK-697: $8/sqft midpoint of the published $7-9 band for typical prep. ' +
+    'Also the prep assumed when the inquiry does not describe the slab, stated on the quote: decided by Julissa 2026-10-05, TURNWRK-697.',
   [coatingLineType('heavy')]: 'Published: $9/sqft, high end of the $7-9 all-in band (coating removal, oil, heavy grind).',
   [logoLineType('small')]: 'Assumption pending TURNWRK-697: small inlay at $300, the low end of the published $300-700 band.',
   [logoLineType('medium')]: 'Assumption pending TURNWRK-697: medium inlay at $500, midpoint of the published $300-700 band.',
@@ -132,12 +142,6 @@ function needsInfo(scope: FloorCoatingsScope): MissingInfo[] {
             : `What's the square footage of the ${SURFACE_LABEL[s.type].toLowerCase()} (length x width works)?`,
       });
     }
-    if (s.prep === undefined) {
-      missing.push({
-        field: `surfaces.${i}.prep`,
-        question: `What condition is the ${SURFACE_LABEL[s.type].toLowerCase()} concrete in: bare, painted, or already coated?`,
-      });
-    }
   });
   if (scope.logo && scope.logo.size === undefined) {
     missing.push({ field: 'logo.size', question: 'How big should the logo be, and how many colors or how much detail does it have?' });
@@ -166,7 +170,7 @@ function bounds(scope: FloorCoatingsScope): string[] {
 
 function takeoff(scope: FloorCoatingsScope): ScopedLine[] {
   const lines: ScopedLine[] = scope.surfaces.map((s) => {
-    const prep = s.prep as FloorPrepTier; // needsInfo guarantees prep and sqft before takeoff
+    const prep = s.prep ?? DEFAULT_PREP; // needsInfo guarantees sqft before takeoff
     return {
       kind: 'labor',
       lineType: coatingLineType(prep),
@@ -200,4 +204,5 @@ export const floorCoatingsPack: QuotePack<FloorCoatingsScope> = defineQuotePack<
   needsInfo,
   bounds,
   takeoff,
+  assumptions,
 });

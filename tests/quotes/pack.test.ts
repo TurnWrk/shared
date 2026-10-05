@@ -338,3 +338,21 @@ describe('markup resolution: explicit opts → rateCard.defaultMarkup → global
     expect(markupOf(floorCard, { overheadProfitBps: 0, contingencyBps: 0 })).toBe(0);
   });
 });
+
+describe('assumptions hook', () => {
+  it('copies the pack hook onto the priced quote, and defaults to []', () => {
+    const withAssumptions = defineQuotePack<FloorScope>({
+      id: 'with-assumptions',
+      scopeSchema: floorScope,
+      rateCard: floorCard,
+      needsInfo: () => [],
+      assumptions: (s) => (s.coats === 2 ? ['Assumes two coats'] : []),
+      takeoff: (s) => [{ kind: 'labor', lineType: 'labor:floor-prep', label: 'Prep', quantity: s.areaSqFt ?? 0, unit: 'square-foot' }],
+    });
+    const at = (scope: unknown) => priced(withAssumptions.price(scope, floorCard, { generatedAt: GENERATED_AT }));
+    expect(at({ areaSqFt: 100 }).assumptions).toEqual(['Assumes two coats']);
+    expect(at({ areaSqFt: 100, coats: 3 }).assumptions).toEqual([]);
+    expect(at({ areaSqFt: 100 }).amountCents).toBe(at({ areaSqFt: 100, coats: 3 }).amountCents);
+    expect(priced(price({ areaSqFt: 100 })).assumptions).toEqual([]);
+  });
+});

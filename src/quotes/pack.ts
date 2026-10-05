@@ -69,6 +69,11 @@ export interface Quote extends QuoteTotals {
   currency: 'usd';
   region: string;
   generatedAt: number;
+  /**
+   * What the price assumed that the customer did not say, worded for the
+   * customer (from the pack's `assumptions` hook). [] when nothing was assumed.
+   */
+  assumptions: string[];
 }
 
 /**
@@ -104,6 +109,11 @@ export interface QuotePack<Scope> {
    * Pass-through only: pricing never reads it.
    */
   workOrderDefaults?: QuotePackWorkOrderDefaults;
+  /**
+   * Assumptions the price rests on, for a scope that will be priced; copied
+   * onto the priced Quote by the shared pricer. Text only: never changes the total.
+   */
+  assumptions?(scope: Scope): string[];
   /**
    * Pure and deterministic. `scope` is untrusted (LLM output) and is parsed
    * with `scopeSchema` first; pricing refuses a scope with missing info.
@@ -212,6 +222,7 @@ export function priceScope<Scope>(
       currency: 'usd',
       region: rateCard.region,
       generatedAt: opts.generatedAt,
+      assumptions: def.assumptions?.(scope) ?? [],
       ...totals,
     },
   };

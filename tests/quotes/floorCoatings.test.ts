@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import {
+  ASSUMED_PREP_TEXT,
   FLOOR_COATINGS_RATE_CARD,
   FLOOR_COATINGS_RATE_NOTES,
   FLOOR_PREP_TIERS,
@@ -48,15 +49,15 @@ const DRAFT_CASES: { id: string; scope: unknown; totalCents: number }[] = [
   { id: 'sh-driveway', scope: { surfaces: [{ type: 'driveway', sqft: 800, prep: 'standard' }] }, totalCents: 640_000 },
   { id: 'sh-logo-small', scope: { surfaces: [garage(400, 'light')], logo: { size: 'small' } }, totalCents: 280_000 + 30_000 },
   { id: 'sh-logo-large', scope: { surfaces: [garage(600, 'heavy')], logo: { size: 'large' } }, totalCents: 540_000 + 70_000 },
+  { id: 'sh-no-prep-assumes-standard', scope: { surfaces: [garage(580)] }, totalCents: 464_000 },
   { id: 'sh-crack-repair-included', scope: { surfaces: [garage(520, 'standard')], crackRepairLf: 30 }, totalCents: 416_000 },
 ];
 
 const NEEDS_INFO_CASES: { id: string; scope: unknown; fields: string[] }[] = [
-  { id: 'fc-004-two-car-no-sqft', scope: { surfaces: [garage()] }, fields: ['surfaces.0.sqft', 'surfaces.0.prep'] },
+  { id: 'fc-004-two-car-no-sqft', scope: { surfaces: [garage()] }, fields: ['surfaces.0.sqft'] },
   { id: 'fc-006-lanai-no-size', scope: { surfaces: [{ type: 'lanai', prep: 'standard' }] }, fields: ['surfaces.0.sqft'] },
-  { id: 'fc-008-logo-only-unsized', scope: { surfaces: [garage()], logo: {} }, fields: ['surfaces.0.sqft', 'surfaces.0.prep', 'logo.size'] },
+  { id: 'fc-008-logo-only-unsized', scope: { surfaces: [garage()], logo: {} }, fields: ['surfaces.0.sqft', 'logo.size'] },
   { id: 'sh-no-surfaces', scope: { surfaces: [] }, fields: ['surfaces'] },
-  { id: 'sh-missing-prep-only', scope: { surfaces: [garage(520)] }, fields: ['surfaces.0.prep'] },
 ];
 
 const REJECTED_CASES: { id: string; scope: unknown; reason: RegExp }[] = [
@@ -97,6 +98,18 @@ describe('floor coatings pack — refusals', () => {
     if (r.status !== 'needs-info') throw new Error(`expected needs-info, got ${JSON.stringify(r)}`);
     expect(r.missing.map((m) => m.field)).toEqual(fields);
     expect(r.missing.every((m) => m.question.length > 0)).toBe(true);
+  });
+
+  it('a garage with sqft but no slab condition prices at standard $8/sqft and states the assumption', () => {
+    const q = priced(price({ surfaces: [garage(520)] }));
+    expect(q.amountCents).toBe(416_000);
+    expect(q.assumptions).toEqual([ASSUMED_PREP_TEXT]);
+    expect(ASSUMED_PREP_TEXT).toBe('Assumes standard prep; final price $7-9/sqft after we see the slab.');
+  });
+
+  it('states no assumption when every surface names its prep', () => {
+    expect(priced(price({ surfaces: [garage(520, 'standard')] })).assumptions).toEqual([]);
+    expect(priced(price({ surfaces: [garage(520, 'heavy'), { type: 'lanai', sqft: 200 }] })).assumptions).toEqual([ASSUMED_PREP_TEXT]);
   });
 
   it('asks the ticket question for a garage without square footage', () => {
