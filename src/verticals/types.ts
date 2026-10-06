@@ -49,9 +49,10 @@ export type VerticalExtensionKey =
   /** Proof-of-service report sent after a visit (TURNWRK-291). */
   | 'proof_report'
   /**
-   * Operator-declared rain-out bulk reschedule (TURNWRK-296). Landscaping-pack
-   * behaviour — pool / STR must not inherit it. No weather provider; the
-   * operator taps "rained out" for a day or route.
+   * Operator-declared rain-out bulk reschedule (TURNWRK-296). Landscaping and
+   * handyman packs opt in; pool / STR must not inherit it. No weather provider;
+   * the operator taps "rained out" for a day or route. Dispatch's `outdoorOnly`
+   * option moves just the work orders flagged `outdoor` (TURNWRK-706).
    */
   | 'rain_reschedule';
 

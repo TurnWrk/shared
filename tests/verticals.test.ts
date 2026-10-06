@@ -149,6 +149,19 @@ describe('orgHasVerticalExtension', () => {
     ).toBe(false);
   });
 
+  it('is true for a maintenance org that adds handyman (TURNWRK-706)', () => {
+    expect(
+      orgHasVerticalExtension(
+        org({ verticals: ['str_turnover', 'handyman'], primaryVertical: 'str_turnover' }),
+        'rain_reschedule',
+      ),
+    ).toBe(true);
+    // ...while a plain STR org still does not get it.
+    expect(orgHasVerticalExtension(org({ verticals: ['str_turnover'] }), 'rain_reschedule')).toBe(
+      false,
+    );
+  });
+
   it('is true for a multi-service org when one pack opts in', () => {
     expect(
       orgHasVerticalExtension(

@@ -7,8 +7,10 @@
  *
  * Pure data by decision (docs/projects/VERTICAL-MODULES.md § E5): a one-off
  * repair is the Dispatch estimate → work-order → invoice flow that already
- * ships. The pack adds no extension — nothing here is a handyman-only behaviour;
- * it is the generic one-off job path with handyman terminology and seeds.
+ * ships. Its one extension is the shared `rain_reschedule` (TURNWRK-706):
+ * exterior jobs (paint, roofs, coatings) wash out, and dispatch's outdoor-only
+ * rain-out moves just the work orders flagged `outdoor`. A maintenance org
+ * enables it by adding `handyman` to `Org.verticals`.
  */
 import type { VerticalPack } from '../types';
 
@@ -90,6 +92,9 @@ export const HANDYMAN_PACK: VerticalPack = {
   onboarding: {},
   /** One-off jobs carry no repeatable booking params, so repeats resolve to 1. */
   repeatSources: [],
-  /** No vertical-only behaviour — handyman is the generic one-off job path. */
-  extensions: [],
+  /**
+   * Rain-out for outdoor jobs (TURNWRK-706). Shared with landscaping; dispatch
+   * offers handyman orgs the outdoor-only move so indoor jobs never shift.
+   */
+  extensions: ['rain_reschedule'],
 };
