@@ -162,8 +162,9 @@ export interface PropertyMaintenance {
 
   /**
    * @deprecated Use the property's compliance items (`cmms_complianceItems`,
-   * TURNWRK-718): smoke alarms (`fl.smoke_alarms`), CO alarm (`fl.co_alarm`) and
-   * the extinguisher service tag (`fl.fire_extinguisher_service`). Kept as a
+   * TURNWRK-718): smoke alarms (`fl.smoke_alarms`), CO alarm (`fl.co_alarm`), the
+   * extinguisher service tag (`fl.fire_extinguisher_service`) and the first aid
+   * kit (`turnwrk.first_aid_kit`). Nothing writes it any more; kept as a
    * read-only fallback until dispatch's `backfill-safety-to-compliance` script
    * has been applied (TURNWRK-723). New code reads and writes compliance items.
    */
