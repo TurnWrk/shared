@@ -41,6 +41,13 @@ export const COLLECTIONS = {
   cmms_calendarSyncs: 'cmms_calendarSyncs',
   cmms_pmTemplates: 'cmms_pmTemplates',
   cmms_pmSchedules: 'cmms_pmSchedules',
+  // Property compliance items (TURNWRK-718): licenses, registrations,
+  // life-safety checks, tax filings. Server-write only (Admin SDK); org
+  // members read.
+  cmms_complianceItems: 'cmms_complianceItems',
+  // Florida DBPR vacation-rental license public records, imported for
+  // prefill matching (TURNWRK-718). Admin SDK writes; platform admins read.
+  cmms_dbprLicenses: 'cmms_dbprLicenses',
   cmms_relayChatMessages: 'cmms_relayChatMessages',
   cmms_chatMeta: 'cmms_chatMeta',
   cmms_actionItems: 'cmms_actionItems',

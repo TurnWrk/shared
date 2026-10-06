@@ -331,6 +331,23 @@ export interface PropertyAddressParts {
   zip: string;
 }
 
+/**
+ * Facts the jurisdiction compliance rules (`src/compliance/jurisdictions`)
+ * read to decide which obligations apply to a unit (TURNWRK-718). Absent
+ * fields mean "unknown", and a rule gated on one does not apply until the
+ * operator answers it.
+ */
+export interface PropertyCompliance {
+  /** County name as the state writes it ("Pinellas"), for county TDT and DBPR matching. */
+  county?: string;
+  /** Habitable stories in the building; Florida balcony certification starts at 3. */
+  stories?: number;
+  /** Any gas, oil or wood appliance, fireplace or attached garage: gates the CO alarm rule. */
+  fuelBurningAppliance?: boolean;
+  /** Homeowners or condo association, when the unit sits under one. */
+  hoaName?: string;
+}
+
 export interface Property {
   id: string;
   orgId: string;
@@ -363,6 +380,7 @@ export interface Property {
 
   maintenance?: PropertyMaintenance;
   supply?: PropertySupply;
+  compliance?: PropertyCompliance;
 
   createdAt: number;
   updatedAt: number;

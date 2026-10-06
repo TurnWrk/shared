@@ -75,6 +75,11 @@
       "require": "./dist/maintenance/index.js",
       "default": "./dist/maintenance/index.js"
     },
+    "./compliance": {
+      "types": "./dist/compliance/index.d.ts",
+      "require": "./dist/compliance/index.js",
+      "default": "./dist/compliance/index.js"
+    },
     "./booking": {
       "types": "./dist/booking/index.d.ts",
       "require": "./dist/booking/index.js",
