@@ -633,6 +633,14 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Inbound inquiries awaiting review (TURNWRK-701). Writes go through the
+    // dispatch leads API (admin/pm only, enforced there — rules cannot tell a
+    // pm from a tech), so clients get read-only, org-scoped access.
+    match /cmms_leads/{leadId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
     match /cmms_reviews/{reviewId} {
       allow read: if canWriteOrg(resource.data.orgId);
       // All writes flow through Admin SDK API routes.
