@@ -109,6 +109,55 @@ describe('buildIntakeItemPayload', () => {
   });
 });
 
+describe('buildIntakeItemPayload — every creation field survives (TURNWRK-733)', () => {
+  it('writes every IntakeItem field it is given', () => {
+    const full = {
+      orgId: 'o1',
+      source: 'guest_sms' as const,
+      text: 'Water under the sink',
+      reporter: { kind: 'guest' as const, id: 'g1', phoneE164: '+15551234567', shareGuestId: 'sg1' },
+      requestedByUid: 'u1',
+      propertyId: 'p1',
+      propertyAddress: '9 Oak Ave',
+      customerId: 'c1',
+      serviceAddress: { address: '12 Elm St', addressParts: { line1: '12 Elm St', city: 'Tampa' } },
+      bookingId: 'b1',
+      parentWorkOrderId: 'wo-parent',
+      sourceMessageId: 'SM1',
+      mediaUrls: ['https://x/1.jpg'],
+      persistMode: 'draftsOnly' as const,
+      emergency: true,
+      assignedTechId: 't1',
+      scheduledDate: '2026-10-06',
+      checklistTemplateId: 'tpl-1',
+      checklistCustomItems: [{ label: 'Check P-trap', required: true }],
+      ai: {
+        category: 'plumbing',
+        priority: 'High' as const,
+        emergencyClass: 'water' as const,
+        confidence: 0.8,
+        duplicateOfWorkOrderId: 'wo-dup',
+        duplicateOfIntakeId: 'wi-dup',
+      },
+      triage: 'duplicate' as const,
+      triagedBy: 'u2',
+      triagedAt: 42,
+      declineReason: 'Guest-caused',
+      snoozeUntil: 99,
+      duplicateOf: 'wo-dup',
+      autoAcceptedByRuleId: 'rule-1',
+      deflection: { outcome: 'escalated' as const, steps: ['Shut the valve'] },
+      reporterStatusSentAt: { received: 1, scheduled: 2, done: 3 },
+    };
+    const doc = buildIntakeItemPayload({ ...full, now: 7 });
+    for (const [key, value] of Object.entries(full)) {
+      expect(doc, `field ${key}`).toHaveProperty(key);
+      expect(doc[key], `field ${key}`).toEqual(value);
+    }
+    expect(doc.receivedAt).toBe(7);
+  });
+});
+
 describe('normalizeIntakeItem', () => {
   const legacy = {
     orgId: 'o1',

@@ -12,6 +12,7 @@ import type {
   IntakeDeflection,
   IntakeItem,
   IntakeReporter,
+  IntakeReporterStatusSentAt,
   IntakeServiceAddress,
   IntakeSource,
   IntakeTriage,
@@ -21,6 +22,13 @@ import type {
 import { INTAKE_SOURCES, WO_INTAKE_SOURCES } from '../types/woIntake';
 import { stripUndefined } from '../stripUndefined';
 
+/**
+ * Every `IntakeItem` field a writer may set at creation. The processing
+ * lifecycle (`status`, `attemptCount`, `processingAt`, `reclaimedAt`,
+ * `completedAt`, `deadLetteredAt`, `reason`, `drafts`, `workOrderIds`,
+ * `expireAt`) is deliberately absent: a new item always starts at
+ * `pending-retry` and only cortex's claim/complete path advances it.
+ */
 export interface IntakeItemInput {
   orgId: string;
   source: IntakeSource;
@@ -56,8 +64,12 @@ export interface IntakeItemInput {
   triage?: IntakeTriage;
   triagedBy?: string;
   triagedAt?: number;
+  declineReason?: string;
+  snoozeUntil?: number;
+  duplicateOf?: string;
   autoAcceptedByRuleId?: string;
   deflection?: IntakeDeflection;
+  reporterStatusSentAt?: IntakeReporterStatusSentAt;
 }
 
 /**
@@ -121,8 +133,12 @@ export function buildIntakeItemPayload(input: IntakeItemInput): Record<string, u
     if (triagedBy) doc.triagedBy = triagedBy;
     doc.triagedAt = input.triagedAt ?? input.now;
   }
+  if (input.declineReason) doc.declineReason = input.declineReason;
+  if (input.snoozeUntil !== undefined) doc.snoozeUntil = input.snoozeUntil;
+  if (input.duplicateOf) doc.duplicateOf = input.duplicateOf;
   if (input.autoAcceptedByRuleId) doc.autoAcceptedByRuleId = input.autoAcceptedByRuleId;
   if (input.deflection) doc.deflection = input.deflection;
+  if (input.reporterStatusSentAt) doc.reporterStatusSentAt = input.reporterStatusSentAt;
 
   // Nested caller objects (serviceAddress, checklist items, deflection, ai,
   // reporter) can carry undefined too; strip at every depth in one pass.
