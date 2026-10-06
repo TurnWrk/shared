@@ -97,7 +97,7 @@ export function orgFeatureEnabled(
  * is dual-read forever-ish rather than dropped, exactly as `cmms` is for
  * `hostfixCmms`. Writers emit only `service`.
  */
-export type OrgAppKey = 'hostfixCmms' | 'restock' | 'service';
+export type OrgAppKey = 'hostfixCmms' | 'restock' | 'service' | 'compliance';
 
 /**
  * Legacy Firestore docs sometimes store `enabledApps.cmms` instead of
@@ -108,6 +108,14 @@ export type OrgEnabledApps = {
   restock?: boolean;
   /** Turnwrk Service (the general booking/recurring-service product). */
   service?: boolean;
+  /**
+   * Standalone compliance tracker (TURNWRK-728): the compliance register on
+   * the shared core without the rest of Dispatch. An org with `hostfixCmms`
+   * already has compliance inside Dispatch; this key is the entry for orgs
+   * that only want the tracker. Scheduling automation is a PLAN entitlement
+   * (Operator), never this key.
+   */
+  compliance?: boolean;
   /**
    * @deprecated Verticals F2 (TURNWRK-331) — read via `orgAppEnabled('service')`.
    * Still present on live org docs; never written by `normalizeEnabledApps`.
@@ -248,6 +256,7 @@ export function orgAppEnabled(
   if (org.status === 'suspended') return false;
   const apps = org.enabledApps;
   if (!apps) {
+    // The compliance tracker is newer than the grandfather; it is always opt-in.
     return app === 'hostfixCmms' || app === 'restock';
   }
   if (app === 'hostfixCmms') {
@@ -275,6 +284,9 @@ export function normalizeEnabledApps(
     ...(input.service === true || input.clean === true
       ? { service: true }
       : { service: false }),
+    // Written only when on: absent reads as off, and every existing org doc
+    // and consumer fixture stays byte-identical (TURNWRK-728).
+    ...(input.compliance === true ? { compliance: true } : {}),
   };
 }
 

@@ -105,3 +105,32 @@ describe('isOrgTrialExpired / isOrgIndefiniteOrActiveTrial', () => {
     ).toBe(false);
   });
 });
+
+describe('compliance tracker app (TURNWRK-728)', () => {
+  it('is on only when enabledApps.compliance is true', () => {
+    expect(orgAppEnabled({ enabledApps: { compliance: true } } as Org, 'compliance')).toBe(true);
+    expect(orgAppEnabled({ enabledApps: { hostfixCmms: true } } as Org, 'compliance')).toBe(false);
+  });
+
+  it('is not grandfathered onto orgs with no enabledApps', () => {
+    expect(orgAppEnabled({ id: 'x', name: 'n', createdAt: 0, updatedAt: 0 } as Org, 'compliance')).toBe(false);
+  });
+
+  it('is off for a suspended org', () => {
+    expect(orgAppEnabled({ status: 'suspended', enabledApps: { compliance: true } } as Org, 'compliance')).toBe(false);
+  });
+
+  it('normalize keeps it when on and omits it when off', () => {
+    expect(normalizeEnabledApps({ compliance: true })).toEqual({
+      hostfixCmms: false,
+      restock: false,
+      service: false,
+      compliance: true,
+    });
+    expect(normalizeEnabledApps({ hostfixCmms: true, compliance: false })).toEqual({
+      hostfixCmms: true,
+      restock: false,
+      service: false,
+    });
+  });
+});
