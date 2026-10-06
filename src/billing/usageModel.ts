@@ -7,7 +7,9 @@
  *   card processor's cost — standard ~2.9% + $0.30 stays pass-through and is
  *   NOT Turnwrk revenue).
  * - AI credits beyond the plan's included allotment.
- * - An optional flat **Pro** membership, per business — never per property.
+ * - Optional flat memberships, per business — never per property, unit or
+ *   seat: **Pro** ($99/mo) and **Operator** ($249/mo, TURNWRK-730 — adds the
+ *   compliance automation loop and guest AI intake).
  * - Restock affiliate margin on supplies bought through carts (informational
  *   here; it is never a line on the customer's bill).
  *
@@ -32,6 +34,16 @@ export const SUITE_USAGE_MODEL = {
   freeIncludedAiCredits: 15,
   /** AI credits included per month on Pro. */
   proIncludedAiCredits: 75,
+  /** Turnwrk markup on processed GMV, Operator plan. Same as Pro (TURNWRK-730). */
+  operatorPaymentRateBps: 60,
+  /** Flat Operator membership per BUSINESS per month. Never multiplied by units. */
+  operatorMonthlyFeeCents: 24_900,
+  /**
+   * AI credits included per month on Operator. One pool shared by guest AI
+   * intake and the Estimator/inspection actions every plan has; sized for
+   * guest intake, which runs per guest message rather than per job.
+   */
+  operatorIncludedAiCredits: 300,
   /** Charge per AI credit beyond the included allotment. */
   aiCreditOverageCents: 400,
   /** Affiliate margin on Restock cart purchases — informational, never billed. */
@@ -46,7 +58,69 @@ export const SUITE_USAGE_MODEL = {
 /** Free trial length applied to **Pro** (the base product is free forever). */
 export const SUITE_PRO_TRIAL_DAYS = 45;
 
-export type SuiteUsagePlan = 'free' | 'pro';
+export type SuiteUsagePlan = 'free' | 'pro' | 'operator';
+
+/** Every suite plan, cheapest first. Plan is the ONLY pricing axis. */
+export const SUITE_USAGE_PLANS: readonly SuiteUsagePlan[] = [
+  'free',
+  'pro',
+  'operator',
+] as const;
+
+/** One plan's terms, read from `SUITE_USAGE_MODEL` — never hard-coded elsewhere. */
+export interface SuitePlanTerms {
+  plan: SuiteUsagePlan;
+  /** Flat membership per business — 0 on the free plan. */
+  monthlyFeeCents: number;
+  paymentRateBps: number;
+  includedAiCredits: number;
+  /** Compliance due dates become scheduled work orders (Operator only). */
+  automatesCompliance: boolean;
+  /** Guest AI intake is enabled (Operator only); draws on `includedAiCredits`. */
+  guestAiIntake: boolean;
+}
+
+export function suitePlanTerms(plan: SuiteUsagePlan): SuitePlanTerms {
+  const m = SUITE_USAGE_MODEL;
+  switch (plan) {
+    case 'operator':
+      return {
+        plan,
+        monthlyFeeCents: m.operatorMonthlyFeeCents,
+        paymentRateBps: m.operatorPaymentRateBps,
+        includedAiCredits: m.operatorIncludedAiCredits,
+        automatesCompliance: true,
+        guestAiIntake: true,
+      };
+    case 'pro':
+      return {
+        plan,
+        monthlyFeeCents: m.proMonthlyFeeCents,
+        paymentRateBps: m.proPaymentRateBps,
+        includedAiCredits: m.proIncludedAiCredits,
+        automatesCompliance: false,
+        guestAiIntake: false,
+      };
+    default:
+      return {
+        plan: 'free',
+        monthlyFeeCents: 0,
+        paymentRateBps: m.freePaymentRateBps,
+        includedAiCredits: m.freeIncludedAiCredits,
+        automatesCompliance: false,
+        guestAiIntake: false,
+      };
+  }
+}
+
+/**
+ * Resolve an `Org.billing.planId` to a usage plan. Only the exact paid plan
+ * ids earn paid terms; trial / comp / legacy v1 / unknown all resolve to
+ * `free` (never invent a discount or an entitlement).
+ */
+export function suiteUsagePlanOf(planId: string | null | undefined): SuiteUsagePlan {
+  return planId === 'pro' || planId === 'operator' ? planId : 'free';
+}
 
 export interface SuiteUsageQuoteInput {
   /** Monthly payment volume processed through Turnwrk, in USD cents. */
@@ -119,14 +193,11 @@ function billFor(
   gmvCents: number,
   aiActions: number,
 ): SuiteUsagePlanBill {
-  const isPro = plan === 'pro';
-  const paymentRateBps = isPro
-    ? SUITE_USAGE_MODEL.proPaymentRateBps
-    : SUITE_USAGE_MODEL.freePaymentRateBps;
-  const includedAiCredits = isPro
-    ? SUITE_USAGE_MODEL.proIncludedAiCredits
-    : SUITE_USAGE_MODEL.freeIncludedAiCredits;
-  const membershipCents = isPro ? SUITE_USAGE_MODEL.proMonthlyFeeCents : 0;
+  const {
+    paymentRateBps,
+    includedAiCredits,
+    monthlyFeeCents: membershipCents,
+  } = suitePlanTerms(plan);
 
   const paymentCents = rateOf(gmvCents, paymentRateBps);
   const aiOverageCents =
