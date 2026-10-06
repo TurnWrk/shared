@@ -1,7 +1,8 @@
 /**
  * cmms_complianceItems / cmms_dbprLicenses (TURNWRK-718). Org members read
- * their own org's compliance items; every client write is refused because
- * seeding and edits go through dispatch's Admin SDK routes. DBPR public
+ * their own org's compliance items; every client write, platform admin
+ * included, is refused because seeding and edits go through dispatch's
+ * Admin SDK routes. DBPR public
  * records are platform-admin read only and never client-written.
  * Canonical rules live in firebase/firestore.rules — never the vendored copy.
  *
@@ -124,8 +125,8 @@ describe('firestore.rules cmms_complianceItems + cmms_dbprLicenses (emulator)', 
     await assertFails(getDoc(doc(testEnv.unauthenticatedContext().firestore(), 'cmms_complianceItems', 'item-1')));
   });
 
-  it('refuses every client write from org members, even the org admin', async () => {
-    for (const uid of [ADMIN_A, MEMBER_A]) {
+  it('refuses every client write, org admin and platform admin included', async () => {
+    for (const uid of [ADMIN_A, MEMBER_A, PLATFORM]) {
       const db = testEnv.authenticatedContext(uid).firestore();
       await assertFails(setDoc(doc(db, 'cmms_complianceItems', `planted-${uid}`), ITEM));
       await assertFails(updateDoc(doc(db, 'cmms_complianceItems', 'item-1'), { identifier: 'X' }));

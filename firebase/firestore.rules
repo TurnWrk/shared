@@ -545,10 +545,11 @@ service cloud.firestore {
     }
 
     // Property compliance items (TURNWRK-718). Seeding, edits and reminders
-    // go through dispatch API routes on the Admin SDK; org members read.
+    // go through dispatch API routes on the Admin SDK; org members read. No
+    // client writes at all, platform admins included.
     match /cmms_complianceItems/{itemId} {
       allow read: if canWriteOrg(resource.data.orgId);
-      allow create, update, delete: if isPlatformAdmin();
+      allow write: if false;
     }
 
     // DBPR vacation-rental license public records (TURNWRK-718). Not org
