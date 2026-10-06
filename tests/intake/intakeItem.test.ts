@@ -80,6 +80,23 @@ describe('buildIntakeItemPayload', () => {
     expect('propertyId' in doc).toBe(false);
   });
 
+  it('strips undefined nested inside serviceAddress, deflection.steps and checklist items (Talos repro)', () => {
+    const doc = buildIntakeItemPayload({
+      ...brainDump,
+      propertyId: undefined,
+      serviceAddress: { address: '12 Elm St', addressParts: { line1: '12 Elm St', city: undefined } },
+      deflection: { outcome: 'escalated', steps: [undefined as unknown as string, 'Reset the breaker'] },
+      checklistCustomItems: [{ label: 'Check P-trap', required: undefined }],
+    });
+    expect(doc.serviceAddress).toEqual({ address: '12 Elm St', addressParts: { line1: '12 Elm St' } });
+    expect('city' in (doc.serviceAddress as { addressParts: object }).addressParts).toBe(false);
+    expect(doc.deflection).toEqual({ outcome: 'escalated', steps: ['Reset the breaker'] });
+    expect(doc.checklistCustomItems).toEqual([{ label: 'Check P-trap' }]);
+    const walk = (v: unknown): boolean =>
+      v === undefined ? false : v && typeof v === 'object' ? Object.values(v).every(walk) : true;
+    expect(walk(doc)).toBe(true);
+  });
+
   it('writes the emergency assignment only on an emergency', () => {
     const extra = { assignedTechId: 't1', scheduledDate: '2026-10-06' };
     expect('assignedTechId' in buildIntakeItemPayload({ ...brainDump, ...extra })).toBe(false);

@@ -1,5 +1,9 @@
 import { normalizePhoneToE164 } from '../phone';
 import type { TwentyFieldMap, TwentyOwnerFields } from './types';
+import { stripUndefined } from '../stripUndefined';
+
+/** Re-exported: the implementation is shared with the intake payload builder. */
+export { stripUndefined };
 
 export const DEFAULT_TWENTY_FIELD_MAP: TwentyFieldMap = {
   firstName: 'name.firstName',
@@ -134,29 +138,6 @@ function setNested(
 
   container[leafKey] = value;
   body[parentKey] = container;
-}
-
-/** Strip undefined keys recursively — Firestore rejects undefined values. */
-export function stripUndefined(
-  value: Record<string, unknown>,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [key, entry] of Object.entries(value)) {
-    if (entry === undefined) continue;
-    if (
-      entry !== null &&
-      typeof entry === 'object' &&
-      !Array.isArray(entry)
-    ) {
-      const nested = stripUndefined(entry as Record<string, unknown>);
-      if (Object.keys(nested).length > 0) {
-        out[key] = nested;
-      }
-      continue;
-    }
-    out[key] = entry;
-  }
-  return out;
 }
 
 export function toTwentyCreateBody(

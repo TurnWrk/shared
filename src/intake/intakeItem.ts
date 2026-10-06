@@ -19,6 +19,7 @@ import type {
   WoIntakeStatus,
 } from '../types/woIntake';
 import { INTAKE_SOURCES, WO_INTAKE_SOURCES } from '../types/woIntake';
+import { stripUndefined } from '../stripUndefined';
 
 export interface IntakeItemInput {
   orgId: string;
@@ -70,9 +71,9 @@ export function defaultTriageFor(source: IntakeSource): IntakeTriage {
 }
 
 /**
- * Build the doc for a new inbox item. Never emits an undefined value —
- * Firestore rejects them, and a trade intake carries no propertyId at all
- * rather than an empty one.
+ * Build the doc for a new inbox item. Never emits an undefined value at any
+ * depth — Firestore rejects them — and a trade intake carries no propertyId at
+ * all rather than an empty one.
  *
  * Created at `pending-retry` with `attemptCount: 0` rather than `processing`:
  * cortex's reclaim clock then anchors on `receivedAt`, so a handoff that never
@@ -86,7 +87,7 @@ export function buildIntakeItemPayload(input: IntakeItemInput): Record<string, u
   const doc: Record<string, unknown> = {
     orgId: input.orgId,
     source: input.source,
-    reporter: omitUndefined({ ...reporter }),
+    reporter,
     text: input.text,
     persistMode: input.persistMode ?? 'workOrders',
     emergency,
@@ -111,7 +112,7 @@ export function buildIntakeItemPayload(input: IntakeItemInput): Record<string, u
     if (input.assignedTechId) doc.assignedTechId = input.assignedTechId;
     if (input.scheduledDate) doc.scheduledDate = input.scheduledDate;
   }
-  if (input.ai) doc.ai = omitUndefined({ ...input.ai });
+  if (input.ai) doc.ai = input.ai;
 
   // A decided item records who decided and when; for a brain dump that is the
   // filer, at filing time.
@@ -123,7 +124,9 @@ export function buildIntakeItemPayload(input: IntakeItemInput): Record<string, u
   if (input.autoAcceptedByRuleId) doc.autoAcceptedByRuleId = input.autoAcceptedByRuleId;
   if (input.deflection) doc.deflection = input.deflection;
 
-  return doc;
+  // Nested caller objects (serviceAddress, checklist items, deflection, ai,
+  // reporter) can carry undefined too; strip at every depth in one pass.
+  return stripUndefined(doc);
 }
 
 const STATUSES: readonly WoIntakeStatus[] = ['pending-retry', 'processing', 'completed', 'dead-letter'];
@@ -174,11 +177,4 @@ function isReporter(v: unknown): v is IntakeReporter {
 
 function pick<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {
   return typeof v === 'string' && (allowed as readonly string[]).includes(v) ? (v as T) : fallback;
-}
-
-function omitUndefined<T extends object>(obj: T): T {
-  for (const key of Object.keys(obj) as (keyof T)[]) {
-    if (obj[key] === undefined) delete obj[key];
-  }
-  return obj;
 }
