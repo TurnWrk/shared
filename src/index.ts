@@ -24,3 +24,4 @@ export * from './routing';
 export * from './booking';
 export * from './money';
 export * from './compliance';
+export * from './intake';

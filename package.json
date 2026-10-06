@@ -85,6 +85,11 @@
       "require": "./dist/booking/index.js",
       "default": "./dist/booking/index.js"
     },
+    "./intake": {
+      "types": "./dist/intake/index.d.ts",
+      "require": "./dist/intake/index.js",
+      "default": "./dist/intake/index.js"
+    },
     "./money": {
       "types": "./dist/money/index.d.ts",
       "require": "./dist/money/index.js",
