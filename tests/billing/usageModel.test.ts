@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   SUITE_PRO_TRIAL_DAYS,
   SUITE_USAGE_MODEL,
+  SUITE_USAGE_PLANS,
+  suitePlanTerms,
+  suiteUsagePlanOf,
   deriveAiActionsFromGmv,
   quoteSuiteUsage,
   quoteSuiteUsageFromGmv,
@@ -21,6 +24,62 @@ describe('suite usage model constants', () => {
     expect(SUITE_USAGE_MODEL.restockAffiliateRateBps).toBe(300);
     expect(SUITE_USAGE_MODEL.aiActionsPer1kGmv).toBe(1.2);
     expect(SUITE_PRO_TRIAL_DAYS).toBe(45);
+  });
+
+  it('locks the Operator tier (TURNWRK-730): flat $249/mo per business', () => {
+    expect(SUITE_USAGE_MODEL.operatorMonthlyFeeCents).toBe(24_900);
+    expect(SUITE_USAGE_MODEL.operatorPaymentRateBps).toBe(60); // same as Pro
+    expect(SUITE_USAGE_MODEL.operatorIncludedAiCredits).toBe(300);
+    expect(Number.isInteger(SUITE_USAGE_MODEL.operatorMonthlyFeeCents)).toBe(true);
+  });
+
+  it('keys nothing on property, unit or seat — plan is the only axis', () => {
+    const keys = Object.keys(SUITE_USAGE_MODEL).join(' ');
+    expect(keys).not.toMatch(/propert|unit|seat/i);
+  });
+});
+
+describe('suitePlanTerms', () => {
+  it('reads every plan from SUITE_USAGE_MODEL', () => {
+    expect(suitePlanTerms('free')).toEqual({
+      plan: 'free',
+      monthlyFeeCents: 0,
+      paymentRateBps: SUITE_USAGE_MODEL.freePaymentRateBps,
+      includedAiCredits: SUITE_USAGE_MODEL.freeIncludedAiCredits,
+      automatesCompliance: false,
+      guestAiIntake: false,
+    });
+    expect(suitePlanTerms('pro')).toEqual({
+      plan: 'pro',
+      monthlyFeeCents: SUITE_USAGE_MODEL.proMonthlyFeeCents,
+      paymentRateBps: SUITE_USAGE_MODEL.proPaymentRateBps,
+      includedAiCredits: SUITE_USAGE_MODEL.proIncludedAiCredits,
+      automatesCompliance: false,
+      guestAiIntake: false,
+    });
+    expect(suitePlanTerms('operator')).toEqual({
+      plan: 'operator',
+      monthlyFeeCents: SUITE_USAGE_MODEL.operatorMonthlyFeeCents,
+      paymentRateBps: SUITE_USAGE_MODEL.operatorPaymentRateBps,
+      includedAiCredits: SUITE_USAGE_MODEL.operatorIncludedAiCredits,
+      automatesCompliance: true,
+      guestAiIntake: true,
+    });
+  });
+
+  it('orders plans cheapest first', () => {
+    const fees = SUITE_USAGE_PLANS.map((p) => suitePlanTerms(p).monthlyFeeCents);
+    expect(fees).toEqual([...fees].sort((a, b) => a - b));
+  });
+});
+
+describe('suiteUsagePlanOf', () => {
+  it('only exact paid plan ids earn paid terms', () => {
+    expect(suiteUsagePlanOf('pro')).toBe('pro');
+    expect(suiteUsagePlanOf('operator')).toBe('operator');
+    for (const id of ['free', 'trial', 'comp', 'founder_ltd', 'dispatch,restock', 'Operator', '', null, undefined]) {
+      expect(suiteUsagePlanOf(id)).toBe('free');
+    }
   });
 });
 

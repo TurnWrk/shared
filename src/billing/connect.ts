@@ -43,7 +43,7 @@
  * Constants + pure fee math — this module never talks to Stripe.
  */
 
-import { SUITE_USAGE_MODEL } from './usageModel';
+import { suitePlanTerms, suiteUsagePlanOf } from './usageModel';
 
 export const CLEAN_CONNECT_SURFACE = 'clean_connect' as const;
 
@@ -105,13 +105,12 @@ export const CLEAN_CONNECT_ORG_FIELDS = {
 export type ConnectedAccountRef = string;
 
 /**
- * Take-rate bps for an org's suite plan. Only `pro` gets the Pro rate; trial /
- * comp / free / unknown all use the Free take-rate (never invent a discount).
+ * Take-rate bps for an org's suite plan. Only `pro` / `operator` get their paid
+ * rate; trial / comp / free / unknown all use the Free take-rate (never invent
+ * a discount).
  */
 export function suitePaymentRateBpsForPlan(planId: string | null | undefined): number {
-  return planId === 'pro'
-    ? SUITE_USAGE_MODEL.proPaymentRateBps
-    : SUITE_USAGE_MODEL.freePaymentRateBps;
+  return suitePlanTerms(suiteUsagePlanOf(planId)).paymentRateBps;
 }
 
 /** Estimated Stripe card processing fee for a charge amount (integer cents). */

@@ -24,8 +24,11 @@ describe('Connect controller defaults', () => {
 });
 
 describe('applicationFeeForDirectCharge', () => {
-  it('uses Free / Pro take-rates from SUITE_USAGE_MODEL', () => {
+  it('uses Free / Pro / Operator take-rates from SUITE_USAGE_MODEL', () => {
     expect(suitePaymentRateBpsForPlan('pro')).toBe(SUITE_USAGE_MODEL.proPaymentRateBps);
+    expect(suitePaymentRateBpsForPlan('operator')).toBe(
+      SUITE_USAGE_MODEL.operatorPaymentRateBps,
+    );
     expect(suitePaymentRateBpsForPlan('free')).toBe(SUITE_USAGE_MODEL.freePaymentRateBps);
     expect(suitePaymentRateBpsForPlan('trial')).toBe(SUITE_USAGE_MODEL.freePaymentRateBps);
     expect(suitePaymentRateBpsForPlan(undefined)).toBe(SUITE_USAGE_MODEL.freePaymentRateBps);
