@@ -544,6 +544,21 @@ service cloud.firestore {
       allow create, update, delete: if isPlatformAdmin();
     }
 
+    // Property compliance items (TURNWRK-718). Seeding, edits and reminders
+    // go through dispatch API routes on the Admin SDK; org members read.
+    match /cmms_complianceItems/{itemId} {
+      allow read: if canWriteOrg(resource.data.orgId);
+      allow create, update, delete: if isPlatformAdmin();
+    }
+
+    // DBPR vacation-rental license public records (TURNWRK-718). Not org
+    // data: an import job writes via the Admin SDK and only platform admins
+    // read. Orgs see their match through cmms_complianceItems.dbpr.
+    match /cmms_dbprLicenses/{licenseId} {
+      allow read: if isPlatformAdmin();
+      allow create, update, delete: if false;
+    }
+
     match /cmms_techRoutes/{routeId} {
       allow read: if canWriteOrg(resource.data.orgId);
       allow create, update, delete: if isPlatformAdmin();
