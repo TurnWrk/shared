@@ -15,6 +15,7 @@ import {
   assembleQuoteLines,
   isAllowedUnit,
   sanitizeBps,
+  type MarkupBps,
   type ResolvedRate,
 } from './pricing';
 import type { LineUnit, QuoteTotals, RateOverride, ScopedLine } from './types';
@@ -36,6 +37,11 @@ export interface RateCard {
   /** ms epoch the card's rates were set; stamped on every line priced from it. */
   ratedAt: number;
   rates: Readonly<Record<string, RateCardEntry>>;
+  /**
+   * Markup this card prices with when the caller passes no bps. A published
+   * consumer rate card is already all-in, so it sets both to 0.
+   */
+  defaultMarkup?: MarkupBps;
 }
 
 /** A required field the scope does not answer yet. */
@@ -48,9 +54,9 @@ export interface MissingInfo {
 export interface QuotePriceOptions {
   /** ms epoch stamped on the quote and its derived rows. Passed in, never read from a clock. */
   generatedAt: number;
-  /** Default DEFAULT_OVERHEAD_PROFIT_BPS. */
+  /** Default rateCard.defaultMarkup, then DEFAULT_OVERHEAD_PROFIT_BPS. */
   overheadProfitBps?: number;
-  /** Default DEFAULT_CONTINGENCY_BPS. */
+  /** Default rateCard.defaultMarkup, then DEFAULT_CONTINGENCY_BPS. */
   contingencyBps?: number;
   /** Trade-supplied rates; win over the card for their lineType. */
   overrides?: readonly RateOverride[];
@@ -63,6 +69,11 @@ export interface Quote extends QuoteTotals {
   currency: 'usd';
   region: string;
   generatedAt: number;
+  /**
+   * What the price assumed that the customer did not say, worded for the
+   * customer (from the pack's `assumptions` hook). [] when nothing was assumed.
+   */
+  assumptions: string[];
 }
 
 /**
@@ -78,6 +89,12 @@ export type PriceResult =
   /** Scope is outside the pack's sanity bounds, or the card cannot price a line. */
   | { status: 'rejected'; reasons: string[] };
 
+/** Work-order fields a pack sets by default when its quote converts. */
+export interface QuotePackWorkOrderDefaults {
+  /** The job is weather-dependent (outdoor surface or weather-sensitive cure). */
+  outdoor?: boolean;
+}
+
 export interface QuotePack<Scope> {
   id: string;
   scopeSchema: z.ZodType<Scope>;
@@ -86,6 +103,17 @@ export interface QuotePack<Scope> {
   needsInfo(scope: Scope): MissingInfo[];
   /** Sanity checks; each returned string is a reason the scope cannot be quoted. */
   bounds?(scope: Scope): string[];
+  /**
+   * Defaults copied onto the work orders a converted lead creates from this
+   * pack's quote (TURNWRK-701; `WorkOrder.outdoor` from TURNWRK-706).
+   * Pass-through only: pricing never reads it.
+   */
+  workOrderDefaults?: QuotePackWorkOrderDefaults;
+  /**
+   * Assumptions the price rests on, for a scope that will be priced; copied
+   * onto the priced Quote by the shared pricer. Text only: never changes the total.
+   */
+  assumptions?(scope: Scope): string[];
   /**
    * Pure and deterministic. `scope` is untrusted (LLM output) and is parsed
    * with `scopeSchema` first; pricing refuses a scope with missing info.
@@ -178,8 +206,12 @@ export function priceScope<Scope>(
   const totals = assembleQuoteLines(lines, rates, {
     region: rateCard.region,
     generatedAt: opts.generatedAt,
-    overheadProfitBps: sanitizeBps(opts.overheadProfitBps, DEFAULT_OVERHEAD_PROFIT_BPS),
-    contingencyBps: sanitizeBps(opts.contingencyBps, DEFAULT_CONTINGENCY_BPS),
+    // explicit opts → the card's defaultMarkup → the global default
+    overheadProfitBps: sanitizeBps(
+      opts.overheadProfitBps ?? rateCard.defaultMarkup?.overheadProfitBps,
+      DEFAULT_OVERHEAD_PROFIT_BPS,
+    ),
+    contingencyBps: sanitizeBps(opts.contingencyBps ?? rateCard.defaultMarkup?.contingencyBps, DEFAULT_CONTINGENCY_BPS),
   });
   return {
     status: 'priced',
@@ -190,6 +222,7 @@ export function priceScope<Scope>(
       currency: 'usd',
       region: rateCard.region,
       generatedAt: opts.generatedAt,
+      assumptions: def.assumptions?.(scope) ?? [],
       ...totals,
     },
   };

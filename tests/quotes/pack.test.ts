@@ -299,3 +299,60 @@ describe('ProposalLineItem compatibility', () => {
     expect(lines.length).toBeGreaterThan(0);
   });
 });
+
+describe('workOrderDefaults', () => {
+  it('passes through defineQuotePack untouched and is absent when not set', () => {
+    const withDefaults = defineQuotePack<FloorScope>({
+      id: 'with-defaults',
+      scopeSchema: floorScope,
+      rateCard: floorCard,
+      workOrderDefaults: { outdoor: true },
+      needsInfo: () => [],
+      takeoff: () => [],
+    });
+    expect(withDefaults.workOrderDefaults).toEqual({ outdoor: true });
+    expect(floorPack.workOrderDefaults).toBeUndefined();
+  });
+});
+
+describe('markup resolution: explicit opts → rateCard.defaultMarkup → global default', () => {
+  const scope = { areaSqFt: 400, coats: 2, crackRepairLf: 12 };
+  const base = 122_000 + 36_246; // see "prices a known scope to the cent"
+  const markupOf = (card: RateCard, opts: { overheadProfitBps?: number; contingencyBps?: number } = {}): number =>
+    priced(floorPack.price(scope, card, { generatedAt: GENERATED_AT, ...opts })).markupCents;
+  const zeroCard: RateCard = { ...floorCard, defaultMarkup: { overheadProfitBps: 0, contingencyBps: 0 } };
+
+  it('falls back to the global DEFAULT_*_BPS when the card sets no defaultMarkup', () => {
+    expect(markupOf(floorCard)).toBe(percentOfCents(base, DEFAULT_OVERHEAD_PROFIT_BPS) + percentOfCents(base, DEFAULT_CONTINGENCY_BPS));
+  });
+
+  it("uses the card's defaultMarkup when opts pass none (or undefined)", () => {
+    expect(markupOf(zeroCard)).toBe(0);
+    expect(markupOf(zeroCard, { overheadProfitBps: undefined, contingencyBps: undefined })).toBe(0);
+    const card = { ...floorCard, defaultMarkup: { overheadProfitBps: 1_000, contingencyBps: 500 } };
+    expect(markupOf(card)).toBe(percentOfCents(base, 1_000) + percentOfCents(base, 500));
+  });
+
+  it('an explicit opts value wins over the card, per field', () => {
+    expect(markupOf(zeroCard, { overheadProfitBps: 2_000 })).toBe(percentOfCents(base, 2_000));
+    expect(markupOf(floorCard, { overheadProfitBps: 0, contingencyBps: 0 })).toBe(0);
+  });
+});
+
+describe('assumptions hook', () => {
+  it('copies the pack hook onto the priced quote, and defaults to []', () => {
+    const withAssumptions = defineQuotePack<FloorScope>({
+      id: 'with-assumptions',
+      scopeSchema: floorScope,
+      rateCard: floorCard,
+      needsInfo: () => [],
+      assumptions: (s) => (s.coats === 2 ? ['Assumes two coats'] : []),
+      takeoff: (s) => [{ kind: 'labor', lineType: 'labor:floor-prep', label: 'Prep', quantity: s.areaSqFt ?? 0, unit: 'square-foot' }],
+    });
+    const at = (scope: unknown) => priced(withAssumptions.price(scope, floorCard, { generatedAt: GENERATED_AT }));
+    expect(at({ areaSqFt: 100 }).assumptions).toEqual(['Assumes two coats']);
+    expect(at({ areaSqFt: 100, coats: 3 }).assumptions).toEqual([]);
+    expect(at({ areaSqFt: 100 }).amountCents).toBe(at({ areaSqFt: 100, coats: 3 }).amountCents);
+    expect(priced(price({ areaSqFt: 100 })).assumptions).toEqual([]);
+  });
+});
