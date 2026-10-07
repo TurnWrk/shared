@@ -109,6 +109,42 @@ describe('buildIntakeItemPayload', () => {
   });
 });
 
+describe('buildIntakeItemPayload — writer-supplied drafts (TURNWRK-736)', () => {
+  const drafts = [
+    { title: 'Fix fan', description: 'Rattles', priority: 'High' as const, estimatedHours: 1, type: 'Repair' as const },
+  ];
+  const relay = {
+    orgId: 'o1',
+    source: 'relay' as const,
+    text: 'Fix fan',
+    propertyId: 'p1',
+    sourceMessageId: 'm1',
+    now: 2000,
+  };
+
+  it('is born completed with its drafts, so the cortex sweeper (pending-retry / processing only) never claims it', () => {
+    const doc = buildIntakeItemPayload({ ...relay, drafts });
+    expect(doc).toMatchObject({ status: 'completed', attemptCount: 0, completedAt: 2000, drafts, triage: 'pending' });
+    expect(['pending-retry', 'processing']).not.toContain(doc.status);
+  });
+
+  it('sets no expireAt: an undecided item must not TTL out before triage', () => {
+    expect(buildIntakeItemPayload({ ...relay, drafts })).not.toHaveProperty('expireAt');
+  });
+
+  it('without drafts keeps the pending-retry start', () => {
+    const doc = buildIntakeItemPayload(relay);
+    expect(doc.status).toBe('pending-retry');
+    expect(doc).not.toHaveProperty('drafts');
+    expect(doc).not.toHaveProperty('completedAt');
+  });
+
+  it('accepts an AI assessment with no confidence and writes no confidence key', () => {
+    const doc = buildIntakeItemPayload({ ...relay, drafts, ai: { category: 'repair', priority: 'High' } });
+    expect(doc.ai).toEqual({ category: 'repair', priority: 'High' });
+  });
+});
+
 describe('buildIntakeItemPayload — every creation field survives (TURNWRK-733)', () => {
   it('writes every IntakeItem field it is given', () => {
     const full = {

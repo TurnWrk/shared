@@ -16,6 +16,7 @@ import type {
   IntakeServiceAddress,
   IntakeSource,
   IntakeTriage,
+  WoIntakeDraft,
   WoIntakePersistMode,
   WoIntakeStatus,
 } from '../types/woIntake';
@@ -25,9 +26,10 @@ import { stripUndefined } from '../stripUndefined';
 /**
  * Every `IntakeItem` field a writer may set at creation. The processing
  * lifecycle (`status`, `attemptCount`, `processingAt`, `reclaimedAt`,
- * `completedAt`, `deadLetteredAt`, `reason`, `drafts`, `workOrderIds`,
- * `expireAt`) is deliberately absent: a new item always starts at
- * `pending-retry` and only cortex's claim/complete path advances it.
+ * `completedAt`, `deadLetteredAt`, `reason`, `workOrderIds`, `expireAt`) is
+ * deliberately absent: a new item starts at `pending-retry` and only cortex's
+ * claim/complete path advances it — unless the writer already did the AI work
+ * and passes `drafts` (see below).
  */
 export interface IntakeItemInput {
   orgId: string;
@@ -60,6 +62,14 @@ export interface IntakeItemInput {
   checklistCustomItems?: ChecklistCustomItemInput[];
 
   ai?: IntakeAiAssessment;
+  /**
+   * Drafts the writer already produced (relay chat: the chat extractor did the
+   * AI work). The item is then born `completed` with these drafts — cortex's
+   * sweeper only claims `pending-retry` / `processing`, so it never re-runs an
+   * LLM over it or charges a second AI credit. No `expireAt`: an undecided
+   * item stays until triage decides it.
+   */
+  drafts?: WoIntakeDraft[];
   /** Defaults to `defaultTriageFor(source)`. */
   triage?: IntakeTriage;
   triagedBy?: string;
@@ -108,6 +118,11 @@ export function buildIntakeItemPayload(input: IntakeItemInput): Record<string, u
     receivedAt: input.now,
     triage,
   };
+  if (input.drafts?.length) {
+    doc.status = 'completed';
+    doc.drafts = input.drafts;
+    doc.completedAt = input.now;
+  }
 
   if (input.requestedByUid) doc.requestedByUid = input.requestedByUid;
   if (input.propertyId) doc.propertyId = input.propertyId;
