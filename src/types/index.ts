@@ -9,6 +9,7 @@ export * from './invite';
 export * from './receipt';
 export * from './vendor';
 export * from './shareToken';
+export * from './guestContact';
 export * from './clean';
 export * from './workOrder';
 export * from './woIntake';

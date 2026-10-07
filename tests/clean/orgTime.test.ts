@@ -72,3 +72,20 @@ describe('todayYmdInTz', () => {
     expect(todayYmdInTz('')).toBe(todayYmdInTz('America/New_York'));
   });
 });
+
+describe('todayYmdInTz / nowHmInTz at a given instant (TURNWRK-742)', () => {
+  // 2026-10-07 02:30 UTC is still the evening of 10-06 in New York.
+  const at = new Date(Date.UTC(2026, 9, 7, 2, 30));
+
+  it('reads the org-local date and time, not the UTC one', async () => {
+    const { nowHmInTz } = await import('../../src/clean/orgTime');
+    expect(todayYmdInTz('America/New_York', at)).toBe('2026-10-06');
+    expect(nowHmInTz('America/New_York', at)).toBe('22:30');
+  });
+
+  it('falls back to UTC for an unknown zone', async () => {
+    const { nowHmInTz } = await import('../../src/clean/orgTime');
+    expect(todayYmdInTz('Not/AZone', at)).toBe('2026-10-07');
+    expect(nowHmInTz('Not/AZone', at)).toBe('02:30');
+  });
+});

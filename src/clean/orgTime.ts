@@ -62,14 +62,14 @@ export function preauthDueAtFor(scheduledStartUtc: number): number {
  * over during the US evening and reports tomorrow. Falls back to the UTC date
  * only when `Intl` rejects the zone.
  */
-export function todayYmdInTz(timeZone?: string): string {
+export function todayYmdInTz(timeZone?: string, now: Date = new Date()): string {
   try {
     const parts = new Intl.DateTimeFormat('en-CA', {
       timeZone: timeZone || DEFAULT_TIMEZONE,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).formatToParts(new Date());
+    }).formatToParts(now);
     const y = parts.find((p) => p.type === 'year')?.value;
     const m = parts.find((p) => p.type === 'month')?.value;
     const d = parts.find((p) => p.type === 'day')?.value;
@@ -77,7 +77,25 @@ export function todayYmdInTz(timeZone?: string): string {
   } catch {
     /* unknown timezone — fall through to UTC */
   }
-  return new Date().toISOString().slice(0, 10);
+  return now.toISOString().slice(0, 10);
+}
+
+/** `HH:MM` (24h) at `now` in an IANA timezone; the UTC time if `Intl` rejects the zone. */
+export function nowHmInTz(timeZone?: string, now: Date = new Date()): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timeZone || DEFAULT_TIMEZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(now);
+    const h = parts.find((p) => p.type === 'hour')?.value;
+    const m = parts.find((p) => p.type === 'minute')?.value;
+    if (h && m) return `${h}:${m}`;
+  } catch {
+    /* unknown timezone — fall through to UTC */
+  }
+  return now.toISOString().slice(11, 16);
 }
 
 /** Add whole days to an org-local YYYY-MM-DD (pure calendar math, DST-immune). */

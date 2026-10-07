@@ -66,6 +66,13 @@ export const COLLECTIONS = {
   // Server-write only (Admin SDK on both sides); clients read to render the
   // in-flight / failed cards in the Incoming Requests inbox.
   cmms_woIntakeRequests: 'cmms_woIntakeRequests',
+  /**
+   * Guest phone -> property bindings for the guest SMS channel (TURNWRK-742),
+   * doc id = E.164 phone. Written by cortex when an unknown number texts a
+   * property's guest code; also carries that phone's bind-attempt counter.
+   * Admin SDK only.
+   */
+  cmms_guestContacts: 'cmms_guestContacts',
   // Owner-facing work-order estimates. Public /estimate/{token} page + the
   // approve/decline writeback resolve these via the Admin SDK — no public read.
   cmms_estimates: 'cmms_estimates',

@@ -624,6 +624,14 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Guest SMS bindings (TURNWRK-742): phone -> property until checkout, plus
+    // the per-phone bind-attempt counter. Admin SDK only (cortex writes, cortex
+    // reads) — a client that could write here could bind any phone to any
+    // property or clear its own throttle.
+    match /cmms_guestContacts/{phone} {
+      allow read, write: if false;
+    }
+
     // Owner portal rate-limit counters (TURNWRK-418). Admin SDK only — a client
     // that could write these could clear its own throttle.
     match /cmms_ownerPortalRateLimits/{bucketId} {
