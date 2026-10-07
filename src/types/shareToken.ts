@@ -52,6 +52,13 @@ export interface PropertyShareToken {
   chatEnabled?: boolean;
   /** Absent = `vendor` (legacy). Read through `shareTokenAudience`. */
   audience?: ShareTokenAudience;
+  /**
+   * Guest tokens only (TURNWRK-742): the short code a guest texts to the
+   * Turnwrk number to bind their phone to this property ("text K7P4QM to …").
+   * Lives and dies with the token — regenerating the QR issues a new code,
+   * turning it off kills the code. See `generateGuestSmsCode`.
+   */
+  smsCode?: string;
 }
 
 /**

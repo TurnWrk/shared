@@ -273,6 +273,47 @@ export function firstSchedulableDayOnOrAfter(
   return { dateStr: current, skippedOccupiedDays, capped: current > limit };
 }
 
+/**
+ * The active booking holding the unit on `todayStr`: the same
+ * `checkIn <= day < checkOut` test the range builder applies, so the stay we
+ * name is one the ranges actually count as occupying today.
+ */
+export function findOccupyingBooking<T extends OccupancyBookingLike>(
+  bookings: T[],
+  todayStr: string,
+): T | undefined {
+  return bookings.find(
+    (b) => b.status === 'active' && b.checkIn <= todayStr && todayStr < b.checkOut,
+  );
+}
+
+/**
+ * The stay a guest contacting us from the property right now belongs to: the
+ * guest report page (TURNWRK-741) and the guest SMS binding (TURNWRK-742).
+ *
+ * The occupancy calendar treats checkout day as vacant, but a guest at 08:00
+ * on checkout morning is still in the house. So before the property's
+ * check-out time, a stay that checks out today wins, and on a turnover day
+ * that is the departing guest rather than the arriving one. After check-out
+ * time the ordinary occupancy test decides. Undefined when nobody is booked.
+ *
+ * `todayStr` and `nowHm` (`HH:MM`, 24h) MUST be property/org-local.
+ */
+export function matchReportBooking<T extends OccupancyBookingLike>(
+  bookings: T[],
+  todayStr: string,
+  nowHm: string,
+  checkOutTime: string,
+): T | undefined {
+  if (nowHm < checkOutTime) {
+    const departing = bookings.find(
+      (b) => b.status === 'active' && b.checkOut === todayStr && b.checkIn < todayStr,
+    );
+    if (departing) return departing;
+  }
+  return findOccupyingBooking(bookings, todayStr);
+}
+
 /** Fallback check-in time when a property has none set. */
 export const DEFAULT_CHECK_IN_TIME = '16:00';
 /** Fallback checkout time when a property has none set. */
