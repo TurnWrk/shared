@@ -73,6 +73,10 @@ export const COLLECTIONS = {
    * Admin SDK only.
    */
   cmms_guestContacts: 'cmms_guestContacts',
+  // Per-org ordered auto-accept rules for the inbox (TURNWRK-737); doc id ===
+  // orgId. Admin SDK only: the Settings API reads and writes it, and both
+  // intake writers (dispatch, cortex) evaluate it at item creation.
+  cmms_intakeRules: 'cmms_intakeRules',
   // Owner-facing work-order estimates. Public /estimate/{token} page + the
   // approve/decline writeback resolve these via the Admin SDK — no public read.
   cmms_estimates: 'cmms_estimates',
