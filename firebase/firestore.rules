@@ -444,6 +444,13 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Inbox auto-accept rules, one doc per org (TURNWRK-737). The Settings API
+    // reads and writes through the Admin SDK and both intake writers evaluate
+    // it server-side; no client ever touches it.
+    match /cmms_intakeRules/{orgId} {
+      allow read, write: if false;
+    }
+
     // AI Estimator rate-override training data (TURNWRK-274, Dispatch for Trades
     // P0.1b). turnwrk-cortex appends one event per applied rate override via the
     // Admin SDK — the bridge to the internal cost DB (Alan's DECISION 2026-08-01
