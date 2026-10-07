@@ -170,8 +170,12 @@ export interface IntakeAiAssessment {
   category: string;
   priority: WOPriority;
   emergencyClass?: IntakeEmergencyClass;
-  /** 0..1 */
-  confidence: number;
+  /**
+   * 0..1. Absent when the assessor reports none — the relay chat extractor
+   * returns category and priority only, and a made-up number would read as a
+   * real score in the Inbox.
+   */
+  confidence?: number;
   duplicateOfWorkOrderId?: string;
   duplicateOfIntakeId?: string;
 }
