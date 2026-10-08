@@ -158,6 +158,7 @@
     {"text": "the guest lost their key but already got in through the garage", "expected": null},
     {"text": "Our power bill seems high this month", "expected": null},
     {"text": "There's a gas smell? no just the neighbor's BBQ, never mind", "expected": null},
-    {"text": "Is the AC supposed to make a clicking sound?", "expected": null}
+    {"text": "Is the AC supposed to make a clicking sound?", "expected": null},
+    {"text": "electricity cut out briefly this morning, it's back up", "expected": null}
   ]
 }

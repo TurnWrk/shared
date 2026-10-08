@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import golden from './fixtures/emergency-golden.json';
+import heldout from './fixtures/emergency-heldout.json';
 import {
   EMERGENCY_CLASSES,
   detectEmergency,
@@ -83,6 +84,62 @@ describe('emergency golden set', () => {
 
     expect(recall).toBeGreaterThanOrEqual(MIN_RECALL);
     expect(precision).toBeGreaterThanOrEqual(MIN_PRECISION);
+  });
+});
+
+/**
+ * The real gate (TURNWRK-738): messages written without looking at the
+ * patterns and never tuned against. Two modes:
+ *  - deterministic: only `isEmergency` pages.
+ *  - with LLM: `ambiguous` goes to the pinned model; scored here with the
+ *    model answering correctly (an oracle), so it is the ceiling the cortex
+ *    path can reach, not a measurement of the model itself.
+ * The floors are the achieved held-out numbers, so they cannot regress.
+ */
+const HELDOUT = (heldout as { cases: GoldenCase[] }).cases;
+const HELDOUT_FLOOR = {
+  // Achieved on 92 held-out messages (54 emergencies), recorded in TurnWrk/shared#41.
+  deterministic: { precision: 1, recall: 34 / 54 },
+  withLlm: { precision: 1, recall: 1 },
+};
+
+function score(cases: GoldenCase[], pages: (c: GoldenCase, d: EmergencyDetection) => boolean) {
+  let tp = 0, fp = 0, fn = 0;
+  const misses: string[] = [];
+  for (const c of cases) {
+    const d = run(c);
+    const paged = pages(c, d);
+    if (paged && c.expected !== null) tp++;
+    else if (paged) { fp++; misses.push(`  FP ${c.text}`); }
+    else if (c.expected !== null) { fn++; misses.push(`  FN(${c.expected}${d.ambiguous ? ', ambiguous' : ''}) ${c.text}`); }
+  }
+  return { tp, fp, fn, precision: ratio(tp, tp + fp), recall: ratio(tp, tp + fn), misses };
+}
+
+describe('emergency held-out set', () => {
+  it('has at least 60 messages, and none of them is in the golden set', () => {
+    expect(HELDOUT.length).toBeGreaterThanOrEqual(60);
+    const tuned = new Set(CASES.map((c) => c.text.toLowerCase()));
+    expect(HELDOUT.filter((c) => tuned.has(c.text.toLowerCase()))).toEqual([]);
+  });
+
+  it('prints held-out precision/recall in both modes and holds the recorded floor', () => {
+    const det = score(HELDOUT, (_c, d) => d.isEmergency);
+    // Oracle model: an ambiguous item is paged exactly when it is a real emergency.
+    const llm = score(HELDOUT, (c, d) => d.isEmergency || (d.ambiguous && c.expected !== null));
+    const llmCalls = HELDOUT.filter((c) => run(c).ambiguous).length;
+    const fmt = (m: ReturnType<typeof score>) =>
+      `tp=${m.tp} fp=${m.fp} fn=${m.fn}  precision=${m.precision.toFixed(2)} recall=${m.recall.toFixed(2)}`;
+    console.log(
+      `\n[emergency held-out: ${HELDOUT.length} messages, ${HELDOUT.filter((c) => c.expected).length} emergencies]\n` +
+        `deterministic only : ${fmt(det)}\n` +
+        `with LLM (oracle)  : ${fmt(llm)}  (${llmCalls} model calls)\n` +
+        det.misses.join('\n') + '\n',
+    );
+    expect(det.precision).toBeGreaterThanOrEqual(HELDOUT_FLOOR.deterministic.precision);
+    expect(det.recall).toBeGreaterThanOrEqual(HELDOUT_FLOOR.deterministic.recall);
+    expect(llm.precision).toBeGreaterThanOrEqual(HELDOUT_FLOOR.withLlm.precision);
+    expect(llm.recall).toBeGreaterThanOrEqual(HELDOUT_FLOOR.withLlm.recall);
   });
 });
 

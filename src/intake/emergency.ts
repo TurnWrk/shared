@@ -214,7 +214,7 @@ const PATTERNS: Record<IntakeEmergencyClass, Pattern[]> = {
 /** A negator in the few words before a match cancels it. */
 const NEGATED_BEFORE = /\b(?:no|not|never|without|nothing|any|is ?n'?t|are ?n'?t|was ?n'?t|do ?n'?t|does ?n'?t|did ?n'?t|sin|ningun[ao]?|nunca)\s+(?:\S+\s+){0,2}$/;
 /** The message says it is over. */
-const RESOLVED = /\b(?:fixed|resolved|repaired|sorted out|working again|works now|back on|came back|all good|cleaned (?:it )?up|never ?mind|nvm|false alarm|disregard|figured (?:it |out|the)|we'?re in now|got in|no longer|anymore|ya se (?:arreglo|resolvio|soluciono)|ya (?:funciona|esta bien|entramos)|volvio)\b/;
+const RESOLVED = /\b(?:fixed|resolved|repaired|sorted out|working again|works now|back on|came back|all good|(?:it'?s|its|is|power'?s|everything'?s) back(?: on| now| up)?|cleaned (?:it )?up|never ?mind|nvm|false alarm|disregard|figured (?:it |out|the)|we'?re in now|got in|no longer|anymore|ya se (?:arreglo|resolvio|soluciono)|ya (?:funciona|esta bien|entramos)|volvio)\b/;
 /** The issue is placed in the past. */
 const PAST = /\b(?:last (?:week|month|year|time|stay|visit)|used to|(?:a few |two |three |\d+ )?(?:days|weeks|months) ago|la semana pasada|el mes pasado)\b/;
 /** ...but it is happening now. Overrides both of the above. */
@@ -225,21 +225,22 @@ const JOKE = /\b(?:lol|lmao|rofl|haha+|hehe+|jk|just kidding|kidding|jaja+)\b|ðŸ
 const AMENITY = /\b(?:pool|gym|mailbox|amenit\w*|laundry room|storage|fob|bike)\b/;
 
 /**
- * Last resort for phrasings no pattern covers: a class's subject plus a
- * trouble word in one clause is `ambiguous`, so the model looks at it. Cheap
- * recall â€” the model decides, and only for messages that already sound like
- * trouble with water, gas, power, a lock or the HVAC.
+ * Recall net for phrasings no pattern covers (TURNWRK-738). Any live (not
+ * resolved, not past, in-season) message that names a class's subject is
+ * `ambiguous`, so the pinned model decides. Deliberately wide: trouble-word
+ * lists kept missing real phrasings on the held-out set ("water spraying",
+ * "code gets rejected", "blows warm air"), and a false positive here costs one
+ * small yes/no model call while a false negative is an unpaged emergency.
+ * Stems, not words, so texted typos ("electricty") and Spanish still land.
  */
 const DOMAIN: Record<IntakeEmergencyClass, RegExp> = {
-  gas: /\b(?:gas|propane|carbon monoxide|monoxido)\b/,
-  water: /\b(?:water|agua|leak\w*|flood\w*|soaked|wet|mojad\w*|ceiling|pipe|toilet|overflow\w*|fuga|gotera)\b/,
-  power: /\b(?:power|electric\w*|breaker|outlets|luz|electricidad|corriente)\b/,
-  lockout: /\b(?:locked|lock|lock ?box|key|keys|keypad|door code|llave|cerradura|entrar)\b/,
-  hvac: /\b(?:ac|a\/c|air ?conditioner|air conditioning|heat|heater|heating|furnace|aire|calefaccion)\b/,
+  gas: /\b(?:gas|propane|carbon monoxide|monoxid\w*|rotten eggs?|sulfur|reek\w*)\b/,
+  water: /\b(?:water|agua|leak\w*|flood\w*|drip\w*|soak\w*|wet|mojad\w*|ceiling|techo|pipes?|tuber\w*|cano|toilet|inodoro|overflow\w*|fuga|gote\w*|sewage|sewer)\b/,
+  power: /\b(?:power|electri\w*|elec|breakers?|outlets?|fuses?|luz|luces|corriente|lights|dark)\b/,
+  lockout: /\b(?:lock\w*|keys?|keypad|code|codigo|door|puerta|entrar|get in|cerradura|llave)\b/,
+  hvac: /\b(?:ac|a\/c|air|aire|hvac|heat\w*|furnace|boiler|calefac\w*|thermostat)\b/,
 };
-const TROUBLE = /\b(?:not|without|sin|wo ?n'?t|broken|broke|burst|dead|died|stopped|soaked|collapsed?|everywhere|overflow\w*|outside|stuck|empty|smell\w*|emergency|urgent|asap|help|emergencia|urgente|ayuda)\b|n't\b/;
-const HVAC_HEAT_WORD = /\b(?:heat|heater|heating|furnace|calefaccion)\b/;
-
+const HVAC_HEAT_WORD = /\b(?:heat|heater|heating|furnace|boiler|calefac\w*)\b/;
 /** Downgrades a weak water hit to nothing: a drip is not a flood. */
 const MINOR = /\b(?:small|slight|tiny|minor|little|drip(?:s|ping)?|a bit|slow|pequena|poquito)\b/;
 
@@ -331,9 +332,10 @@ export function detectEmergency(text: string, ctx: EmergencyDetectionContext = {
       hits.push(hit);
     }
   }
-  if (hits.length === 0) {
-    for (const clause of live) {
-      if (!TROUBLE.test(clause)) continue;
+  if (!hits.some((h) => h.strength === 'strong')) {
+    // Subject and trouble may sit in different clauses ("the AC. it's 90 in here").
+    const message = live.join(' . ');
+    for (const clause of [message]) {
       for (const cls of EMERGENCY_CLASSES) {
         if (!DOMAIN[cls].test(clause)) continue;
         if (cls === 'hvac' && (outOfSeason || !season[HVAC_HEAT_WORD.test(clause) ? 'heating' : 'cooling'])) continue;
