@@ -68,6 +68,12 @@ export interface IntakeItem {
    * `isEmergency` with the tech/date stamped below.
    */
   emergency: boolean;
+  /**
+   * The emergency detector found a possible emergency it could not confirm
+   * because the model was unavailable (TURNWRK-738). The item waits in the
+   * Inbox (pinned to the top) and org admins were paged; a human decides.
+   */
+  possibleEmergency?: boolean;
   /** Resolved on-call tech. Absent for PM-portal emergencies (broadcast-accept). */
   assignedTechId?: string;
   /** Org-local `YYYY-MM-DD`, resolved at enqueue — cortex runs UTC. */
