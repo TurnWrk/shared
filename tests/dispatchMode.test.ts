@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   IN_HOUSE_CLEARED_FIELDS,
+  applyInHouseToNewWorkOrder,
   inHouseAcceptedFields,
   inHouseTechIdOf,
   isInHouseOrg,
@@ -55,5 +56,32 @@ describe('inHouseAcceptedFields', () => {
     expect(fields).not.toHaveProperty('expiresAt');
     expect(IN_HOUSE_CLEARED_FIELDS).toContain('expiresAt');
     expect(IN_HOUSE_CLEARED_FIELDS).toContain('releasedReason');
+  });
+});
+
+describe('applyInHouseToNewWorkOrder', () => {
+  const ok = { ok: true as const, techId: 'alan' };
+  const NOW = 1_700_000_000_000;
+
+  it('hands open, unassigned, non-emergency work to the tech, accepted, with no offer clock', () => {
+    for (const status of ['Backlog', 'Scheduled']) {
+      const wo: Record<string, unknown> = { status };
+      expect(applyInHouseToNewWorkOrder(wo, ok, NOW)).toBe('assigned');
+      expect(wo).toEqual({ status, assignedTechId: 'alan', acknowledgedAt: NOW });
+    }
+  });
+
+  it('leaves a named assignee, an emergency and closed work untouched', () => {
+    for (const wo of [{ status: 'Backlog', assignedTechId: 'sam' }, { status: 'Scheduled', isEmergency: true }, { status: 'Pending Approval' }]) {
+      const copy = { ...wo };
+      expect(applyInHouseToNewWorkOrder(copy, ok, NOW)).toBe('skipped');
+      expect(copy).toEqual(wo);
+    }
+  });
+
+  it('an unresolved tech leaves the job unassigned', () => {
+    const wo = { status: 'Backlog' };
+    expect(applyInHouseToNewWorkOrder(wo, { ok: false, reason: 'tech-inactive' }, NOW)).toBe('unresolved');
+    expect(wo).toEqual({ status: 'Backlog' });
   });
 });

@@ -72,6 +72,29 @@ export function inHouseAcceptedFields(techId: string, now: number): { assignedTe
   return { assignedTechId: techId, acknowledgedAt: now };
 }
 
+/** Statuses a new work order can be handed to the in-house tech in. */
+const IN_HOUSE_CREATE_STATUSES: ReadonlySet<string> = new Set(['Backlog', 'Scheduled']);
+
+/**
+ * Hand a NEW work-order payload of an in-house org to its tech, accepted, before
+ * it is written. Every creation path calls this one function. Skipped (payload
+ * untouched): it already names a tech (e.g. an intake rule's assignee), it is
+ * an emergency (broadcast-accept flow), or it is not open work. `unresolved`:
+ * the tech could not be resolved, so the job stays unassigned for a human.
+ * Mutates `payload`.
+ */
+export function applyInHouseToNewWorkOrder(
+  payload: Record<string, unknown>,
+  resolution: InHouseTechResolution,
+  now: number,
+): 'assigned' | 'unresolved' | 'skipped' {
+  if (payload.assignedTechId || payload.isEmergency === true) return 'skipped';
+  if (!IN_HOUSE_CREATE_STATUSES.has(String(payload.status))) return 'skipped';
+  if ('reason' in resolution) return 'unresolved';
+  Object.assign(payload, inHouseAcceptedFields(resolution.techId, now));
+  return 'assigned';
+}
+
 /**
  * Offer-cycle fields an in-house work order must not carry: the offer clock,
  * the release marker, and the per-offer notification/attempt stamps. Writers
