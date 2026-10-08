@@ -451,6 +451,14 @@ export interface Org {
      */
     autoAssignEnabled?: boolean;
     /**
+     * `in-house`: the org's own tech (`inHouseTechId`) takes every job already
+     * accepted, with no offer clock, and the offer sweeps never touch it.
+     * Absent = `marketplace`. See `src/dispatchMode.ts` (TURNWRK-767).
+     */
+    mode?: import('../dispatchMode').DispatchMode;
+    /** The `cmms_technicians` id an `in-house` org's jobs go to. */
+    inHouseTechId?: string;
+    /**
      * Trade A/R billing defaults (TURNWRK-287): invoice terms, dunning schedule,
      * and optional late-fee disclosure. Org-admin writable like `quickWorkOrder`.
      */
