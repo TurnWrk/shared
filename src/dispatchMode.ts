@@ -61,10 +61,20 @@ export function resolveInHouseTech(
 ): InHouseTechResolution {
   const techId = inHouseTechIdOf(org);
   if (!techId) return { ok: false, reason: 'no-in-house-tech' };
-  if (!tech || tech.id !== techId) return { ok: false, reason: 'tech-not-found' };
-  if (tech.status !== 'Active') return { ok: false, reason: 'tech-inactive' };
-  if (!Array.isArray(tech.orgIds) || !tech.orgIds.includes(orgId)) return { ok: false, reason: 'tech-not-in-org' };
-  return { ok: true, techId };
+  const reason = activeOrgTechProblem(orgId, techId, tech);
+  return reason ? { ok: false, reason } : { ok: true, techId };
+}
+
+/** Why `tech` is not the active org tech `techId`, or null when it is. */
+function activeOrgTechProblem(
+  orgId: string,
+  techId: string,
+  tech: InHouseTechLike | null | undefined,
+): Exclude<InHouseTechUnresolved, 'no-in-house-tech'> | null {
+  if (!tech || tech.id !== techId) return 'tech-not-found';
+  if (tech.status !== 'Active') return 'tech-inactive';
+  if (!Array.isArray(tech.orgIds) || !tech.orgIds.includes(orgId)) return 'tech-not-in-org';
+  return null;
 }
 
 /** The fields that make a work order assigned to, and accepted by, the in-house tech. */
@@ -75,23 +85,45 @@ export function inHouseAcceptedFields(techId: string, now: number): { assignedTe
 /** Statuses a new work order can be handed to the in-house tech in. */
 const IN_HOUSE_CREATE_STATUSES: ReadonlySet<string> = new Set(['Backlog', 'Scheduled']);
 
+/** What a creation path knows about an in-house org when it builds new work orders. */
+export interface InHouseCreateContext {
+  orgId: string;
+  /** `resolveInHouseTech` for the org. */
+  inHouse: InHouseTechResolution;
+  /** The org's tech docs, to vet a payload's already-named assignee (e.g. an intake rule's). */
+  orgTechs: readonly InHouseTechLike[];
+}
+
 /**
- * Hand a NEW work-order payload of an in-house org to its tech, accepted, before
- * it is written. Every creation path calls this one function. Skipped (payload
- * untouched): it already names a tech (e.g. an intake rule's assignee), it is
- * an emergency (broadcast-accept flow), or it is not open work. `unresolved`:
- * the tech could not be resolved, so the job stays unassigned for a human.
- * Mutates `payload`.
+ * Make a NEW work-order payload of an in-house org accepted before it is
+ * written — nothing in an in-house org sits unaccepted. Every creation path
+ * calls this one function. Mutates `payload`.
+ *
+ * - `kept`: it already names an active tech of the org (an intake rule's
+ *   assignee): that tech keeps it, accepted.
+ * - `assigned`: unassigned, or named someone who is not an active org tech:
+ *   the in-house tech takes it, accepted.
+ * - `unresolved`: the in-house tech cannot be resolved: left unassigned (an
+ *   invalid named assignee is cleared) for a human, never offered.
+ * - `skipped`, untouched: an emergency (broadcast-accept flow) or not open work.
  */
 export function applyInHouseToNewWorkOrder(
   payload: Record<string, unknown>,
-  resolution: InHouseTechResolution,
+  ctx: InHouseCreateContext,
   now: number,
-): 'assigned' | 'unresolved' | 'skipped' {
-  if (payload.assignedTechId || payload.isEmergency === true) return 'skipped';
+): 'kept' | 'assigned' | 'unresolved' | 'skipped' {
+  if (payload.isEmergency === true) return 'skipped';
   if (!IN_HOUSE_CREATE_STATUSES.has(String(payload.status))) return 'skipped';
-  if ('reason' in resolution) return 'unresolved';
-  Object.assign(payload, inHouseAcceptedFields(resolution.techId, now));
+  const named = typeof payload.assignedTechId === 'string' && payload.assignedTechId ? payload.assignedTechId : null;
+  if (named && !activeOrgTechProblem(ctx.orgId, named, ctx.orgTechs.find((t) => t.id === named))) {
+    Object.assign(payload, inHouseAcceptedFields(named, now));
+    return 'kept';
+  }
+  if ('reason' in ctx.inHouse) {
+    if (named) payload.assignedTechId = null;
+    return 'unresolved';
+  }
+  Object.assign(payload, inHouseAcceptedFields(ctx.inHouse.techId, now));
   return 'assigned';
 }
 

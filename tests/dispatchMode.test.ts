@@ -60,28 +60,57 @@ describe('inHouseAcceptedFields', () => {
 });
 
 describe('applyInHouseToNewWorkOrder', () => {
-  const ok = { ok: true as const, techId: 'alan' };
   const NOW = 1_700_000_000_000;
+  const sam = { id: 'sam', status: 'Active', orgIds: ['bk'] };
+  const ctx = (over: Partial<{ inHouse: { ok: true; techId: string } | { ok: false; reason: 'tech-inactive' }; orgTechs: Array<Record<string, unknown> & { id: string }> }> = {}) => ({
+    orgId: 'bk',
+    inHouse: { ok: true as const, techId: 'alan' },
+    orgTechs: [{ id: 'alan', status: 'Active', orgIds: ['bk'] }, sam],
+    ...over,
+  });
 
-  it('hands open, unassigned, non-emergency work to the tech, accepted, with no offer clock', () => {
+  it('hands open, unassigned, non-emergency work to the in-house tech, accepted, with no offer clock', () => {
     for (const status of ['Backlog', 'Scheduled']) {
       const wo: Record<string, unknown> = { status };
-      expect(applyInHouseToNewWorkOrder(wo, ok, NOW)).toBe('assigned');
+      expect(applyInHouseToNewWorkOrder(wo, ctx(), NOW)).toBe('assigned');
       expect(wo).toEqual({ status, assignedTechId: 'alan', acknowledgedAt: NOW });
     }
   });
 
-  it('leaves a named assignee, an emergency and closed work untouched', () => {
-    for (const wo of [{ status: 'Backlog', assignedTechId: 'sam' }, { status: 'Scheduled', isEmergency: true }, { status: 'Pending Approval' }]) {
-      const copy = { ...wo };
-      expect(applyInHouseToNewWorkOrder(copy, ok, NOW)).toBe('skipped');
-      expect(copy).toEqual(wo);
+  it('a rule-named assignee who is an active org tech keeps the job, accepted, no offer clock', () => {
+    const wo: Record<string, unknown> = { status: 'Backlog', assignedTechId: 'sam' };
+    expect(applyInHouseToNewWorkOrder(wo, ctx(), NOW)).toBe('kept');
+    expect(wo).toEqual({ status: 'Backlog', assignedTechId: 'sam', acknowledgedAt: NOW });
+    expect(wo).not.toHaveProperty('expiresAt');
+  });
+
+  it('a rule-named assignee who is not an active org tech falls back to the in-house tech, accepted', () => {
+    for (const orgTechs of [
+      [{ id: 'sam', status: 'Inactive', orgIds: ['bk'] }],
+      [{ id: 'sam', status: 'Active', orgIds: ['other-org'] }],
+      [],
+    ]) {
+      const wo: Record<string, unknown> = { status: 'Scheduled', assignedTechId: 'sam' };
+      expect(applyInHouseToNewWorkOrder(wo, ctx({ orgTechs }), NOW)).toBe('assigned');
+      expect(wo).toEqual({ status: 'Scheduled', assignedTechId: 'alan', acknowledgedAt: NOW });
     }
   });
 
-  it('an unresolved tech leaves the job unassigned', () => {
-    const wo = { status: 'Backlog' };
-    expect(applyInHouseToNewWorkOrder(wo, { ok: false, reason: 'tech-inactive' }, NOW)).toBe('unresolved');
-    expect(wo).toEqual({ status: 'Backlog' });
+  it('an unresolved in-house tech leaves the job unassigned and never accepted or offered', () => {
+    const unresolved = ctx({ inHouse: { ok: false, reason: 'tech-inactive' }, orgTechs: [] });
+    const plain: Record<string, unknown> = { status: 'Backlog' };
+    expect(applyInHouseToNewWorkOrder(plain, unresolved, NOW)).toBe('unresolved');
+    expect(plain).toEqual({ status: 'Backlog' });
+    const badNamed: Record<string, unknown> = { status: 'Backlog', assignedTechId: 'ghost' };
+    expect(applyInHouseToNewWorkOrder(badNamed, unresolved, NOW)).toBe('unresolved');
+    expect(badNamed).toEqual({ status: 'Backlog', assignedTechId: null });
+  });
+
+  it('leaves an emergency and closed work untouched', () => {
+    for (const wo of [{ status: 'Scheduled', isEmergency: true }, { status: 'Scheduled', isEmergency: true, assignedTechId: 'sam' }, { status: 'Pending Approval' }]) {
+      const copy = { ...wo };
+      expect(applyInHouseToNewWorkOrder(copy, ctx(), NOW)).toBe('skipped');
+      expect(copy).toEqual(wo);
+    }
   });
 });
