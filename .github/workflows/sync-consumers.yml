@@ -189,18 +189,24 @@ jobs:
               echo "First manifest-tracked sync (no previous SHA on ${{ matrix.base }})."
             fi
             echo
+            echo "Opened as a draft so bot force-pushes run no CI here: mark it ready for review to run CI, then merge."
             echo "Merging this PR ships the update (App Hosting / Coolify deploy on ${{ matrix.base }})."
             echo "Review authz-relevant changes under \`packages/shared/firebase/\` before merging;"
             echo "prod rules/indexes deploy separately via the Deploy Firebase rules workflow in TurnWrk/shared."
           } > "$RUNNER_TEMP/pr-body.md"
 
+          # Draft (TURNWRK-793): every consumer's CI skips draft PRs and runs on
+          # `ready_for_review`, so the force-pushes above start no consumer CI
+          # until a human marks the PR ready to merge it. Neither the force-push
+          # nor `gh pr edit` changes draft state, so an update never flips a draft
+          # out of draft, and never pushes back into draft a PR a human readied.
           if [[ -n "$existing" ]]; then
             gh pr edit "$existing" --repo "${{ matrix.repo }}" \
               --title "Sync @turnwrk/shared ${sha_short}" \
               --body-file "$RUNNER_TEMP/pr-body.md"
             echo "Updated PR #$existing on ${{ matrix.repo }}"
           else
-            gh pr create --repo "${{ matrix.repo }}" \
+            gh pr create --repo "${{ matrix.repo }}" --draft \
               --head bot/sync-shared --base "${{ matrix.base }}" \
               --title "Sync @turnwrk/shared ${sha_short}" \
               --body-file "$RUNNER_TEMP/pr-body.md"
